@@ -5,129 +5,105 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Quick Expense App</title>
 
+  <!-- Tesseract.js -->
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <!-- 顶部标题 -->
-  <header>
-    <h2 id="pageTitle">支出记录</h2>
-  </header>
 
-  <!-- 页面容器 -->
-  <main>
-    <!-- 支出列表页 -->
-    <section id="recordsPage" class="page active"></section>
-
-    <!-- 添加支出页 -->
-    <section id="addPage" class="page">
-      <button id="scanBtn">🧾 从小票读取</button>
-      <input type="file" id="receiptInput" accept="image/*" hidden />
-
-      <div class="field">
-        <label>商户</label>
-        <input type="text" id="merchant" />
-      </div>
-
-      <div class="field">
-        <label>日期</label>
-        <input type="date" id="date" />
-      </div>
-
-      <div class="field">
-        <label>总金额 (USD)</label>
-        <input type="number" id="amount" step="0.01" />
-      </div>
-
-      <div class="field">
-        <label>交易类型</label>
-        <select id="type">
-          <option value="expense">支出</option>
-          <option value="income">收入</option>
-          <option value="transfer">转账</option>
-        </select>
-      </div>
-
-      <div class="field">
-        <label>账户</label>
-        <select id="account">
-          <option>BoA  A saving</option>
-          <option>BoA  B check</option>
-          <option>ICBC 储蓄</option>
-          <option>BoA 信用卡</option>
-          <option>现金</option>
-        </select>
-      </div>
-
-      <div class="field">
-        <label>明细 (一行一个: 名称 $价格)</label>
-        <textarea id="items" rows="5" placeholder="Latte $5.50&#10;Muffin $10.00"></textarea>
-      </div>
-
-      <button id="saveBtn">保存支出</button>
-    </section>
-
-    <!-- 账户分析页 -->
-    <section id="accountsPage" class="page">
-      <h3>账户余额</h3>
-      <div id="accounts"></div>
-      <h3>支出占比（本月）</h3>
-      <div id="chart"></div>
-    </section>
-
-    <!-- 借贷管理页 -->
-    <section id="loanPage" class="page">
-      <div class="field">
-        <label>对象</label>
-        <input type="text" id="loanPerson" />
-      </div>
-
-      <div class="field">
-        <label>类型</label>
-        <select id="loanDirection">
-          <option value="lend">我借给别人</option>
-          <option value="borrow">我向别人借</option>
-        </select>
-      </div>
-
-      <div class="field">
-        <label>金额</label>
-        <input type="number" id="loanAmount" step="0.01" />
-      </div>
-
-      <div class="field">
-        <label>账户</label>
-        <select id="loanAccount">
-          <option>BoA  A saving</option>
-          <option>BoA  B check</option>
-          <option>ICBC 储蓄</option>
-          <option>BoA 信用卡</option>
-          <option>现金</option>
-        </select>
-      </div>
-
-      <div class="field">
-        <label>备注</label>
-        <input type="text" id="loanNote" />
-      </div>
-
-      <button id="loanSave">记录借贷</button>
-      <button id="loanSettle">标记已结清</button>
-
-      <h3>未结清借贷</h3>
-      <div id="loanList"></div>
-    </section>
-  </main>
-
-  <!-- 底部导航 -->
+  <h2 id="pageTitle">Quick Expense</h2>
   <nav>
-    <button data-page="recordsPage">支出列表</button>
-    <button data-page="addPage">添加支出</button>
-    <button data-page="accountsPage">账户分析</button>
-    <button data-page="loanPage">借贷管理</button>
+    <button data-page="expensePage">记账</button>
+    <button data-page="loanPage">借贷</button>
+    <button data-page="accountsPage">账户</button>
   </nav>
 
-  <pre id="log"></pre>
+  <div id="expensePage" class="page active">
+    <button id="scanBtn">🧾 从小票读取</button>
+    <input type="file" id="receiptInput" accept="image/*" hidden />
+    <div id="ocrStatus" style="margin:10px 0; font-weight:bold; color:blue;"></div>
+
+    <div class="field">
+      <label>商户</label>
+      <input type="text" id="merchant" placeholder="Merchant" />
+    </div>
+
+    <div class="field">
+      <label>金额 (USD)</label>
+      <input type="number" id="amount" step="0.01" placeholder="0.00" />
+    </div>
+
+    <div class="field">
+      <label>日期</label>
+      <input type="date" id="date" />
+    </div>
+
+    <div class="field">
+      <label>交易类型</label>
+      <select id="type">
+        <option value="expense">支出</option>
+        <option value="income">收入</option>
+        <option value="transfer">转账</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>使用账户</label>
+      <select id="account">
+        <option>BoA  A saving</option>
+        <option>BoA  B check</option>
+        <option>ICBC 储蓄</option>
+        <option>BoA 信用卡</option>
+        <option>现金</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>明细</label>
+      <div id="items"></div>
+    </div>
+
+    <button id="saveBtn">保存支出</button>
+    <div id="recordsPage" style="margin-top:20px"></div>
+  </div>
+
+  <div id="loanPage" class="page">
+    <div class="field">
+      <label>对象</label><input type="text" id="loanPerson"/>
+    </div>
+    <div class="field">
+      <label>方向</label>
+      <select id="loanDirection">
+        <option value="lend">借给朋友</option>
+        <option value="borrow">向朋友借</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>金额</label><input type="number" id="loanAmount" step="0.01"/>
+    </div>
+    <div class="field">
+      <label>账户</label>
+      <select id="loanAccount">
+        <option>BoA  A saving</option>
+        <option>BoA  B check</option>
+        <option>ICBC 储蓄</option>
+        <option>BoA 信用卡</option>
+        <option>现金</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>备注</label><input type="text" id="loanNote"/>
+    </div>
+    <button id="loanSave">保存借贷</button>
+    <button id="loanSettle">一键结清</button>
+    <div id="loanList" style="margin-top:10px"></div>
+  </div>
+
+  <div id="accountsPage" class="page">
+    <div id="accounts" style="margin-bottom:10px"></div>
+    <div id="chart"></div>
+  </div>
 
   <script src="app.js"></script>
 </body>

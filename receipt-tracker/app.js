@@ -24,14 +24,15 @@ let accounts = {
 // ---------------- DOM ----------------
 const scanBtn = document.getElementById("scanBtn");
 const receiptInput = document.getElementById("receiptInput");
-const log = document.getElementById("log");
+const ocrStatus = document.getElementById("ocrStatus");
 
 const merchant = document.getElementById("merchant");
 const amount = document.getElementById("amount");
 const dateInput = document.getElementById("date");
 const type = document.getElementById("type");
 const accountInput = document.getElementById("account");
-const itemsInput = document.getElementById("items");
+const itemsContainer = document.getElementById("items");
+
 const saveBtn = document.getElementById("saveBtn");
 
 const loanPerson = document.getElementById("loanPerson");
@@ -54,14 +55,14 @@ receiptInput.onchange = async e => {
   const file = e.target.files[0];
   if (!file) return;
 
-  log.textContent = "OCR 初始化中…";
+  ocrStatus.textContent = "OCR 初始化中…";
 
   try {
     const worker = await Tesseract.createWorker({
       logger: m => {
         if (m.status === "recognizing text") {
           const percent = (m.progress * 100).toFixed(0);
-          log.textContent = `OCR 识别中 ${percent}%`;
+          ocrStatus.textContent = `OCR 识别中 ${percent}%`;
         }
       }
     });
@@ -72,30 +73,46 @@ receiptInput.onchange = async e => {
     const { data } = await worker.recognize(file);
     await worker.terminate();
 
-    log.textContent = "OCR 识别完成！请检查自动填入的数据";
+    ocrStatus.textContent = "OCR 识别完成！请检查自动填入的数据";
 
-    // 自动填充商户：第一行
+    // 自动填充商户
     const lines = data.text.split("\n").map(l=>l.trim()).filter(Boolean);
-    if (lines[0]) merchant.value = lines[0];
+    if(lines[0]) merchant.value = lines[0];
 
-    // 自动提取总金额（取 OCR 中最大的金额）
+    // 自动填充总金额
     const nums = data.text.match(/\$?\d+\.\d{2}/g);
-    if (nums) amount.value = Math.max(...nums.map(n=>parseFloat(n.replace("$","")))).toFixed(2);
+    if(nums) amount.value = Math.max(...nums.map(n=>parseFloat(n.replace("$","")))).toFixed(2);
 
-    // 自动生成明细（每行包含金额的行）
-    let itemLines = lines.filter(l => /\d+\.\d{2}/.test(l));
-    itemsInput.value = itemLines.join("\n");
+    // 明细独立行
+    itemsContainer.innerHTML = "";
+    lines.filter(l=>/\d+\.\d{2}/.test(l)).forEach(l=>{
+      const match = l.match(/^(.+?)\s*\$?(\d+\.\d{2})$/);
+      if(match){
+        const div = document.createElement("div");
+        div.className="itemRow";
+        div.innerHTML = `<input type="text" class="itemName" value="${match[1]}"/> $ 
+                         <input type="number" class="itemPrice" step="0.01" value="${parseFloat(match[2])}"/>`;
+        itemsContainer.appendChild(div);
+      }
+    });
 
   } catch(err){
     console.error(err);
-    log.textContent = "OCR 识别失败，请使用清晰小票重试";
+    ocrStatus.textContent = "OCR 识别失败，请使用清晰小票重试";
   }
 
-  receiptInput.value = ""; // 清空选择文件
+  receiptInput.value = "";
 };
 
 // ---------------- 保存支出 ----------------
 saveBtn.onclick = () => {
+  const itemRows = Array.from(itemsContainer.querySelectorAll(".itemRow"));
+  const items = itemRows.map(r=>{
+    const name = r.querySelector(".itemName").value;
+    const price = parseFloat(r.querySelector(".itemPrice").value);
+    return {name, price};
+  }).filter(i=>i.name && i.price);
+
   const record = {
     id: Date.now(),
     merchant: merchant.value || "Unknown",
@@ -103,57 +120,47 @@ saveBtn.onclick = () => {
     total: parseFloat(amount.value),
     type: type.value,
     account: accountInput.value,
-    items: itemsInput.value.split("\n").map(l=>{
-      const match = l.match(/^(.+?)\s*\$?(\d+\.\d{2})$/);
-      if(match) return {name:match[1],price:parseFloat(match[2])};
-      else return null;
-    }).filter(Boolean)
+    items
   };
   if(!record.total){alert("请输入金额"); return;}
   records.push(record);
   localStorage.setItem("records",JSON.stringify(records));
 
-  merchant.value=""; amount.value=""; itemsInput.value=""; dateInput.value="";
+  merchant.value=""; amount.value=""; itemsContainer.innerHTML=""; dateInput.value="";
 
   recalcAccounts();
   renderRecords();
 };
 
-// ---------------- 渲染记录列表 ----------------
+// ---------------- 渲染记录 ----------------
 function renderRecords(){
   recordsPage.innerHTML="";
   records.slice().reverse().forEach(r=>{
-    const card=document.createElement("div");
+    const card = document.createElement("div");
     card.className="card";
     card.innerHTML=`${r.date} ｜ ${r.merchant} ｜ $${r.total.toFixed(2)}`;
 
-    // 点击展开明细
     const detail = document.createElement("div");
     detail.style.display="none";
     detail.style.marginTop="6px";
-    detail.innerHTML = r.items.map(i=>`${i.name} $${i.price.toFixed(2)}`).join("<br>");
+    r.items.forEach(i=>{
+      const row = document.createElement("div");
+      row.innerHTML = `<input type="text" value="${i.name}" class="itemName"/> $ 
+                       <input type="number" value="${i.price}" class="itemPrice" step="0.01"/>`;
+      detail.appendChild(row);
+    });
+
     card.appendChild(detail);
-
-    card.onclick=()=>{
-      detail.style.display = detail.style.display==="none"?"block":"none";
-    }
-
+    card.onclick = ()=> detail.style.display = detail.style.display==="none"?"block":"none";
     recordsPage.appendChild(card);
   });
 }
 
 // ---------------- 借贷 ----------------
 loanSave.onclick=()=>{
-  const loan={
-    id:Date.now(),
-    person:loanPerson.value,
-    direction:loanDirection.value,
-    amount:parseFloat(loanAmount.value),
-    account:loanAccount.value,
-    note:loanNote.value,
-    date:new Date().toISOString(),
-    settled:false
-  };
+  const loan={id:Date.now(), person:loanPerson.value, direction:loanDirection.value,
+              amount:parseFloat(loanAmount.value), account:loanAccount.value, note:loanNote.value,
+              date:new Date().toISOString(), settled:false};
   if(!loan.person||!loan.amount){alert("请填写对象和金额");return;}
   loans.push(loan);
   localStorage.setItem("loans",JSON.stringify(loans));
@@ -162,14 +169,12 @@ loanSave.onclick=()=>{
   recalcAccounts(); renderLoans();
 };
 
-// 一键结清
 loanSettle.onclick=()=>{
   loans.forEach(l=>l.settled=true);
   localStorage.setItem("loans",JSON.stringify(loans));
   recalcAccounts(); renderLoans();
 };
 
-// 渲染借贷
 function renderLoans(){
   loanList.innerHTML="";
   loans.filter(l=>!l.settled).forEach(l=>{
@@ -177,13 +182,13 @@ function renderLoans(){
   });
 }
 
-// ---------------- 重算账户 ----------------
+// ---------------- 账户计算 ----------------
 function recalcAccounts(){
   Object.keys(accounts).forEach(a=>accounts[a]=0);
   records.forEach(r=>{
     if(r.type==='expense') accounts[r.account]-=r.total;
     if(r.type==='income') accounts[r.account]+=r.total;
-    if(r.type==='transfer') {
+    if(r.type==='transfer'){
       accounts[r.account]-=r.total;
       if(accounts[r.target]!==undefined) accounts[r.target]+=r.total;
     }
@@ -197,7 +202,6 @@ function recalcAccounts(){
   renderAccounts(); renderChart();
 }
 
-// ---------------- 渲染账户 ----------------
 function renderAccounts(){
   accountsDiv.innerHTML="";
   for(let a in accounts){
@@ -205,7 +209,6 @@ function renderAccounts(){
   }
 }
 
-// ---------------- 渲染图表 ----------------
 function renderChart(){
   chartDiv.innerHTML="";
   const now=new Date();
