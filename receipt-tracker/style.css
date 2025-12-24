@@ -1,0 +1,107 @@
+body {
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #f7f7f7;
+  padding: 0;
+  margin: 0;
+}
+
+header {
+  background: #000;
+  color: #fff;
+  text-align: center;
+  padding: 12px 0;
+}
+
+main {
+  padding: 12px;
+  min-height: calc(100vh - 56px - 56px);
+}
+
+.page {
+  display: none;
+}
+
+.page.active {
+  display: block;
+}
+
+nav {
+  display: flex;
+  justify-content: space-around;
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  background: #000;
+}
+
+nav button {
+  flex: 1;
+  padding: 12px;
+  font-size: 14px;
+  color: #fff;
+  background: none;
+  border: none;
+}
+
+.field {
+  margin-bottom: 12px;
+}
+
+label {
+  font-size: 13px;
+  color: #555;
+}
+
+input, select, textarea {
+  width: 100%;
+  padding: 10px;
+  margin-top: 4px;
+  font-size: 15px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+textarea {
+  resize: vertical;
+}
+
+button#saveBtn, button#loanSave, button#loanSettle, #scanBtn {
+  width: 100%;
+  padding: 12px;
+  margin: 6px 0;
+  font-size: 16px;
+  border-radius: 8px;
+  border: none;
+  background: #000;
+  color: #fff;
+}
+
+.bar {
+  margin: 6px 0;
+  background: #ddd;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.bar-inner {
+  height: 20px;
+  background: #000;
+  color: #fff;
+  font-size: 12px;
+  padding-left: 6px;
+  display: flex;
+  align-items: center;
+}
+
+.card {
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 8px;
+  margin-bottom: 6px;
+  background: #fff;
+}
+
+.card:hover {
+  background: #f0f0f0;
+  cursor: pointer;
+}
