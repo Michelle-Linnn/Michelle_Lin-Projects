@@ -1,202 +1,159 @@
-const scanBtn = document.getElementById("scanBtn");
-const receiptInput = document.getElementById("receiptInput");
-const ocrStatus = document.getElementById("ocrStatus");
-const ocrProgressBar = document.getElementById("ocrProgressBar");
-
-const merchant = document.getElementById("merchant");
-const amount = document.getElementById("amount");
-const dateInput = document.getElementById("date");
-const type = document.getElementById("type");
-const accountInput = document.getElementById("account");
-const itemsContainer = document.getElementById("items");
-
-const saveBtn = document.getElementById("saveBtn");
-const recordsPage = document.getElementById("recordsPage");
-
+// --- 配置 ---
+const API_KEY = "AIzaSyDnR_pLdVUv4xyakNbzxFiu2IDZGGmkdIA"; 
 let records = JSON.parse(localStorage.getItem("records")) || [];
+let currentCurrency = "USD";
 
-// ---------------- OCR 上传 ----------------
-scanBtn.onclick = () => receiptInput.click();
+// 初始化日期
+document.getElementById('date').valueAsDate = new Date();
 
-receiptInput.onchange = async e => {
-  const file = e.target.files[0];
-  if (!file) return;
+// --- 页面切换 ---
+function showPage(pageId) {
+    document.querySelectorAll('.page-content').forEach(p => p.style.display = 'none');
+    document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
+    document.getElementById(pageId).style.display = 'block';
+    document.getElementById('nav' + pageId.charAt(0).toUpperCase() + pageId.slice(1, -4)).classList.add('active');
+    if(pageId === 'recordsPage') renderRecords();
+    if(pageId === 'analysisPage') renderAnalysis();
+}
 
-  ocrStatus.textContent = "OCR 初始化中…";
-  ocrProgressBar.style.width = "0%";
+// --- AI 识别 ---
+document.getElementById('scanBtn').onclick = () => document.getElementById('receiptInput').click();
 
-  try {
-    // 压缩图片
-    const compressed = await compressImage(file, 1080);
+document.getElementById('receiptInput').onchange = async (e) => {
+    const file = e.target.files[0];
+    if(!file) return;
 
-    const worker = await Tesseract.createWorker({
-      logger: m => {
-        if (m.status === "recognizing text") {
-          const percent = (m.progress*100).toFixed(0);
-          ocrStatus.textContent = `OCR 识别中 ${percent}%`;
-          ocrProgressBar.style.width = percent+"%";
-        } else if(m.status==="loading tesseract core") {
-          ocrStatus.textContent = "OCR 加载核心模块…";
-        } else if(m.status==="loading language traineddata") {
-          ocrStatus.textContent = "OCR 加载语言包…";
-        }
-      }
-    });
-
-    await worker.loadLanguage("eng");
-    await worker.initialize("eng");
-
-    const { data } = await worker.recognize(compressed);
-    await worker.terminate();
-
-    ocrStatus.textContent = "OCR 识别完成！请检查明细";
-    ocrProgressBar.style.width = "100%";
-
-    fillOCRData(data.text);
-
-  } catch(err){
-    console.error(err);
-    ocrStatus.textContent = "OCR 识别失败，请上传清晰小票重试";
-    ocrProgressBar.style.width = "0%";
-  }
-
-  receiptInput.value = "";
-};
-
-// ---------------- 压缩图片 ----------------
-function compressImage(file, maxWidth){
-  return new Promise(resolve=>{
-    const img = new Image();
+    // 显示预览
     const reader = new FileReader();
-    reader.onload = e => {
-      img.src = e.target.result;
-    };
-    img.onload = ()=>{
-      const canvas = document.createElement("canvas");
-      const scale = Math.min(1, maxWidth / img.width);
-      canvas.width = img.width * scale;
-      canvas.height = img.height * scale;
-      const ctx = canvas.getContext("2d");
-      ctx.drawImage(img,0,0,canvas.width,canvas.height);
-      canvas.toBlob(blob=>{
-        resolve(blob);
-      },"image/jpeg",0.9);
+    reader.onload = (ev) => {
+        const img = document.getElementById('previewImg');
+        img.src = ev.target.result;
+        img.style.display = 'block';
     };
     reader.readAsDataURL(file);
-  });
-}
 
-// ---------------- 填充 OCR 数据 ----------------
-function fillOCRData(text){
-  const lines = text.split("\n").map(l=>l.trim()).filter(Boolean);
-  if(lines[0]) merchant.value = lines[0];
-  const nums = text.match(/\$?\d+\.\d{2}/g);
-  if(nums) amount.value = Math.max(...nums.map(n=>parseFloat(n.replace("$","")))).toFixed(2);
+    const status = document.getElementById('ocrStatus');
+    const bar = document.getElementById('ocrProgressBar');
+    status.innerHTML = "🌀 AI 正在分析小票...";
+    bar.style.width = "40%";
 
-  itemsContainer.innerHTML = "";
-  lines.filter(l=>/\d+\.\d{2}/.test(l)).forEach(l=>{
-    const match = l.match(/^(.+?)\s*\$?(\d+\.\d{2})$/);
-    if(match){
-      const div = document.createElement("div");
-      div.className="itemRow";
-      div.innerHTML = `<input type="text" class="itemName" value="${match[1]}"/> $ 
-                       <input type="number" class="itemPrice" step="0.01" value="${parseFloat(match[2])}"/>`;
-      itemsContainer.appendChild(div);
+    try {
+        const base64Data = await fileToBase64(file);
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+        
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{
+                    parts: [
+                        { text: "请分析这张小票，提取：商家名(merchant)、日期(date: YYYY-MM-DD)、总金额(total)、税费(tax)、商品明细(items: [{name, price}])。请只返回 JSON 格式，不要包含 Markdown 标签或解释。" },
+                        { inline_data: { mime_type: file.type, data: base64Data } }
+                    ]
+                }]
+            })
+        });
+
+        const data = await response.json();
+        const aiResponse = data.candidates[0].content.parts[0].text;
+        const result = JSON.parse(aiResponse.replace(/```json|```/gi, "").trim());
+
+        // 填充数据
+        if(result.merchant) document.getElementById('merchant').value = result.merchant;
+        if(result.date) document.getElementById('date').value = result.date;
+        if(result.total) document.getElementById('amount').value = result.total;
+        if(result.tax) document.getElementById('tax').value = result.tax;
+
+        const itemsList = document.getElementById('itemsList');
+        itemsList.innerHTML = "";
+        if(result.items) {
+            result.items.forEach(item => addItemRow(item.name, item.price));
+        }
+
+        status.innerHTML = "✅ 识别完成";
+        bar.style.width = "100%";
+    } catch (err) {
+        status.innerHTML = "❌ 识别失败，请手动输入";
+        console.error(err);
     }
-  });
-
-  // 监听明细变化自动求和
-  Array.from(itemsContainer.querySelectorAll(".itemPrice")).forEach(inp=>{
-    inp.oninput = updateTotalFromItems;
-  });
-  updateTotalFromItems();
-}
-
-// ---------------- 自动求和 ----------------
-function updateTotalFromItems(){
-  let sum = 0;
-  Array.from(itemsContainer.querySelectorAll(".itemPrice")).forEach(inp=>{
-    sum += parseFloat(inp.value)||0;
-  });
-  amount.value = sum.toFixed(2);
-}
-
-// ---------------- 保存支出 ----------------
-saveBtn.onclick = () => {
-  const itemRows = Array.from(itemsContainer.querySelectorAll(".itemRow"));
-  const items = itemRows.map(r=>{
-    const name = r.querySelector(".itemName").value;
-    const price = parseFloat(r.querySelector(".itemPrice").value);
-    return {name, price};
-  }).filter(i=>i.name && i.price);
-
-  const record = {
-    id: Date.now(),
-    merchant: merchant.value || "Unknown",
-    date: dateInput.value || new Date().toISOString().split("T")[0],
-    total: parseFloat(amount.value),
-    type: type.value,
-    account: accountInput.value,
-    items
-  };
-  if(!record.total){alert("请输入金额"); return;}
-  records.push(record);
-  localStorage.setItem("records",JSON.stringify(records));
-
-  merchant.value=""; amount.value=""; itemsContainer.innerHTML=""; dateInput.value="";
-  renderRecords(); renderChart();
 };
 
-// ---------------- 渲染记录 ----------------
-function renderRecords(){
-  recordsPage.innerHTML="";
-  records.slice().reverse().forEach(r=>{
-    const card = document.createElement("div");
-    card.className="card";
-    card.innerHTML=`${r.date} ｜ ${r.merchant} ｜ $${r.total.toFixed(2)}`;
-
-    const detail = document.createElement("div");
-    detail.style.display="none";
-    detail.style.marginTop="6px";
-    r.items.forEach(i=>{
-      const row = document.createElement("div");
-      row.innerHTML = `<input type="text" value="${i.name}" class="itemName"/> $ 
-                       <input type="number" value="${i.price}" class="itemPrice" step="0.01"/>`;
-      detail.appendChild(row);
+function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = e => reject(e);
     });
-
-    card.appendChild(detail);
-    card.onclick = ()=> detail.style.display = detail.style.display==="none"?"block":"none";
-    recordsPage.appendChild(card);
-  });
 }
 
-// ---------------- 支出分析图表 ----------------
-function renderChart(){
-  let chartDiv = document.getElementById("chart");
-  if(!chartDiv){
-    chartDiv = document.createElement("div");
-    chartDiv.id="chart";
-    document.body.appendChild(chartDiv);
-  }
-  chartDiv.innerHTML="<h3>本月账户支出比例</h3>";
-  const now=new Date();
-  const month = now.getMonth();
-  const year = now.getFullYear();
-  const sum={};
-  records.forEach(r=>{
-    const d=new Date(r.date);
-    if(r.type==="expense" && d.getMonth()===month && d.getFullYear()===year){
-      sum[r.account]=(sum[r.account]||0)+r.total;
-    }
-  });
-  const total = Object.values(sum).reduce((a,b)=>a+b,0);
-  if(!total){ chartDiv.innerHTML+="<div>本月暂无支出</div>"; return;}
-  for(let k in sum){
-    const p=((sum[k]/total)*100).toFixed(1);
-    chartDiv.innerHTML+=`<div class="bar"><div class="bar-inner" style="width:${p}%">${k} $${sum[k].toFixed(2)} (${p}%)</div></div>`;
-  }
+// --- 表单功能 ---
+function addItemRow(name = "", price = "") {
+    const div = document.createElement('div');
+    div.className = 'item-row';
+    div.innerHTML = `
+        <input type="text" placeholder="商品" class="item-name" value="${name}" style="flex:2">
+        <input type="number" placeholder="金额" class="item-price" value="${price}" style="flex:1" oninput="updateTotal()">
+        <button onclick="this.parentElement.remove(); updateTotal()">✕</button>
+    `;
+    document.getElementById('itemsList').appendChild(div);
 }
 
-// ---------------- 初始化 ----------------
-renderRecords(); renderChart();
+function updateTotal() {
+    let sum = 0;
+    document.querySelectorAll('.item-price').forEach(i => sum += parseFloat(i.value) || 0);
+    const tax = parseFloat(document.getElementById('tax').value) || 0;
+    document.getElementById('amount').value = (sum + tax).toFixed(2);
+}
+
+function setCurrency(curr) {
+    currentCurrency = curr;
+    document.getElementById('currUSD').classList.toggle('active', curr === 'USD');
+    document.getElementById('currCNY').classList.toggle('active', curr === 'CNY');
+    document.getElementById('currencySymbol').textContent = curr === 'USD' ? '$' : '¥';
+}
+
+document.getElementById('saveBtn').onclick = () => {
+    const record = {
+        id: Date.now(),
+        merchant: document.getElementById('merchant').value || "未知商家",
+        date: document.getElementById('date').value,
+        amount: parseFloat(document.getElementById('amount').value) || 0,
+        currency: currentCurrency,
+        type: document.getElementById('type').value
+    };
+
+    records.push(record);
+    localStorage.setItem("records", JSON.stringify(records));
+    alert("已保存！");
+    location.reload();
+};
+
+// --- 渲染历史与分析 ---
+function renderRecords() {
+    const container = document.getElementById('recordsPage');
+    container.innerHTML = "<h3>最近记录</h3>";
+    records.slice().reverse().forEach(r => {
+        const div = document.createElement('div');
+        div.className = 'card';
+        div.innerHTML = `<div><strong>${r.merchant}</strong><br><small>${r.date}</small></div>
+                        <div style="color:red">-${r.currency === 'USD' ? '$' : '¥'}${r.amount}</div>`;
+        container.appendChild(div);
+    });
+}
+
+let chart;
+function renderAnalysis() {
+    const ctx = document.getElementById('expenseChart').getContext('2d');
+    const stats = {};
+    records.forEach(r => stats[r.merchant] = (stats[r.merchant] || 0) + r.amount);
+
+    if(chart) chart.destroy();
+    chart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: Object.keys(stats),
+            datasets: [{ data: Object.values(stats), backgroundColor: ['#6366f1', '#10b981', '#f59e0b', '#ef4444'] }]
+        }
+    });
+}

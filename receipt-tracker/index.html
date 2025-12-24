@@ -1,81 +1,92 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Quick Expense App</title>
-
-  <!-- Tesseract.js -->
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-
-  <style>
-    body { font-family: sans-serif; padding: 20px; max-width: 600px; margin:auto; }
-    .field { margin-bottom: 10px; }
-    input, select { width: 100%; padding:5px; }
-    #ocrStatus { font-weight: bold; color: blue; margin:5px 0; }
-    #ocrProgressContainer { width:100%; background:#eee; height:8px; margin:5px 0; }
-    #ocrProgressBar { width:0%; height:100%; background:green; }
-    .itemRow { display:flex; gap:5px; margin-bottom:5px; }
-    .itemRow input { flex:1; }
-    .card { border:1px solid #ccc; padding:5px; margin-bottom:5px; cursor:pointer; }
-    .bar { background:#eee; margin:3px 0; }
-    .bar-inner { background:#4caf50; color:white; padding:2px; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能记账 AI 系统</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <div class="container">
+        <h2>💰 智能记账 AI 系统</h2>
+        
+        <nav class="nav">
+            <button onclick="showPage('formPage')" id="navForm" class="active">记账</button>
+            <button onclick="showPage('recordsPage')" id="navRecords">记录</button>
+            <button onclick="showPage('analysisPage')" id="navAnalysis">分析</button>
+        </nav>
 
-  <h2>Quick Expense</h2>
+        <section id="formPage" class="page-content">
+            <div class="ocr-section">
+                <button class="btn scan-btn" id="scanBtn">📷 拍照/上传小票</button>
+                <input type="file" id="receiptInput" accept="image/*" style="display:none">
+                <div id="ocrStatus" class="ocr-status">等待上传...</div>
+                <div class="progress-bar"><div class="progress-bar-fill" id="ocrProgressBar"></div></div>
+                <img id="previewImg" class="preview-img" alt="预览">
+            </div>
 
-  <button id="scanBtn">🧾 上传小票</button>
-  <input type="file" id="receiptInput" accept="image/*" hidden />
-  <div id="ocrStatus">等待上传小票...</div>
-  <div id="ocrProgressContainer"><div id="ocrProgressBar"></div></div>
+            <div class="currency-toggle">
+                <button onclick="setCurrency('USD')" id="currUSD" class="active">💵 USD</button>
+                <button onclick="setCurrency('CNY')" id="currCNY">💴 CNY</button>
+            </div>
 
-  <div class="field">
-    <label>商户</label>
-    <input type="text" id="merchant" placeholder="Merchant" />
-  </div>
+            <div class="input-card">
+                <div class="row">
+                    <div class="input-group">
+                        <label>商家</label>
+                        <input type="text" id="merchant" placeholder="商家名称">
+                    </div>
+                    <div class="input-group">
+                        <label>日期</label>
+                        <input type="date" id="date">
+                    </div>
+                </div>
 
-  <div class="field">
-    <label>总金额 (USD)</label>
-    <input type="number" id="amount" step="0.01" placeholder="0.00" />
-  </div>
+                <div class="row">
+                    <div class="input-group">
+                        <label>类型</label>
+                        <select id="type">
+                            <option value="expense">支出</option>
+                            <option value="income">收入</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>账户</label>
+                        <select id="account">
+                            <option value="BOA Credit">BOA 信用卡</option>
+                            <option value="Cash">现金</option>
+                            <option value="Alipay">支付宝/微信</option>
+                        </select>
+                    </div>
+                </div>
 
-  <div class="field">
-    <label>日期</label>
-    <input type="date" id="date" />
-  </div>
+                <div id="itemsList" class="items-list"></div>
+                <button class="btn-text" onclick="addItemRow()">+ 添加商品明细</button>
 
-  <div class="field">
-    <label>交易类型</label>
-    <select id="type">
-      <option value="expense">支出</option>
-      <option value="income">收入</option>
-      <option value="transfer">转账</option>
-    </select>
-  </div>
+                <div class="total-section">
+                    <div class="row">
+                        <span>税费 (Tax)</span>
+                        <input type="number" id="tax" step="0.01" oninput="calculateTotal()" placeholder="0.00">
+                    </div>
+                    <div class="row main-total">
+                        <span>总金额 (<span id="currencySymbol">$</span>)</span>
+                        <input type="number" id="amount" step="0.01">
+                    </div>
+                </div>
 
-  <div class="field">
-    <label>使用账户</label>
-    <select id="account">
-      <option>BoA  A saving</option>
-      <option>BoA  B check</option>
-      <option>ICBC 储蓄</option>
-      <option>BoA 信用卡</option>
-      <option>现金</option>
-    </select>
-  </div>
+                <button class="btn save-btn" id="saveBtn">💾 保存账单</button>
+            </div>
+        </section>
 
-  <div class="field">
-    <label>明细</label>
-    <div id="items"></div>
-  </div>
+        <section id="recordsPage" class="page-content" style="display:none;"></section>
 
-  <button id="saveBtn">保存支出</button>
+        <section id="analysisPage" class="page-content" style="display:none;">
+            <canvas id="expenseChart"></canvas>
+            <div id="analysisStats" class="stats-list"></div>
+        </section>
+    </div>
 
-  <h3>记录列表</h3>
-  <div id="recordsPage"></div>
-
-  <script src="app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
