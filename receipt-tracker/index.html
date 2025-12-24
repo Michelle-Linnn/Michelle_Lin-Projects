@@ -3,26 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>智能记账 AI 系统</title>
+    <title>AI 智能记账 - Fetch Style</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
-        <h2>💰 智能记账 AI 系统</h2>
+        <header>
+            <h2>💰 AI 智能记账</h2>
+            <p class="subtitle">支持长收据多图合并扫描</p>
+        </header>
         
         <nav class="nav">
             <button onclick="showPage('formPage')" id="navForm" class="active">记账</button>
-            <button onclick="showPage('recordsPage')" id="navRecords">记录</button>
+            <button onclick="showPage('recordsPage')" id="navRecords">历史</button>
             <button onclick="showPage('analysisPage')" id="navAnalysis">分析</button>
         </nav>
 
         <section id="formPage" class="page-content">
             <div class="ocr-section">
-                <button class="btn scan-btn" id="scanBtn">📷 拍照/上传小票</button>
-                <input type="file" id="receiptInput" accept="image/*" style="display:none">
-                <div id="ocrStatus" class="ocr-status">等待上传...</div>
+                <div class="upload-area" onclick="document.getElementById('receiptInput').click()">
+                    <div class="icon">📸</div>
+                    <p>点击拍照或上传</p>
+                    <span class="hint">长收据可连续选择多张照片</span>
+                </div>
+                <input type="file" id="receiptInput" accept="image/*" multiple style="display:none">
+                
+                <div id="imageQueue" class="image-queue"></div>
+                
+                <div id="ocrStatus" class="ocr-status">等待上传收据...</div>
                 <div class="progress-bar"><div class="progress-bar-fill" id="ocrProgressBar"></div></div>
-                <img id="previewImg" class="preview-img" alt="预览">
+                
+                <button id="startAiBtn" class="btn ai-process-btn" style="display:none;">✨ 开始智能分析 (合并多图)</button>
             </div>
 
             <div class="currency-toggle">
@@ -34,7 +45,7 @@
                 <div class="row">
                     <div class="input-group">
                         <label>商家</label>
-                        <input type="text" id="merchant" placeholder="商家名称">
+                        <input type="text" id="merchant" placeholder="AI 自动提取">
                     </div>
                     <div class="input-group">
                         <label>日期</label>
@@ -42,39 +53,21 @@
                     </div>
                 </div>
 
-                <div class="row">
-                    <div class="input-group">
-                        <label>类型</label>
-                        <select id="type">
-                            <option value="expense">支出</option>
-                            <option value="income">收入</option>
-                        </select>
-                    </div>
-                    <div class="input-group">
-                        <label>账户</label>
-                        <select id="account">
-                            <option value="BOA Credit">BOA 信用卡</option>
-                            <option value="Cash">现金</option>
-                            <option value="Alipay">支付宝/微信</option>
-                        </select>
-                    </div>
-                </div>
-
                 <div id="itemsList" class="items-list"></div>
-                <button class="btn-text" onclick="addItemRow()">+ 添加商品明细</button>
+                <button class="btn-text" onclick="addItemRow()">+ 添加手动条目</button>
 
                 <div class="total-section">
                     <div class="row">
                         <span>税费 (Tax)</span>
-                        <input type="number" id="tax" step="0.01" oninput="calculateTotal()" placeholder="0.00">
+                        <input type="number" id="tax" step="0.01" oninput="updateTotal()" placeholder="0.00">
                     </div>
                     <div class="row main-total">
                         <span>总金额 (<span id="currencySymbol">$</span>)</span>
-                        <input type="number" id="amount" step="0.01">
+                        <input type="number" id="amount" step="0.01" placeholder="0.00">
                     </div>
                 </div>
 
-                <button class="btn save-btn" id="saveBtn">💾 保存账单</button>
+                <button class="btn save-btn" id="saveBtn">💾 保存记录</button>
             </div>
         </section>
 
