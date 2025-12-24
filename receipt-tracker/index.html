@@ -8,102 +8,73 @@
   <!-- Tesseract.js -->
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
-  <link rel="stylesheet" href="style.css" />
+  <style>
+    body { font-family: sans-serif; padding: 20px; max-width: 600px; margin:auto; }
+    .field { margin-bottom: 10px; }
+    input, select { width: 100%; padding:5px; }
+    #ocrStatus { font-weight: bold; color: blue; margin:5px 0; }
+    #ocrProgressContainer { width:100%; background:#eee; height:8px; margin:5px 0; }
+    #ocrProgressBar { width:0%; height:100%; background:green; }
+    .itemRow { display:flex; gap:5px; margin-bottom:5px; }
+    .itemRow input { flex:1; }
+    .card { border:1px solid #ccc; padding:5px; margin-bottom:5px; cursor:pointer; }
+    .bar { background:#eee; margin:3px 0; }
+    .bar-inner { background:#4caf50; color:white; padding:2px; }
+  </style>
 </head>
 <body>
 
-  <h2 id="pageTitle">Quick Expense</h2>
-  <nav>
-    <button data-page="expensePage">记账</button>
-    <button data-page="loanPage">借贷</button>
-    <button data-page="accountsPage">账户</button>
-  </nav>
+  <h2>Quick Expense</h2>
 
-  <div id="expensePage" class="page active">
-    <button id="scanBtn">🧾 从小票读取</button>
-    <input type="file" id="receiptInput" accept="image/*" hidden />
-    <div id="ocrStatus" style="margin:10px 0; font-weight:bold; color:blue;"></div>
+  <button id="scanBtn">🧾 上传小票</button>
+  <input type="file" id="receiptInput" accept="image/*" hidden />
+  <div id="ocrStatus">等待上传小票...</div>
+  <div id="ocrProgressContainer"><div id="ocrProgressBar"></div></div>
 
-    <div class="field">
-      <label>商户</label>
-      <input type="text" id="merchant" placeholder="Merchant" />
-    </div>
-
-    <div class="field">
-      <label>金额 (USD)</label>
-      <input type="number" id="amount" step="0.01" placeholder="0.00" />
-    </div>
-
-    <div class="field">
-      <label>日期</label>
-      <input type="date" id="date" />
-    </div>
-
-    <div class="field">
-      <label>交易类型</label>
-      <select id="type">
-        <option value="expense">支出</option>
-        <option value="income">收入</option>
-        <option value="transfer">转账</option>
-      </select>
-    </div>
-
-    <div class="field">
-      <label>使用账户</label>
-      <select id="account">
-        <option>BoA  A saving</option>
-        <option>BoA  B check</option>
-        <option>ICBC 储蓄</option>
-        <option>BoA 信用卡</option>
-        <option>现金</option>
-      </select>
-    </div>
-
-    <div class="field">
-      <label>明细</label>
-      <div id="items"></div>
-    </div>
-
-    <button id="saveBtn">保存支出</button>
-    <div id="recordsPage" style="margin-top:20px"></div>
+  <div class="field">
+    <label>商户</label>
+    <input type="text" id="merchant" placeholder="Merchant" />
   </div>
 
-  <div id="loanPage" class="page">
-    <div class="field">
-      <label>对象</label><input type="text" id="loanPerson"/>
-    </div>
-    <div class="field">
-      <label>方向</label>
-      <select id="loanDirection">
-        <option value="lend">借给朋友</option>
-        <option value="borrow">向朋友借</option>
-      </select>
-    </div>
-    <div class="field">
-      <label>金额</label><input type="number" id="loanAmount" step="0.01"/>
-    </div>
-    <div class="field">
-      <label>账户</label>
-      <select id="loanAccount">
-        <option>BoA  A saving</option>
-        <option>BoA  B check</option>
-        <option>ICBC 储蓄</option>
-        <option>BoA 信用卡</option>
-        <option>现金</option>
-      </select>
-    </div>
-    <div class="field">
-      <label>备注</label><input type="text" id="loanNote"/>
-    </div>
-    <button id="loanSave">保存借贷</button>
-    <button id="loanSettle">一键结清</button>
-    <div id="loanList" style="margin-top:10px"></div>
+  <div class="field">
+    <label>总金额 (USD)</label>
+    <input type="number" id="amount" step="0.01" placeholder="0.00" />
   </div>
 
-  <div id="accountsPage" class="page">
-    <div id="accounts" style="margin-bottom:10px"></div>
-    <div id="chart"></div>
+  <div class="field">
+    <label>日期</label>
+    <input type="date" id="date" />
   </div>
+
+  <div class="field">
+    <label>交易类型</label>
+    <select id="type">
+      <option value="expense">支出</option>
+      <option value="income">收入</option>
+      <option value="transfer">转账</option>
+    </select>
+  </div>
+
+  <div class="field">
+    <label>使用账户</label>
+    <select id="account">
+      <option>BoA  A saving</option>
+      <option>BoA  B check</option>
+      <option>ICBC 储蓄</option>
+      <option>BoA 信用卡</option>
+      <option>现金</option>
+    </select>
+  </div>
+
+  <div class="field">
+    <label>明细</label>
+    <div id="items"></div>
+  </div>
+
+  <button id="saveBtn">保存支出</button>
+
+  <h3>记录列表</h3>
+  <div id="recordsPage"></div>
 
   <script src="app.js"></script>
 </body>
