@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能账本 Ultra - 最终修复版</title>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="budget-card">
+            <div class="budget-header">
+                <span>📅 本月预算进度</span>
+                <span id="budgetText">$0 / $2000</span>
+            </div>
+            <div class="progress-bar"><div id="budgetFill" class="progress-bar-fill"></div></div>
+        </div>
+
+        <nav class="nav">
+            <button onclick="showPage('scanPage')" id="navScan" class="active">📝 记账</button>
+            <button onclick="showPage('analysisPage')" id="navAnalysis">📊 统计</button>
+            <button onclick="showPage('listPage')" id="navList">📜 明细</button>
+            <button onclick="showPage('reconcilePage')" id="navReconcile">🔍 对账</button>
+        </nav>
+        
+        <section id="scanPage" class="page-content">
+            <div class="ocr-section">
+                <div class="upload-area" onclick="document.getElementById('receiptInput').click()">
+                    <div class="icon">📷</div>
+                    <p>拍摄/连拍收据</p>
+                </div>
+                <input type="file" id="receiptInput" accept="image/*" multiple style="display:none">
+                <div id="imageQueue" class="image-queue"></div>
+                <div id="ocrStatus" class="status-text">就绪</div>
+                <div class="ocr-actions">
+                    <button id="processBtn" class="btn btn-process" style="display:none;">开始识别</button>
+                    <button id="reScanBtn" class="btn btn-util" style="display:none;" onclick="resetOCR()">🔄 重新识别</button>
+                </div>
+
+                <details class="email-details">
+                    <summary>📧 粘贴商家邮件收据内容</summary>
+                    <textarea id="emailPasteArea" placeholder="直接粘贴邮件正文..."></textarea>
+                    <button class="btn-util" style="width:100%; margin-top:5px" onclick="parseEmailReceipt()">提取金额</button>
+                </details>
+            </div>
+
+            <div class="input-card">
+                <h3 id="formTitle">新增记录</h3>
+                <div class="row">
+                    <div class="input-group">
+                        <label>账户</label>
+                        <select id="account">
+                            <option value="BOA检查账户">BOA 检查账户</option>
+                            <option value="BOA储蓄账户">BOA 储蓄账户</option>
+                            <option value="BOA信用卡">BOA 信用卡</option>
+                            <option value="ICBC-US">ICBC-US</option>
+                            <option value="中国银行储蓄卡">中国银行储蓄卡</option>
+                            <option value="中国银行visa信用卡">中国银行visa信用卡</option>
+                            <option value="中国银行长城visa卡">中国银行长城visa卡</option>
+                            <option value="现金">现金</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>币种</label>
+                        <select id="currency"><option value="USD">USD</option><option value="CNY">CNY</option></select>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="input-group">
+                        <label>类型</label>
+                        <select id="type"><option value="支出">支出</option><option value="收入">收入</option><option value="转账">转账</option></select>
+                    </div>
+                    <div class="input-group">
+                        <label>分类</label>
+                        <select id="category">
+                            <option value="餐饮">餐饮</option>
+                            <option value="交通">交通</option>
+                            <option value="购物">购物</option>
+                            <option value="生活">生活</option>
+                            <option value="其他">其他</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>商家/备注</label>
+                    <input type="text" id="merchant">
+                </div>
+
+                <div class="input-group">
+                    <label>快捷标签 (点选后会自动记住新输入的)</label>
+                    <div id="tagLibrary" class="tag-options"></div>
+                    <input type="text" id="tags" placeholder="新标签用逗号分隔">
+                </div>
+
+                <div class="input-group">
+                    <label>金额</label>
+                    <input type="number" id="amount" step="0.01" class="amount-primary">
+                </div>
+
+                <button class="btn btn-save" onclick="saveRecord()" id="saveBtn">💾 保存记录</button>
+                <button class="btn btn-util" id="cancelEditBtn" style="display:none; margin-top:10px" onclick="cancelEdit()">取消编辑</button>
+            </div>
+        </section>
+
+        <section id="analysisPage" class="page-content" style="display:none;">
+            <div class="chart-card"><canvas id="pieChart" style="max-height: 250px;"></canvas></div>
+            <div id="tagStatsContainer"></div>
+        </section>
+
+        <section id="calendarPage" class="page-content" style="display:none;">
+    <div class="input-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <button class="btn-util" onclick="changeMonth(-1)">◀ 上个月</button>
+            <h3 id="calendarMonthTitle" style="margin:0">2023年10月</h3>
+            <button class="btn-util" onclick="changeMonth(1)">下个月 ▶</button>
+        </div>
+        <div class="calendar-grid-header">
+            <span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
+        </div>
+        <div id="calendarGrid" class="calendar-grid"></div>
+    </div>
+    <div id="dayDetailCard" class="input-card" style="display:none; border-top: 4px solid var(--primary);">
+        <h4 id="detailDate" style="margin-top:0">日期详情</h4>
+        <div id="detailContent"></div>
+    </div>
+    </section>
+        <section id="listPage" class="page-content" style="display:none;">
+            <div class="util-bar" style="display:flex; gap:10px; margin-bottom:10px;">
+                <button class="btn-util" onclick="exportData()" style="flex:1">📤 备份数据</button>
+                <button class="btn-util" onclick="document.getElementById('importFile').click()" style="flex:1">📥 导入恢复</button>
+                <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+            </div>
+            <div class="tab-mini">
+                <button id="btnActive" class="active" onclick="setListMode('active')">当前流水</button>
+                <button id="btnTrash" onclick="setListMode('trash')">🗑️ 回收站</button>
+            </div>
+            <div id="recordsList"></div>
+        </section>
+
+        <section id="reconcilePage" class="page-content" style="display:none;">
+            <div class="input-card">
+                <h3>CSV 对账功能</h3>
+                <input type="file" id="bankCsvInput" accept=".csv" class="btn-util" style="width:100%">
+                <button class="btn btn-save" style="margin-top:15px" onclick="runReconciliation()">执行比对</button>
+            </div>
+            <div id="reconcileResults"></div>
+        </section>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
