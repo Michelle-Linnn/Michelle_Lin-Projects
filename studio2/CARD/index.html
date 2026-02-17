@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ART ARCHIVE | Local Assets</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Syncopate:wght@400;700&family=Playfair+Display:italic@400&family=Inter:wght@300;500&display=swap');
+
+        body {
+            /* Morandi Grey Gradient Background */
+            background: #cbd5e1;
+            background: radial-gradient(circle at center, #f1f5f9 0%, #94a3b8 100%);
+            min-height: 100vh;
+            color: #1e293b;
+            font-family: 'Inter', sans-serif;
+            padding: 60px 20px;
+        }
+
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+            gap: 60px;
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+
+        /* 16:10 Landscape Ratio */
+        .card-container {
+            perspective: 2000px;
+            aspect-ratio: 16 / 10;
+            width: 100%;
+        }
+
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.9s cubic-bezier(0.15, 0.8, 0.3, 1);
+            transform-style: preserve-3d;
+            cursor: pointer;
+        }
+
+        .flipped { transform: rotateY(180deg); }
+
+        .side {
+            position: absolute;
+            inset: 0;
+            backface-visibility: hidden;
+            background: #ffffff;
+            border-radius: 2px;
+            padding: 15px; /* Frame Effect */
+            box-shadow: 0 20px 40px rgba(0,0,0,0.12);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .back { transform: rotateY(180deg); }
+
+        .img-wrapper {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #fafafa;
+        }
+
+        img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain; /* Full visibility, No Crop */
+            transition: transform 0.6s ease;
+        }
+
+        .card-container:hover img { transform: scale(1.03); }
+
+        /* Date & Labels */
+        .date-stamp {
+            position: absolute;
+            bottom: 12px;
+            right: 20px;
+            font-family: 'Playfair Display', serif;
+            font-style: italic;
+            font-size: 11px;
+            letter-spacing: 1px;
+            color: #94a3b8;
+        }
+
+        .side-label {
+            position: absolute;
+            bottom: 12px;
+            left: 20px;
+            font-family: 'Syncopate', sans-serif;
+            font-size: 8px;
+            letter-spacing: 3px;
+            opacity: 0.4;
+            text-transform: uppercase;
+        }
+
+        header h1 {
+            font-family: 'Syncopate', sans-serif;
+            letter-spacing: 0.8em;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+
+    <header class="text-center mb-24">
+        <h1 class="text-xl uppercase opacity-80">Visual Archive</h1>
+        <div class="h-[1px] w-20 bg-slate-400 mx-auto mt-6 mb-4"></div>
+        <p class="text-[9px] uppercase tracking-[0.5em] text-slate-500">Card Exhibition </p>
+    </header>
+
+    <div id="galleryGrid" class="gallery-grid"></div>
+
+    <script>
+        /** * CONFIGURATION 
+         * galleryData: Manually input the date for each pair.
+         * The index (i+1) matches your file names: front1.png, back1.png...
+         */
+        const galleryData = [
+            { date: "FEBRUARY 12, 2026" },
+            { date: "JANUARY 28, 2026" },
+            { date: "DECEMBER 15, 2025" },
+            { date: "NOVEMBER 03, 2025" },
+            { date: "OCTOBER 21, 2025" }
+        ];
+
+        const fileExtension = 'png'; // Change to 'jpg' if needed
+        const grid = document.getElementById('galleryGrid');
+
+        function init() {
+            galleryData.forEach((item, index) => {
+                const i = index + 1;
+                const card = document.createElement('div');
+                card.className = 'card-container';
+                
+                card.innerHTML = `
+                    <div class="card-inner" onclick="this.classList.toggle('flipped')">
+                        <div class="side front">
+                            <div class="img-wrapper">
+                                <img src="front${i}.${fileExtension}" alt="Front ${i}" 
+                                     onerror="this.src='https://via.placeholder.com/800x500?text=front${i}.${fileExtension}+Not+Found'">
+                            </div>
+                            <div class="side-label">Side A</div>
+                        </div>
+                        
+                        <div class="side back">
+                            <div class="img-wrapper">
+                                <img src="back${i}.${fileExtension}" alt="Back ${i}" 
+                                     onerror="this.src='https://via.placeholder.com/800x500?text=back${i}.${fileExtension}+Not+Found'">
+                            </div>
+                            <div class="side-label">Side B</div>
+                            <div class="date-stamp">${item.date}</div>
+                        </div>
+                    </div>
+                `;
+
+                // Artistic Tilt Interaction
+                card.addEventListener('mousemove', (e) => {
+                    const rect = card.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    const rx = (rect.height/2 - y) / 15;
+                    const ry = (x - rect.width/2) / 15;
+                    card.style.transform = `rotateX(${rx}deg) rotateY(${ry}deg)`;
+                });
+
+                card.addEventListener('mouseleave', () => {
+                    card.style.transform = `rotateX(0deg) rotateY(0deg)`;
+                });
+
+                grid.appendChild(card);
+            });
+        }
+
+        init();
+    </script>
+</body>
+</html>

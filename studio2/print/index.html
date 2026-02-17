@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Card Designer Pro | Studio Studio Edition</title>
+    <style>
+        :root { --primary: #007AFF; --bg: #F2F2F7; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); color: #1C1C1E; display: flex; margin: 0; height: 100vh; overflow: hidden; }
+        
+        .sidebar { width: 400px; background: white; border-right: 1px solid #D1D1D6; display: flex; flex-direction: column; padding: 24px; box-sizing: border-box; overflow-y: auto; }
+        h1 { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+        .btn-random { background: var(--primary); color: white; border: none; padding: 14px; border-radius: 12px; cursor: pointer; font-weight: 600; margin-bottom: 24px; transition: 0.2s; }
+        .btn-random:hover { background: #005BB7; transform: translateY(-1px); }
+
+        .section-title { font-size: 11px; font-weight: 600; color: #8E8E93; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+        .preset-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 30px; }
+        .preset-card { background: #F2F2F7; border: 2px solid transparent; border-radius: 12px; padding: 10px; cursor: pointer; transition: 0.2s; }
+        .preset-card:hover { border-color: var(--primary); }
+        .preset-name { font-size: 11px; font-weight: 600; display: block; margin-bottom: 6px; }
+        .colors { display: flex; gap: 4px; }
+        .colors span { width: 14px; height: 14px; border-radius: 3px; border: 1px solid rgba(0,0,0,0.1); }
+
+        .control-group { margin-bottom: 18px; }
+        label { display: flex; justify-content: space-between; font-size: 13px; font-weight: 500; margin-bottom: 8px; }
+        input[type="color"] { width: 100%; height: 40px; border: none; border-radius: 8px; cursor: pointer; background: none; padding: 0; }
+        input[type="range"] { width: 100%; accent-color: var(--primary); }
+
+        .output-box { background: #1C1C1E; color: #32D74B; padding: 18px; border-radius: 12px; font-family: "SF Mono", monospace; font-size: 11px; margin-top: auto; white-space: pre-wrap; }
+
+        .preview-pane { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #E5E5EA; padding: 40px; }
+        .card-frame {
+            width: 505px; height: 276px; /* 337*1.5 x 184*1.5 */
+            display: flex; align-items: flex-end; justify-content: flex-end;
+            padding: 24px; box-sizing: border-box;
+            transition: all 0.4s ease;
+            box-shadow: 0 40px 80px rgba(0,0,0,0.1);
+            position: relative;
+        }
+        .date-label { font-family: "Helvetica Neue", sans-serif; font-weight: 500; letter-spacing: 1px; text-transform: uppercase; }
+        .card-inner-placeholder { position: absolute; top: 10%; left: 10%; width: 80%; height: 80%; border: 1px dashed rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center; font-size: 12px; color: rgba(0,0,0,0.2); pointer-events: none; }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <h1>Card Designer Pro</h1>
+    <p style="font-size: 13px; color: #8E8E93; margin-bottom: 20px;">English Interface v2.5</p>
+    
+    <button class="btn-random" onclick="randomTheme()">Inspire Me (Random Scheme)</button>
+
+    <div class="section-title">Designer Presets</div>
+    <div class="preset-grid" id="presetGrid"></div>
+
+    <div class="section-title">Manual Customization</div>
+    <div class="control-group"><label>Background Color</label><input type="color" id="cardFill" value="#FFFFFF"></div>
+    <div class="control-group"><label>Border Accent</label><input type="color" id="borderColor" value="#E1D7C8"></div>
+    <div class="control-group"><label>Date Text Color</label><input type="color" id="textColor" value="#8C7D6E"></div>
+    <div class="control-group"><label>Corner Radius</label><input type="range" id="radiusRange" min="0" max="80" value="22"></div>
+
+    <div class="output-box" id="codeOutput"></div>
+</div>
+
+<div class="preview-pane">
+    <div class="card-frame" id="previewCard">
+        <div class="card-inner-placeholder">Thumbnail Area (No Crop)</div>
+        <div class="date-label" id="previewText">Feb 10, 2026</div>
+    </div>
+    <p style="margin-top: 30px; color: #8E8E93; font-size: 13px;">Full Card Style Preview (337x184 Area)</p>
+</div>
+
+<script>
+    const presets = [
+        { name: "Nordic Snow", fill: "#FFFFFF", border: "#D1D1D6", text: "#48484A", radius: 12 },
+        { name: "Deep Navy", fill: "#001F3F", border: "#0074D9", text: "#7FDBFF", radius: 15 },
+        { name: "Sakura Silk", fill: "#FFF5F7", border: "#FADADD", text: "#D4A5A5", radius: 40 },
+        { name: "Matcha Mist", fill: "#F2F4EF", border: "#C5D1B7", text: "#5E6B4E", radius: 25 },
+        { name: "Cyber Neon", fill: "#000000", border: "#39FF14", text: "#39FF14", radius: 0 },
+        { name: "Desert Sand", fill: "#F9F4EE", border: "#D2B48C", text: "#8B4513", radius: 20 }
+    ];
+
+    function randomTheme() {
+        const rc = () => '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
+        applyTheme(rc(), rc(), rc(), Math.floor(Math.random()*60));
+    }
+
+    function applyTheme(fill, border, text, radius) {
+        document.getElementById('cardFill').value = fill;
+        document.getElementById('borderColor').value = border;
+        document.getElementById('textColor').value = text;
+        document.getElementById('radiusRange').value = radius;
+        update();
+    }
+
+    function update() {
+        const fill = document.getElementById('cardFill').value;
+        const border = document.getElementById('borderColor').value;
+        const text = document.getElementById('textColor').value;
+        const radius = document.getElementById('radiusRange').value;
+
+        const card = document.getElementById('previewCard');
+        card.style.backgroundColor = fill;
+        card.style.border = `4px solid ${border}`;
+        card.style.borderRadius = radius + 'px';
+        document.getElementById('previewText').style.color = text;
+
+        const rgb = (h) => `${parseInt(h.slice(1,3),16)}, ${parseInt(h.slice(3,5),16)}, ${parseInt(h.slice(5,7),16)}`;
+        document.getElementById('codeOutput').innerText = `THEME_CONFIG = {
+    "card_bg": (${rgb(fill)}),
+    "border": (${rgb(border)}),
+    "text": (${rgb(text)}),
+    "radius": ${radius}
+}`;
+    }
+
+    function init() {
+        const grid = document.getElementById('presetGrid');
+        presets.forEach(p => {
+            const d = document.createElement('div');
+            d.className = 'preset-card';
+            d.onclick = () => applyTheme(p.fill, p.border, p.text, p.radius);
+            d.innerHTML = `<span class="preset-name">${p.name}</span><div class="colors"><span style="background:${p.fill}"></span><span style="background:${p.border}"></span><span style="background:${p.text}"></span></div>`;
+            grid.appendChild(d);
+        });
+        document.querySelectorAll('input').forEach(i => i.addEventListener('input', update));
+        update();
+    }
+    init();
+</script>
+</body>
+</html>
