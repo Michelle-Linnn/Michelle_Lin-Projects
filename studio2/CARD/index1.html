@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ART ARCHIVE | Private Emotional Journaling</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Syncopate:wght@400;700&family=Playfair+Display:italic@400&family=Inter:wght@300;400;500&display=swap');
+
+        body {
+            background: #cbd5e1;
+            background: radial-gradient(circle at center, #f1f5f9 0%, #94a3b8 100%);
+            min-height: 100vh;
+            color: #1e293b;
+            font-family: 'Inter', sans-serif;
+            padding: 60px 20px;
+        }
+
+        /* Gallery Styles */
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+            gap: 60px;
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+
+        .card-container {
+            perspective: 2000px;
+            aspect-ratio: 16 / 10;
+            width: 100%;
+        }
+
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.9s cubic-bezier(0.15, 0.8, 0.3, 1);
+            transform-style: preserve-3d;
+            cursor: pointer;
+        }
+
+        .flipped { transform: rotateY(180deg); }
+
+        .side {
+            position: absolute;
+            inset: 0;
+            backface-visibility: hidden;
+            background: #ffffff;
+            border-radius: 2px;
+            padding: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.12);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .back { transform: rotateY(180deg); }
+
+        .img-wrapper {
+            width: 100%; height: 100%;
+            display: flex; align-items: center; justify-content: center;
+            background: #fafafa;
+        }
+
+        img { max-width: 100%; max-height: 100%; object-fit: contain; }
+
+        .date-stamp {
+            position: absolute; bottom: 12px; right: 20px;
+            font-family: 'Playfair Display', serif; font-style: italic;
+            font-size: 11px; letter-spacing: 1px; color: #94a3b8;
+        }
+
+        .side-label {
+            position: absolute; bottom: 12px; left: 20px;
+            font-family: 'Syncopate', sans-serif; font-size: 8px;
+            letter-spacing: 3px; opacity: 0.4; text-transform: uppercase;
+        }
+
+        /* Modal Styles */
+        #guideModal {
+            position: fixed; inset: 0;
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        .modal-box {
+            background: white; width: 90%; max-width: 850px;
+            min-height: 620px; position: relative;
+            padding: 60px; border-radius: 4px; box-shadow: 0 50px 100px rgba(0,0,0,0.5);
+            display: flex; flex-direction: column;
+        }
+
+        .guide-page { display: none; animation: fadeIn 0.4s ease forwards; }
+        .guide-page.active { display: flex; flex-direction: column; height: 100%; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .guide-title {
+            font-family: 'Syncopate', sans-serif; font-size: 14px;
+            letter-spacing: 4px; text-transform: uppercase; color: #64748b; margin-bottom: 24px;
+        }
+
+        .guide-content { font-size: 15px; line-height: 1.8; color: #1e293b; font-weight: 300; }
+        
+        .rules-img { width: 100%; max-height: 280px; object-fit: contain; background: #f8fafc; margin: 20px 0; border: 1px solid #f1f5f9; }
+
+        .modal-nav { display: flex; justify-content: space-between; margin-top: auto; padding-top: 30px; }
+        .nav-btn { font-family: 'Syncopate', sans-serif; font-size: 10px; letter-spacing: 2px; cursor: pointer; color: #94a3b8; transition: 0.3s; }
+        .nav-btn:hover { color: #1e293b; }
+
+        .close-guide { position: absolute; top: 20px; right: 20px; cursor: pointer; font-size: 12px; letter-spacing: 1px; opacity: 0.4; }
+
+        header h1 { font-family: 'Syncopate', sans-serif; letter-spacing: 0.8em; font-weight: 700; }
+    </style>
+</head>
+<body>
+
+    <div id="guideModal">
+        <div class="modal-box">
+            <div class="close-guide" onclick="closeGuide()">✕ SKIP</div>
+
+            <div class="guide-page active">
+                <div class="guide-title">Introduction</div>
+                <div class="guide-content" style="font-size: 20px; padding-top: 40px;">
+                    This is a private emotional journaling system designed specifically for individuals. By translating fleeting, vague emotions into concrete geometric language, it facilitates the entire process from "feeling" to "identifying" to "archiving."
+                </div>
+            </div>
+
+            <div class="guide-page">
+                <div class="guide-title">01 The Core Ideogram — Sensibility</div>
+                <div class="guide-content">
+                    <strong>Position:</strong> Front of the card.<br>
+                    <strong>Logic:</strong> Drawn according to "Vertical Axis + Geometric Core + Directional Accents".<br>
+                    <strong>Function:</strong> The raw portrait of an emotion. The Axis represents "Self", the Core represents "Mental State" (Circle: Spirit, Square: Stagnation, Diamond: Conflict), and Accents represent "Energy Flow".
+                </div>
+                <img src="rules1.png" class="rules-img" alt="Rule 1 Visualization">
+            </div>
+
+            <div class="guide-page">
+                <div class="guide-title">02 The Shorthand Texture — Efficiency</div>
+                <div class="guide-content">
+                    <strong>Position:</strong> Back of the card (Visual Center).<br>
+                    <strong>Logic:</strong> Macro-compression of the front. It strips fine lines, retaining the core skeleton with injected stripe textures.<br>
+                    <strong>Function:</strong> "Instant Recognition" system. Users recall the emotional baseline through visual intuition without reading text.
+                </div>
+                <img src="rules2.png" class="rules-img" alt="Rule 2 Visualization">
+            </div>
+
+            <div class="guide-page">
+                <div class="guide-title">03 The Cipher Archive — Rationality</div>
+                <div class="guide-content">
+                    <strong>Position:</strong> Back of the card (Surrounding Shorthand).<br>
+                    <strong>Logic:</strong> A-Z Encryption system. Classifies letters into varied geometric forms.<br>
+                    <strong>Function:</strong> Narrative archive. It geometrically reconstructs private thoughts, maintaining visual unity while storing precise language.
+                </div>
+                <img src="rules3.png" class="rules-img" alt="Rule 3 Visualization">
+            </div>
+
+            <div class="guide-page">
+                <div class="guide-title">Example Exhibit</div>
+                <div class="flex flex-col items-center">
+                    <div class="card-container" style="width: 320px; margin-bottom: 25px;">
+                        <div class="card-inner" onclick="this.classList.toggle('flipped')">
+                            <div class="side front">
+                                <div class="img-wrapper"><img src="front3.png"></div>
+                                <div class="side-label">Side A</div>
+                            </div>
+                            <div class="side back">
+                                <div class="img-wrapper"><img src="back3.png"></div>
+                                <div class="side-label">Side B</div>
+                                <div class="date-stamp">EXAMPLE</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="guide-content text-center italic" style="color: #64748b; font-size: 14px;">
+                        Means:<br>
+                        I had quite a few things I wanted to accomplish today.<br> 
+                        I encountered some setbacks.<br> 
+                        I've fallen into self-doubt.
+                    </div>
+                </div>
+            </div>
+
+            <div class="guide-page">
+                <div class="guide-title">Geometric Gene Sharing</div>
+                <div class="guide-content" style="font-size: 14px;">
+                    <strong>A. Genetic Inheritance:</strong> The Geometric Core of the front-side symbol determines the primary form of the back-side Shorthand while predetermining the Cipher's visual distribution.<br><br>
+                    <strong>B. The Collapse of Meaning:</strong> This system demonstrates information's evolution from <strong>infinite sensibility</strong> (front) to <strong>semi-structuralization</strong> (shorthand), culminating in <strong>full structuralization</strong> (cipher). This connection ensures consistency with the original emotional logic.
+                </div>
+            </div>
+
+            <div class="modal-nav">
+                <div class="nav-btn" id="prevBtn" onclick="changePage(-1)">← PREVIOUS</div>
+                <div class="nav-btn" id="nextBtn" onclick="changePage(1)">NEXT PAGE →</div>
+            </div>
+        </div>
+    </div>
+
+    <header class="text-center mb-24">
+        <h1 class="text-xl uppercase opacity-80">Visual Archive</h1>
+        <div class="h-[1px] w-20 bg-slate-400 mx-auto mt-6 mb-4"></div>
+        <p class="text-[9px] uppercase tracking-[0.5em] text-slate-500">Emotional Cipher System</p>
+    </header>
+
+    <div id="galleryGrid" class="gallery-grid"></div>
+
+    <script>
+        // Modal Logic
+        let currentPage = 0;
+        const pages = document.querySelectorAll('.guide-page');
+        
+        function changePage(dir) {
+            pages[currentPage].classList.remove('active');
+            currentPage += dir;
+            
+            if (currentPage < 0) currentPage = 0;
+            if (currentPage >= pages.length) {
+                closeGuide();
+                return;
+            }
+            
+            pages[currentPage].classList.add('active');
+            
+            // Toggle Button Visibility
+            document.getElementById('prevBtn').style.visibility = currentPage === 0 ? 'hidden' : 'visible';
+            document.getElementById('nextBtn').innerText = currentPage === pages.length - 1 ? 'ENTER ARCHIVE →' : 'NEXT PAGE →';
+        }
+        
+        document.getElementById('prevBtn').style.visibility = 'hidden';
+
+        function closeModal() {
+            document.getElementById('guideModal').style.display = 'none';
+        }
+        
+        function closeGuide() {
+            document.getElementById('guideModal').style.display = 'none';
+        }
+
+        // Gallery Data (Same as your local files)
+        const galleryData = [
+            { date: "FEBRUARY 12, 2026" },
+            { date: "JANUARY 28, 2026" },
+            { date: "DECEMBER 15, 2025" },
+            { date: "NOVEMBER 03, 2025" },
+            { date: "OCTOBER 21, 2025" }
+        ];
+
+        const fileExtension = 'png';
+        const grid = document.getElementById('galleryGrid');
+
+        function init() {
+            galleryData.forEach((item, index) => {
+                const i = index + 1;
+                const card = document.createElement('div');
+                card.className = 'card-container';
+                card.innerHTML = `
+                    <div class="card-inner" onclick="this.classList.toggle('flipped')">
+                        <div class="side front">
+                            <div class="img-wrapper">
+                                <img src="front${i}.${fileExtension}" alt="Front ${i}" onerror="this.src='https://via.placeholder.com/800x500?text=front${i}.png+Found'">
+                            </div>
+                            <div class="side-label">Side A</div>
+                        </div>
+                        <div class="side back">
+                            <div class="img-wrapper">
+                                <img src="back${i}.${fileExtension}" alt="Back ${i}" onerror="this.src='https://via.placeholder.com/800x500?text=back${i}.png+Found'">
+                            </div>
+                            <div class="side-label">Side B</div>
+                            <div class="date-stamp">${item.date}</div>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+        init();
+    </script>
+</body>
+</html>
