@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>3D HU Heavy Fall - Debug Mode</title>
+    <style>
+        body { margin: 0; background-color: #1a1a1a; overflow: hidden; } /* 临时加个深色背景确认页面在运行 */
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+    <div id="loading" style="color: white; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-family: sans-serif;">
+        Loading 3D Engine...
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.module.min.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { FontLoader } from 'three/addons/loaders/FontLoader.js';
+        import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
+
+        console.log("Scene initializing...");
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        
+        // alpha: true 设置透明背景 / Transparent background
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        const light = new THREE.DirectionalLight(0xffffff, 2);
+        light.position.set(2, 5, 5);
+        scene.add(light);
+        scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+
+        const loader = new FontLoader();
+        // 使用 cdnjs 的备用字体地址，更稳定
+        const fontUrl = 'https://threejs.org/examples/fonts/helvetiker_bold.typeface.json';
+
+        loader.load(fontUrl, 
+            (font) => {
+                console.log("Font loaded successfully!");
+                document.getElementById('loading').style.display = 'none';
+
+                const geometry = new TextGeometry('HU', {
+                    font: font,
+                    size: 2,
+                    height: 1, // 厚度
+                    bevelEnabled: true,
+                    bevelThickness: 0.1,
+                    bevelSize: 0.05,
+                });
+                geometry.center();
+
+                const material = new THREE.MeshStandardMaterial({ 
+                    color: 0x555555, 
+                    metalness: 0.8, 
+                    roughness: 0.2 
+                });
+                const textMesh = new THREE.Mesh(geometry, material);
+                scene.add(textMesh);
+
+                camera.position.z = 7;
+                camera.position.y = 1;
+
+                // 物理参数：重感倒下 / Physics: Heavy falling
+                let angle = 0;
+                let velocity = 0;
+                const gravity = -0.002;
+                const bounce = -0.2; // 极低反弹，显得更重
+
+                function animate() {
+                    requestAnimationFrame(animate);
+                    
+                    if (angle > -Math.PI / 2 || Math.abs(velocity) > 0.001) {
+                        velocity += gravity;
+                        angle += velocity;
+
+                        if (angle <= -Math.PI / 2) {
+                            angle = -Math.PI / 2;
+                            velocity *= bounce; // 撞击地面
+                        }
+                        textMesh.rotation.x = angle;
+                    }
+                    renderer.render(scene, camera);
+                }
+                animate();
+            },
+            // 加载进度
+            (xhr) => { console.log((xhr.loaded / xhr.total * 100) + '% loaded'); },
+            // 错误处理
+            (err) => { 
+                console.error("Font load failed:", err);
+                document.getElementById('loading').innerText = "Font Load Error! Check Internet.";
+            }
+        );
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
