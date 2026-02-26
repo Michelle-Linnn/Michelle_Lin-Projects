@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>SUNSET - Trigger Debug Pro</title>
+    <style>
+        :root { --radius: 180px; }
+        body, html { margin: 0; padding: 0; background-color: #050505; }
+        .image-list { position: relative; width: 100%; }
+        .image-list img { width: 100vw; height: auto; display: block; }
+
+        /* 雾蒙蒙层 */
+        #fog {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(15, 15, 25, 0.75); 
+            backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
+            pointer-events: none; z-index: 100;
+        }
+
+        /* 视角 1 的容器：改为固定位置或随页面滚动 */
+        #shijiao-1 {
+            position: absolute;
+            left: 537px; /* 你的 X 坐标 */
+            top: 1274px; /* 你的 Y 坐标 */
+            z-index: 150;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            pointer-events: none;
+        }
+
+        /* 线段动画 */
+        .line {
+            width: 2px;
+            height: 0;
+            background: linear-gradient(to bottom, #ffcc64, transparent);
+            transition: height 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .shijiao-img {
+            width: 320px;
+            margin-top: 10px;
+            border: 1px solid rgba(255, 204, 100, 0.5);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+        }
+
+        /* 激活状态 */
+        #shijiao-1.active { opacity: 1; }
+        #shijiao-1.active .line { height: 120px; }
+
+        /* 调试辅助标记：在目标点画个圈，成功后可删除 */
+        #target-marker {
+            position: absolute;
+            left: 537px; top: 1274px;
+            width: 20px; height: 20px;
+            border: 2px solid red;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 99;
+        }
+
+        #coords {
+            position: fixed; top: 10px; right: 10px;
+            background: black; color: lime; padding: 10px;
+            font-family: monospace; z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="coords">ABS Y: <span id="curY">0</span></div>
+
+    <div class="image-list">
+        <div id="target-marker"></div>
+
+        <div id="shijiao-1">
+            <div class="line"></div>
+            <img src="shijiao1.png" class="shijiao-img">
+        </div>
+
+        <img src="1.png"><img src="2.png"><img src="3.png"><img src="4.png"><img src="5.png">
+    </div>
+
+    <div id="fog"></div>
+
+    <script>
+        const fog = document.getElementById('fog');
+        const shijiao1 = document.getElementById('shijiao-1');
+        const curYDisp = document.getElementById('curY');
+
+        const TARGET_X = 537;
+        const TARGET_Y = 1274;
+        const THRESHOLD = 60; // 稍微调大一点点，确保能触发
+
+        let mouseX = window.innerWidth / 2, mouseY = window.innerHeight / 2;
+        let currentX = mouseX, currentY = mouseY;
+
+        window.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+        });
+
+        function animate() {
+            currentX += (mouseX - currentX) * 0.12;
+            currentY += (mouseY - currentY) * 0.12;
+
+            const absX = currentX + window.scrollX;
+            const absY = currentY + window.scrollY;
+
+            // 1. 更新手电筒遮罩
+            const mask = `radial-gradient(circle 180px at ${currentX}px ${currentY}px, transparent 90%, black 100%)`;
+            fog.style.webkitMaskImage = mask;
+            fog.style.maskImage = mask;
+
+            // 2. 触发逻辑
+            const dx = absX - TARGET_X;
+            const dy = absY - TARGET_Y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            if (distance < THRESHOLD) {
+                shijiao1.classList.add('active');
+            } else {
+                shijiao1.classList.remove('active');
+            }
+
+            curYDisp.innerText = Math.floor(absY);
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+    </script>
+</body>
+</html>
