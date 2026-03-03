@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Melting Pulse | Glacier Visualization & Installation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700;900&display=swap');
+        
+        body { background-color: #000; color: #fff; font-family: 'Inter', sans-serif; line-height: 1.6; margin: 0; overflow-x: hidden; }
+        
+        /* --- 背景核心设置 --- */
+        .background-fixed-layer {
+            position: fixed;
+            inset: 0;
+            background-image: url('glacier-bg.jpg'); 
+            background-repeat: repeat;
+            background-size: 500px;
+            background-attachment: fixed;
+            filter: brightness(1.2) contrast(1.1); 
+            z-index: -2;
+        }
+        .bg-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.35); 
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .glacier-cyan { color: #a5f3fc; }
+        .glass-panel { background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.08); }
+        .hero-gradient-overlay { background: linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 40%, rgba(0,0,0,0.8) 80%, #000 100% ); position: absolute; inset: 0; z-index: 1; }
+        .section-title { font-size: 0.65rem; letter-spacing: 0.4em; color: #a5f3fc; text-transform: uppercase; margin-bottom: 0.75rem; display: block; font-weight: 700; }
+        .glacier-highlight { background: linear-gradient(90deg, #a5f3fc, #ffffff); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; font-weight: 700; }
+        
+        /* Scroll Reveal Animation */
+        .reveal { opacity: 0; transform: translateY(30px); transition: all 1s cubic-bezier(0.2, 1, 0.3, 1); }
+        .reveal.active { opacity: 1; transform: translateY(0); }
+
+        .project-img { transition: transform 0.8s cubic-bezier(0.2, 1, 0.3, 1); filter: brightness(1.05); }
+        .img-container:hover .project-img { transform: scale(1.02); filter: brightness(1.2); }
+        
+        /* 全屏等宽类 */
+        .full-bleed { width: 100vw; position: relative; left: 50%; right: 50%; margin-left: -50vw; margin-right: -50vw; }
+        
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #a5f3fc; border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="background-fixed-layer"></div>
+    <div class="bg-overlay"></div>
+
+    <nav class="fixed top-8 left-8 z-50">
+        <a href="../main.html" class="text-[10px] tracking-[0.4em] opacity-40 hover:opacity-100 hover:text-cyan-400 transition flex items-center space-x-3">
+            <span class="text-lg">←</span> <span>BACK TO WORKS</span>
+        </a>
+    </nav>
+
+    <header class="relative w-full flex flex-col items-start px-12 pt-[70vh] pb-32">
+        <div class="absolute top-0 left-0 w-full h-[100vh] z-0">
+            <img src="glacier-hero.jpg" alt="Glacier Melting" class="w-full h-full object-cover opacity-90">
+            <div class="hero-gradient-overlay"></div>
+        </div>
+        <div class="relative z-10 max-w-5xl">
+            <div class="flex flex-col space-y-2 mb-6 reveal active">
+                <span class="section-title italic">Project 02</span>
+                <span class="text-[10px] tracking-[0.3em] uppercase opacity-60">Data Visualization / Sustainable Material Design</span>
+            </div>
+            <h1 class="text-6xl md:text-9xl font-black tracking-tighter mb-8 italic uppercase leading-none reveal active">Melting Pulse</h1>
+            <p class="text-xl md:text-2xl text-gray-200 font-light max-w-3xl leading-relaxed mb-12 reveal active">
+                Translating the silent <span class="glacier-highlight">disappearance of glaciers</span> into tangible data and bio-material installations.
+            </p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-12 pt-8 border-t border-white/10 w-full max-w-3xl reveal active">
+                <div><span class="section-title">My Role</span><p class="text-gray-300 text-sm tracking-wide uppercase font-medium">Data Artist, Material Researcher</p></div>
+                <div><span class="section-title">Focus</span><p class="text-gray-300 text-sm tracking-wide uppercase font-medium">Eco-friendly Materials, Data Storytelling</p></div>
+            </div>
+        </div>
+    </header>
+
+    <main class="relative z-10 max-w-6xl mx-auto py-24 px-6 space-y-40">
+        
+        <section class="reveal">
+            <div class="glass-panel p-12 md:p-20 rounded-[2rem]">
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-12">
+                    <div class="md:col-span-4">
+                        <span class="section-title">Project Summary</span>
+                        <h2 class="text-3xl font-bold leading-tight uppercase glacier-cyan">Vanishing Archives</h2>
+                    </div>
+                    <div class="md:col-span-8 text-gray-400 text-lg space-y-8">
+                        <p>This project explores the intersection of climate data and material science. By visualizing the melting rate of Arctic ice, I created an installation that uses sustainable materials to mimic the fragile state of our glaciers.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="reveal">
+            <div class="max-w-6xl mx-auto mb-12">
+                <span class="section-title">Step 01</span>
+                <h3 class="text-3xl font-bold mb-6 italic uppercase">Data Visualization</h3>
+                <p class="text-gray-400 leading-relaxed max-w-2xl">The visualization converts global temperature anomalies and sea-level rise data into a fluid, disappearing digital landscape.</p>
+            </div>
+            <div class="full-bleed overflow-hidden">
+                <img src="data-visualization.png" class="w-full h-auto project-img" alt="Data Chart">
+            </div>
+        </section>
+        
+        <section class="grid grid-cols-1 md:grid-cols-12 gap-12 items-center reveal">
+            <div class="md:col-span-5">
+                <span class="section-title">Step 02</span>
+                <h3 class="text-3xl font-bold mb-6 italic uppercase">Materiality</h3>
+                <p class="text-gray-400 leading-relaxed">
+                    I experimented with various eco-friendly materials, including Bioplastics and recycled polymers, to achieve the crystalline yet fleeting texture of ice.
+                </p>
+            </div>
+            <div class="md:col-span-7 img-container overflow-hidden rounded-2xl glass-panel">
+                <img src="material-trial.png" class="project-img w-full h-auto opacity-80">
+            </div>
+        </section>
+
+        <section class="reveal">
+            <div class="max-w-6xl mx-auto mb-12">
+                <span class="section-title">Step 03</span>
+                <h3 class="text-3xl font-bold mb-6 italic uppercase">The Installation</h3>
+                <p class="text-gray-400 leading-relaxed max-w-2xl">A physical manifestation of the data, using the developed bio-materials to represent the melting pulse of the earth.</p>
+            </div>
+            <div class="full-bleed overflow-hidden">
+                <img src="final-installation.JPG" class="w-full h-auto project-img" alt="Final Installation">
+            </div>
+        </section>
+
+        <section class="space-y-12 reveal">
+            <span class="section-title">Sustainable Explorations</span>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="img-container rounded-3xl overflow-hidden glass-panel">
+                    <img src="eco-attempt-1.png" class="project-img w-full h-80 object-cover">
+                    <div class="p-6"><p class="text-xs tracking-widest uppercase opacity-50">Recycled Bio-Resin</p></div>
+                </div>
+                <div class="img-container rounded-3xl overflow-hidden glass-panel">
+                    <img src="eco-attempt-2.png" class="project-img w-full h-80 object-cover">
+                    <div class="p-6"><p class="text-xs tracking-widest uppercase opacity-50">Mycelium Composites</p></div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="relative z-10 py-40 text-center border-t border-white/5 reveal">
+        <a href="../main.html" class="group">
+            <span class="text-gray-600 text-[10px] tracking-[0.5em] block mb-6 uppercase">Return to Gallery</span>
+            <span class="text-5xl font-black group-hover:text-cyan-400 transition-all italic tracking-tighter uppercase">Back to Home →</span>
+        </a>
+    </footer>
+
+    <script>
+        const observerOptions = { threshold: 0.1 };
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('active');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.reveal').forEach(el => {
+            observer.observe(el);
+        });
+    </script>
+
+</body>
+</html>

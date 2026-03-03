@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>body { background: #0a0a0a; margin: 0; padding: 20px; }</style>
+</head>
+<body>
+    <div id="main" style="width:100%; height:90vh;"></div>
+    <script>
+        const chart = echarts.init(document.getElementById('main'));
+        d3.csv("cleaned_greenland_data.csv").then(raw => {
+            const base = raw.map(d => parseFloat(d.Mass_Gt));
+            const dates = raw.map(d => d.Date);
+            const upper = raw.map(d => parseFloat(d.Mass_Gt) + parseFloat(d.Uncertainty_Gt));
+            const lower = raw.map(d => parseFloat(d.Mass_Gt) - parseFloat(d.Uncertainty_Gt));
+
+            chart.setOption({
+                tooltip: { trigger: 'axis' },
+                xAxis: { data: dates, axisLine: { lineStyle: { color: '#444' } } },
+                yAxis: { splitLine: { lineStyle: { color: '#222' } } },
+                series: [
+                    { name: 'Mass', type: 'line', data: base, z: 10, lineStyle: { color: '#fff' }, symbol: 'none' },
+                    { 
+                        name: 'Error Margin', type: 'line', data: upper, 
+                        lineStyle: { opacity: 0 }, areaStyle: { color: 'rgba(0, 210, 255, 0.2)' }, stack: 'error', symbol: 'none' 
+                    },
+                    { 
+                        name: 'Lower', type: 'line', data: lower.map((v, i) => upper[i] - v), 
+                        lineStyle: { opacity: 0 }, areaStyle: { color: 'rgba(0, 210, 255, 0.2)' }, stack: 'error', symbol: 'none' 
+                    }
+                ]
+            });
+        });
+    </script>
+</body>
+</html>

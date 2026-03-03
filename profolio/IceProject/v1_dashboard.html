@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body { background: #050505; color: #fff; font-family: 'Inter', sans-serif; margin: 0; }
+        #header { padding: 40px; border-bottom: 1px solid #222; display: flex; justify-content: space-between; }
+        #main { width: 100vw; height: 70vh; }
+        .stat-value { font-size: 48px; color: #00d2ff; font-weight: bold; text-shadow: 0 0 20px rgba(0,210,255,0.5); }
+    </style>
+</head>
+<body>
+    <div id="header">
+        <div>
+            <h1 style="margin:0; letter-spacing:4px;">GREENLAND ICE MELT</h1>
+            <p style="color:#666;">NASA GRACE SATELLITE DATA | 2002 - 2025</p>
+        </div>
+        <div style="text-align:right;">
+            <div style="color:#666; font-size:12px;">CURRENT MASS LOSS</div>
+            <div id="counter" class="stat-value">0</div>
+            <div style="color:#666;">GIGATONNES</div>
+        </div>
+    </div>
+    <div id="main"></div>
+    <script>
+        const chart = echarts.init(document.getElementById('main'), 'dark');
+        d3.csv("cleaned_greenland_data.csv").then(data => {
+            const dates = data.map(d => d.Date);
+            const values = data.map(d => parseFloat(d.Mass_Gt));
+            chart.setOption({
+                backgroundColor: 'transparent',
+                tooltip: { trigger: 'axis', axisPointer: { type: 'cross', label: { backgroundColor: '#6a7985' } } },
+                xAxis: { type: 'category', data: dates, axisLine: { lineStyle: { color: '#333' } } },
+                yAxis: { type: 'value', splitLine: { lineStyle: { color: '#111' } } },
+                series: [{
+                    type: 'line', smooth: true, symbol: 'none',
+                    lineStyle: { width: 4, color: '#00d2ff' },
+                    areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{offset: 0, color: 'rgba(0,210,255,0.3)'}, {offset: 1, color: 'transparent'}]) },
+                    data: values
+                }]
+            });
+            chart.on('updateAxisPointer', (event) => {
+                if(event.axesInfo) document.getElementById('counter').innerText = Math.floor(values[event.axesInfo[0].value]).toLocaleString();
+            });
+        });
+    </script>
+</body>
+</html>

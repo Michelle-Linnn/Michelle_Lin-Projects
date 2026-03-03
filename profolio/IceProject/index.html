@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Greenland Ice Mass Loss - Interactive Lab</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body { background-color: #0b0b0e; color: #e0e0e0; font-family: 'Helvetica Neue', Arial; margin: 0; padding: 40px; }
+        #chart-container { width: 100%; height: 600px; border-radius: 8px; background: #16161a; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .header { margin-bottom: 30px; border-left: 4px solid #00d2ff; padding-left: 20px; }
+        h1 { font-weight: 200; letter-spacing: 2px; margin: 0; text-transform: uppercase; }
+        p { color: #888; font-size: 0.9em; margin-top: 5px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Greenland Ice Mass Loss</h1>
+        <p>Scientific Data Visualization: 2002 - 2025 | Unit: Gigatonnes (Gt)</p>
+    </div>
+    <div id="chart-container"></div>
+
+    <script>
+        const chartDom = document.getElementById('chart-container');
+        const myChart = echarts.init(chartDom, 'dark');
+
+        // 1. 使用 D3.js 加载你清洗好的 CSV 文件
+        d3.csv("cleaned_greenland_data.csv").then(function(data) {
+            // 2. 转化数据格式以适应 ECharts
+            const dates = data.map(d => d.Date);
+            const massData = data.map(d => parseFloat(d.Mass_Gt));
+
+            const option = {
+                backgroundColor: 'transparent',
+                tooltip: { 
+                    trigger: 'axis', 
+                    formatter: '{b}<br/>Loss: <b>{c}</b> Gt',
+                    axisPointer: { type: 'line', lineStyle: { color: '#00d2ff', width: 1, type: 'dashed' } }
+                },
+                grid: { left: '5%', right: '5%', bottom: '15%', containLabel: true },
+                xAxis: { 
+                    type: 'category', 
+                    data: dates,
+                    axisLabel: { color: '#888', interval: 48 }, // 每隔约4年显示一个刻度
+                    axisLine: { lineStyle: { color: '#333' } }
+                },
+                yAxis: { 
+                    type: 'value', 
+                    name: 'Mass Change (Gt)',
+                    splitLine: { lineStyle: { color: '#222' } },
+                    axisLabel: { color: '#888' }
+                },
+                dataZoom: [
+                    { type: 'inside', start: 0, end: 100 },
+                    { type: 'slider', bottom: 20, borderColor: '#333', fillerColor: 'rgba(0, 210, 255, 0.1)' }
+                ],
+                series: [{
+                    name: 'Ice Mass Change',
+                    type: 'line',
+                    smooth: true,
+                    showSymbol: false,
+                    lineStyle: { width: 3, color: '#00d2ff' },
+                    areaStyle: {
+                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                            { offset: 0, color: 'rgba(0, 210, 255, 0.4)' },
+                            { offset: 1, color: 'rgba(0, 210, 255, 0)' }
+                        ])
+                    },
+                    data: massData
+                }]
+            };
+
+            myChart.setOption(option);
+        }).catch(function(error){
+            console.log("Error loading the CSV:", error);
+        });
+
+        // 响应式窗口大小调整
+        window.addEventListener('resize', myChart.resize);
+    </script>
+</body>
+</html>
