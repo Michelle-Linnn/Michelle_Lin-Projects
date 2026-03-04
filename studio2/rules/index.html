@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mahjong Chat Scenes</title>
+    <style>
+        :root {
+            --bg-color: transparent; /* 按照您的要求设为透明 / Set to transparent as requested */
+            --phone-bg: #f0f2f5;
+            --user-a-color: #e3f2fd;
+            --user-other-color: #ffffff;
+            --accent-green: #4caf50;
+            --warning-red: #ff5252;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #2c3e50; /* 外部背景方便预览 / External bg for preview */
+            display: flex;
+            gap: 20px;
+            padding: 20px;
+            overflow-x: auto;
+            justify-content: center;
+        }
+
+        /* 手机外壳容器 / Mobile shell container */
+        .phone-container {
+            width: 350px;
+            height: 650px;
+            background-color: var(--phone-bg);
+            border-radius: 30px;
+            border: 8px solid #333;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            flex-shrink: 0;
+        }
+
+        .header {
+            padding: 40px 20px 10px;
+            background: #fff;
+            border-bottom: 1px solid #ddd;
+            text-align: center;
+            font-weight: bold;
+            border-radius: 22px 22px 0 0;
+        }
+
+        .chat-window {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        /* 消息样式 / Message styles */
+        .message {
+            display: flex;
+            align-items: flex-start;
+            max-width: 85%;
+        }
+
+        .message.self {
+            flex-direction: row-reverse;
+            align-self: flex-end;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin: 0 8px;
+            background-size: cover;
+        }
+
+        .bubble {
+            padding: 10px 14px;
+            border-radius: 15px;
+            font-size: 14px;
+            line-height: 1.4;
+            position: relative;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .other .bubble { background-color: var(--user-other-color); border-top-left-radius: 2px; }
+        .self .bubble { background-color: var(--user-a-color); border-top-right-radius: 2px; }
+
+        .system-status {
+            text-align: center;
+            font-size: 12px;
+            color: #888;
+            margin: 5px 0;
+            font-style: italic;
+        }
+
+        .input-area {
+            padding: 15px;
+            background: #fff;
+            border-top: 1px solid #ddd;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-radius: 0 0 22px 22px;
+        }
+
+        .input-box {
+            flex: 1;
+            height: 35px;
+            background: #f1f1f1;
+            border-radius: 20px;
+            padding-left: 15px;
+            border: none;
+        }
+
+        .retracted { color: #aaa; font-style: italic; font-size: 13px; }
+        .warning { color: var(--warning-red); font-weight: bold; }
+        .sticker { width: 80px; border-radius: 10px; }
+
+    </style>
+</head>
+<body>
+
+<div class="phone-container">
+    <div class="header">Scene 1: The Pace</div>
+    <div class="chat-window">
+        <div class="message self">
+            <div class="avatar" style="background-image: url('https://api.dicebear.com/7.x/avataaars/svg?seed=A')"></div>
+            <div class="bubble">Your turn! Stop daydreaming. 🀄</div>
+        </div>
+        <div class="system-status">User B is typing...</div>
+        <div class="message other">
+            <div class="avatar" style="background-image: url('https://api.dicebear.com/7.x/avataaars/svg?seed=B')"></div>
+            <div class="bubble">Thinking... that 5-dot you just dropped is suspicious. 🤔</div>
+        </div>
+        <div class="message other">
+            <div class="avatar" style="background-image: url('https://api.dicebear.com/7.x/avataaars/svg?seed=C')"></div>
+            <div class="bubble">Hurry up! The wall is shrinking. 🧱</div>
+        </div>
+    </div>
+    <div class="input-area"><div class="input-box"></div><span>➕</span></div>
+</div>
+
+<div class="phone-container">
+    <div class="header">Scene 2: Rules Warning</div>
+    <div class="chat-window">
+        <div class="message other">
+            <div class="avatar" style="background-image: url('https://api.dicebear.com/7.x/avataaars/svg?seed=D')"></div>
+            <div class="bubble">WAIT! I HU! (Winning!) 🎉</div>
+        </div>
+        <div class="message self">
+            <div class="avatar" style="background-image: url('https://api.dicebear.com/7.x/avataaars/svg?seed=A')"></div>
+            <div class="bubble retracted">Message retracted</div>
+        </div>
+        <div class="message other">
+            <div class="avatar" style="background-image: url('https://api.dicebear.com/7.x/avataaars/svg?seed=B')"></div>
+            <div class="bubble">Hold on, you just picked that up from the wrong pile. That’s a False Win (Chombo).</div>
+        </div>
+        <div class="message other">
+            <div class="avatar" style="background-image: url('https://api.dicebear.com/7.x/avataaars/svg?seed=C')"></div>
+            <div class="bubble warning">🛑 Pay up to everyone. Rules are rules, buddy.</div>
+        </div>
+    </div>
+    <div class="input-area"><div class="input-box"></div><span>➕</span></div>
+</div>
+
+<div class="phone-container">
+    <div class="header">Scene 3: Big Win</div>
+    <div class="chat-window">
+        <div class="message other">
+            <div class="avatar" style="background-image: url('https://api.dicebear.com/7.x/avataaars/svg?seed=B')"></div>
+            <div class="bubble">ALL GREEN! (Pure One Suit) 🍃</div>
+        </div>
+        <div class="message other">
+            <div class="avatar" style="background-image: url('https://api.dicebear.com/7.x/avataaars/svg?seed=D')"></div>
+            <div class="bubble">No way... that’s like 80 points! 😱</div>
+        </div>
+        <div class="message self">
+            <div class="avatar" style="background-image: url('https://api.dicebear.com/7.x/avataaars/svg?seed=A')"></div>
+            <div class="bubble">My wallet is crying. 💸</div>
+        </div>
+        <div class="message other">
+            <div class="avatar" style="background-image: url('https://api.dicebear.com/7.x/avataaars/svg?seed=B')"></div>
+            <div class="bubble">
+                <img class="sticker" src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJpbmZicW00amM0eG5uOHR6bmh0MndiaGZ6eGZ6eGZ6eGZ6eGZ6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/l3vR16pONZYq775o4/giphy.gif" alt="Dancing Tile">
+            </div>
+        </div>
+    </div>
+    <div class="input-area"><div class="input-box"></div><span>➕</span></div>
+</div>
+
+</body>
+</html>
