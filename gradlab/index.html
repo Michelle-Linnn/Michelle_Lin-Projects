@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>Generative Liquid Universe - Fullscreen</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@700&display=swap" rel="stylesheet">
+    <style>
+        body { margin: 0; padding: 0; background: #000; overflow: hidden; }
+        canvas { display: block; }
+        .ui-overlay {
+            position: fixed; bottom: 30px; width: 100%; text-align: center;
+            color: rgba(255,255,255,0.3); font-family: sans-serif; letter-spacing: 2px;
+            pointer-events: none; text-transform: uppercase; font-size: 11px;
+        }
+    </style>
+</head>
+<body>
+    <div class="ui-overlay">输入名字 • 空格爆发 • Cmd+S 导出全屏艺术 (PNG)</div>
+
+<script>
+let nameInput = "";
+let nameScale = 1;
+let nSeed = 0;
+let layers = []; // 存储历史字母留下的液体层
+
+function setup() {
+    createCanvas(windowWidth, windowHeight);
+    colorMode(HSB, 360, 100, 100, 1);
+    textFont('Quicksand');
+    background(0);
+    nSeed = random(1000);
+}
+
+function draw() {
+    // 极低的透明度，让过去的色块产生深度的层叠和“融合”痕迹
+    background(0, 0, 0, 0.04);
+
+    // 1. 绘制历史字母留下的静态液体层 (混合模式)
+    push();
+    blendMode(ADD); // 让颜色叠加时产生发光和混合感
+    for (let l of layers) {
+        drawLiquidLayer(l);
+    }
+    blendMode(BLEND); // 切回普通模式
+    pop();
+
+    // 2. 绘制当前正在输入的实时全屏流动 (填充感)
+    if (nameInput.length > 0) {
+        let lastChar = nameInput.toUpperCase().charCodeAt(nameInput.length - 1);
+        drawHyperFill(lastChar);
+    }
+
+    // 3. 屏幕中心的名字 (更立体的糖浆填充)
+    drawCenterName();
+
+    nameScale = lerp(nameScale, 1, 0.1);
+}
+
+function drawHyperFill(c) {
+    push();
+    translate(width/2, height/2);
+    let t = frameCount * 0.01;
+    let hue = map(c, 65, 90, 0, 360);
+    
+    // 不同的数学填充逻辑：元音=圆润，辅音=激荡
+    if ("AEIOU".includes(String.fromCharCode(c))) {
+        // 元音：平滑的噪声波浪填充
+        fill(hue, 60, 100, 0.1); // 低透明度填充
+        noStroke();
+        beginShape();
+        for (let a = 0; a < 360; a += 5) {
+            let n = noise(cos(a)*0.5 + t, sin(a)*0.5 + t, c*0.01);
+            let r = map(n, 0, 1, width*0.1, width*0.6); // 撑满屏幕
+            vertex(cos(a)*r, sin(a)*r);
+        }
+        endShape(CLOSE);
+    } else {
+        // 辅音：激荡的三角函数色块
+        fill(hue, 80, 100, 0.08);
+        noStroke();
+        beginShape();
+        vertex(-width/2, height/2); // 从屏幕左下角开始
+        for (let x = -width/2; x < width/2; x += 30) {
+            // 使用 sin, cos, tan 混合控制复杂高度
+            let freq = map(c, 65, 90, 0.005, 0.02);
+            let y = sin(x * freq + t) * (height*0.3) + cos(x * 0.01) * 100;
+            // c % 4 === 0 时触发 tan 的突变
+            if (c % 4 === 0) y += tan(x * 0.002 + t) * 50; 
+            y = constrain(y, -height/2, height/2);
+            vertex(x, y);
+        }
+        vertex(width/2, height/2); // 封闭到底部
+        endShape(CLOSE);
+    }
+    pop();
+}
+
+function drawLiquidLayer(l) {
+    push();
+    noStroke();
+    fill(l.h, 70, 90, 0.02); // 极其淡的静态痕迹，靠叠加产生厚度
+    beginShape();
+    // 历史痕迹是静态的噪声波形
+    for (let i = 0; i < l.points.length; i++) {
+        vertex(l.points[i].x, l.points[i].y);
+    }
+    endShape(CLOSE);
+    pop();
+}
+
+function drawCenterName() {
+    push();
+    translate(width/2, height/2);
+    scale(nameScale);
+    textAlign(CENTER, CENTER);
+    
+    let lastChar = nameInput.length > 0 ? nameInput.toUpperCase().charCodeAt(nameInput.length-1) : 65;
+    let h = map(lastChar, 65, 90, 0, 360);
+
+    textSize(width * 0.13); // 超大字体
+    
+    // 立体层叠渲染 (增强厚度)
+    // 1. 深色阴影 (厚度感)
+    fill(0, 0, 0, 0.6);
+    text(nameInput, 10, 12);
+    
+    // 2. 糖浆描边 (增加清晰度)
+    stroke(h, 90, 40);
+    strokeWeight(15);
+    fill(h, 90, 40);
+    text(nameInput, 0, 0);
+    
+    // 3. 糖浆主体填充
+    noStroke();
+    fill(h, 85, 100);
+    text(nameInput, 0, 0);
+    
+    // 4. 顶层高光 (模拟液态反光)
+    fill(0, 0, 100, 0.8);
+    textSize(width * 0.128);
+    text(nameInput, -5, -6);
+    pop();
+}
+
+function keyTyped() {
+    if (key !== ' ' && keyCode !== ENTER && keyCode !== BACKSPACE) {
+        nameInput += key;
+        nameScale = 1.5;
+
+        // --- 核心功能：每输入一个字母，都在背景沉淀一个“液体层”痕迹 ---
+        let lastChar = key.toUpperCase().charCodeAt(0);
+        let currentPoints = [];
+        // 生成该字母对应的静态波形点集
+        for (let a = 0; a < 360; a += 10) {
+            let n = noise(cos(a)*0.8 + nSeed, sin(a)*0.8 + nSeed, lastChar*0.05);
+            let r = map(n, 0, 1, width*0.1, width*0.7);
+            currentPoints.push({
+                x: width/2 + cos(a)*r,
+                y: height/2 + sin(a)*r
+            });
+        }
+        layers.push({
+            points: currentPoints,
+            h: map(lastChar, 65, 90, 0, 360)
+        });
+        
+        // 限制痕迹数量，防止卡顿
+        if (layers.length > 30) layers.shift();
+    } 
+    else if (key === ' ') {
+        nameScale = 3.5; // 空格是巨大的视觉冲击
+        background(map(random(360), 0, 360, 0, 360), 50, 100, 0.3); // 闪烁底色
+    }
+    return false;
+}
+
+function keyPressed() {
+    if (keyCode === BACKSPACE) {
+        nameInput = nameInput.slice(0, -1);
+        nameScale = 0.8;
+        layers.pop(); // 删除字时，也撤销最后一个液体层
+    }
+
+    // CMD+S 导出全屏PNG
+    if ((key === 's' || key === 'S') && (keyIsDown(CONTROL) || keyIsDown(91))) {
+        saveCanvas('LiquidUniverse_' + (nameInput || 'Art'), 'png');
+        return false;
+    }
+    // CMD+K 清空一切
+    if ((key === 'k' || key === 'K') && (keyIsDown(CONTROL) || keyIsDown(91))) {
+        background(0);
+        nameInput = "";
+        layers = [];
+        return false;
+    }
+}
+
+function windowResized() {
+    resizeCanvas(windowWidth, windowHeight);
+    background(0);
+}
+</script>
+</body>
+</html>
