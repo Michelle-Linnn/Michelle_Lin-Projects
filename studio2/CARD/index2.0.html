@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ART ARCHIVE | Visual Cipher Gallery</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Syncopate:wght@400;700&family=Playfair+Display:italic@400&family=Inter:wght@300;400;500&display=swap');
+
+        body {
+            background: #cbd5e1;
+            background: radial-gradient(circle at center, #f1f5f9 0%, #94a3b8 100%);
+            min-height: 100vh;
+            color: #1e293b;
+            font-family: 'Inter', sans-serif;
+            padding: 60px 20px;
+        }
+
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+            gap: 50px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .card-container {
+            perspective: 2000px;
+            aspect-ratio: 16 / 10;
+        }
+
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+            transform-style: preserve-3d;
+            cursor: pointer;
+        }
+
+        .flipped { transform: rotateY(180deg); }
+
+        .side {
+            position: absolute;
+            inset: 0;
+            backface-visibility: hidden;
+            background: #ffffff;
+            border-radius: 4px;
+            padding: 12px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .front { border: 1px solid #e2e8f0; }
+        .back { transform: rotateY(180deg); background: #f8fafc; }
+
+        .img-wrapper {
+            width: 100%; height: 100%;
+            display: flex; align-items: center; justify-content: center;
+            background: #f1f5f9;
+            overflow: hidden;
+        }
+
+        img { max-width: 100%; max-height: 100%; object-fit: contain; }
+
+        .side-label {
+            position: absolute; bottom: 10px; left: 15px;
+            font-family: 'Syncopate', sans-serif; font-size: 8px;
+            letter-spacing: 2px; color: #94a3b8;
+        }
+
+        .date-stamp {
+            position: absolute; bottom: 10px; right: 15px;
+            font-family: 'Playfair Display', serif; font-style: italic;
+            font-size: 10px; color: #64748b;
+        }
+
+        header h1 { 
+            font-family: 'Syncopate', sans-serif; 
+            letter-spacing: 0.6em; 
+            text-align: center;
+            margin-bottom: 60px;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1 class="text-xl uppercase">Emotional Archive</h1>
+    </header>
+
+    <div id="galleryGrid" class="gallery-grid">
+        <!-- 卡片将由 JS 自动生成 -->
+    </div>
+
+    <script>
+        // ==========================================
+        // 核心配置：当你存入新图片后，修改下面的数字
+        // ==========================================
+        const TOTAL_CARDS = 1; // 如果你存到了 back10.png，就把这里改成 10
+        
+        const grid = document.getElementById('galleryGrid');
+
+        function renderGallery() {
+            grid.innerHTML = '';
+            
+            // 获取今天的日期作为演示用
+            const today = new Date().toLocaleDateString('en-US', { 
+                year: 'numeric', month: 'long', day: 'numeric' 
+            });
+
+            for (let i = 1; i <= TOTAL_CARDS; i++) {
+                const card = document.createElement('div');
+                card.className = 'card-container';
+                
+                // 假设图片路径在 card/back1.png, card/back2.png ...
+                const imgSrc = `card/back${i}.png`;
+                const signature = `CIPHER_ENTRY_${String(i).padStart(3, '0')}`;
+
+                card.innerHTML = `
+                    <div class="card-inner" onclick="this.classList.toggle('flipped')">
+                        <!-- 正面：显示图片 -->
+                        <div class="side front">
+                            <div class="img-wrapper">
+                                <img src="${imgSrc}" alt="Cipher Front">
+                            </div>
+                            <div class="side-label">${signature}</div>
+                        </div>
+                        
+                        <!-- 反面：可以作为装饰或显示同样的图 -->
+                        <div class="side back">
+                            <div class="img-wrapper">
+                                <img src="${imgSrc}" style="filter: grayscale(1) opacity(0.3);" alt="Cipher Back">
+                            </div>
+                            <div class="side-label">ANALYSIS VIEW</div>
+                            <div class="date-stamp">${today}</div>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            }
+        }
+
+        // 初始化
+        renderGallery();
+    </script>
+</body>
+</html>

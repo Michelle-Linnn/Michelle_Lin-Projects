@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF 小册子排版工具 | PDF Booklet Maker</title>
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen p-8">
+    <div class="max-w-2xl mx-auto bg-white p-8 rounded-xl shadow-md border border-gray-200">
+        <h1 class="text-2xl font-bold mb-6 text-gray-800 border-b pb-4">PDF 小册子自动排印工具</h1>
+        
+        <div class="space-y-6">
+            <div class="p-4 bg-blue-50 rounded-lg border border-blue-100">
+                <label class="block text-sm font-bold text-blue-800 mb-2">1. 上传 PDF 文件</label>
+                <input type="file" id="pdfInput" accept=".pdf" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700">
+            </div>
+
+            <div id="suggestionBox" class="hidden p-4 bg-green-50 rounded-lg border border-green-100">
+                <h3 class="text-sm font-bold text-green-800 mb-2">智能分册建议 (Smart Suggestion):</h3>
+                <p id="suggestionText" class="text-sm text-green-700"></p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">每册几张纸 (Sheets/Booklet)</label>
+                    <input type="number" id="sheetsPerBooklet" value="5" min="1" class="mt-1 block w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 outline-none">
+                    <p class="text-xs text-gray-400 mt-1">💡 1张纸 = 4页内容。太厚可能无法对折。</p>
+                </div>
+                <div class="flex flex-col justify-center">
+                    <label class="flex items-center cursor-pointer">
+                        <input type="checkbox" id="rotateBack" checked class="h-5 w-5 text-blue-600 border-gray-300 rounded">
+                        <span class="ml-2 text-sm font-medium text-gray-700">背面旋转 180° (纠正打印)</span>
+                    </label>
+                </div>
+            </div>
+
+            <button onclick="processPdf()" id="processBtn" class="w-full bg-indigo-600 text-white py-3 rounded-lg font-bold hover:bg-indigo-700 shadow-lg transition active:scale-95 disabled:bg-gray-400">
+                开始生成排版文件
+            </button>
+        </div>
+
+        <div id="status" class="mt-6 p-4 rounded-lg hidden text-sm font-medium"></div>
+    </div>
+
+    <script>
+        const { PDFDocument, degrees } = PDFLib;
+        let originalPageCount = 0;
+
+        // 监听文件上传，自动给出建议
+        document.getElementById('pdfInput').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const arrayBuffer = await file.arrayBuffer();
+            const pdfDoc = await PDFDocument.load(arrayBuffer);
+            originalPageCount = pdfDoc.getPageCount();
+
+            const box = document.getElementById('suggestionBox');
+            const text = document.getElementById('suggestionText');
+            
+            // 建议逻辑：
+            // 1. 如果页数 <= 20，建议 1 册打完
+            // 2. 如果页数 > 20，建议每册 5-8 张纸（20-32页），防止中间太厚鼓起来
+            let recommendedSheets = 5; 
+            if (originalPageCount <= 16) recommendedSheets = Math.ceil(originalPageCount / 4);
+            
+            const totalBooklets = Math.ceil(originalPageCount / (recommendedSheets * 4));
+            const blankPages = (totalBooklets * recommendedSheets * 4) - originalPageCount;
+
+            text.innerHTML = `检测到文件共有 <b>${originalPageCount}</b> 页。<br>
+                推荐设置：<b>每册 ${recommendedSheets} 张纸</b>。<br>
+                计算结果：将分为 <b>${totalBooklets}</b> 册打印，最后一册需补 <b>${blankPages}</b> 页空白。`;
+            
+            document.getElementById('sheetsPerBooklet').value = recommendedSheets;
+            box.classList.remove('hidden');
+        });
+
+        async function processPdf() {
+            const fileInput = document.getElementById('pdfInput');
+            const sheetsPerBooklet = parseInt(document.getElementById('sheetsPerBooklet').value);
+            const shouldRotate = document.getElementById('rotateBack').checked;
+            const statusDiv = document.getElementById('status');
+            const btn = document.getElementById('processBtn');
+
+            if (!fileInput.files[0]) {
+                alert("请先上传 PDF！");
+                return;
+            }
+
+            try {
+                btn.disabled = true;
+                statusDiv.classList.remove('hidden', 'bg-red-100', 'text-red-700', 'bg-green-100', 'text-green-700');
+                statusDiv.classList.add('bg-blue-50', 'text-blue-700');
+                statusDiv.innerText = "正在重排页面中，请稍候...";
+
+                const existingPdfBytes = await fileInput.files[0].arrayBuffer();
+                const srcDoc = await PDFDocument.load(existingPdfBytes);
+                const totalSrcPages = srcDoc.getPageCount();
+                const outDoc = await PDFDocument.create();
+
+                const pagesPerBooklet = sheetsPerBooklet * 4;
+                const totalBooklets = Math.ceil(totalSrcPages / pagesPerBooklet);
+
+                for (let b = 0; b < totalBooklets; b++) {
+                    let start = b * pagesPerBooklet;
+                    let bookletPageIndices = [];
+                    for (let i = 0; i < pagesPerBooklet; i++) {
+                        bookletPageIndices.push((start + i < totalSrcPages) ? start + i : null);
+                    }
+
+                    let left = 0;
+                    let right = pagesPerBooklet - 1;
+
+                    while (left < right) {
+                        // 正面
+                        const frontPage = outDoc.addPage([841.89, 595.28]); // A4 横向尺寸
+                        await drawHalfPage(outDoc, frontPage, srcDoc, bookletPageIndices[right], 'left');
+                        await drawHalfPage(outDoc, frontPage, srcDoc, bookletPageIndices[left], 'right');
+
+                        // 背面
+                        const backPage = outDoc.addPage([841.89, 595.28]);
+                        await drawHalfPage(outDoc, backPage, srcDoc, bookletPageIndices[left + 1], 'left');
+                        await drawHalfPage(outDoc, backPage, srcDoc, bookletPageIndices[right - 1], 'right');
+
+                        if (shouldRotate) backPage.setRotation(degrees(180));
+
+                        left += 2;
+                        right -= 2;
+                    }
+                }
+
+                const pdfBytes = await outDoc.save();
+                const blob = new Blob([pdfBytes], { type: "application/pdf" });
+                const link = document.createElement("a");
+                link.href = URL.createObjectURL(blob);
+                link.download = "小册子排版_请横向双面打印.pdf";
+                link.click();
+
+                statusDiv.innerText = "完成！请查看下载的文件。打印建议：选择“横向”并开启“双面打印”。";
+                statusDiv.classList.replace('bg-blue-50', 'bg-green-100');
+                statusDiv.classList.replace('text-blue-700', 'text-green-700');
+
+            } catch (err) {
+                console.error(err);
+                statusDiv.innerText = "错误: " + err.message;
+                statusDiv.classList.replace('bg-blue-50', 'bg-red-100');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        async function drawHalfPage(outDoc, targetPage, srcDoc, srcIdx, side) {
+            if (srcIdx === null) return;
+            const [embeddedPage] = await outDoc.embedPdf(srcDoc, [srcIdx]);
+            const { width, height } = targetPage.getSize();
+            
+            // 修正后的属性获取：使用 .width 和 .height
+            const eWidth = embeddedPage.width;
+            const eHeight = embeddedPage.height;
+            
+            const scale = Math.min((width / 2) / eWidth, height / eHeight);
+            const xOffset = (side === 'left') ? 0 : width / 2;
+
+            targetPage.drawPage(embeddedPage, {
+                x: xOffset + (width / 2 - eWidth * scale) / 2,
+                y: (height - eHeight * scale) / 2,
+                width: eWidth * scale,
+                height: eHeight * scale,
+            });
+        }
+    </script>
+</body>
+</html>

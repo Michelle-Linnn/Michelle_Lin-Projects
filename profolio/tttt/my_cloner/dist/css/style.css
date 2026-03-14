@@ -1,0 +1,346 @@
+/* Global CSS Variables */
+:root {
+  --margin-xsmall: 0.5rem;
+  --strokeWeight: 1px;
+  --textColor: rgba(0, 0, 255, 1);
+  --slider-track-height: var(--strokeWeight);
+  --slider-track-color: var(--textColor);
+  --slider-thumb-size: 1rem;
+  --slider-thumb-background: #fff;
+  --slider-thumb-strokeColor: var(--textColor);
+  --slider-thumb-radius: 50%;
+  --slider-transition-duration: 0.2s;
+  --button-hover-bg: var(--textColor);
+  --button-hover-text: #fff;
+}
+
+/* Base reset and viewport fill */
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  height: -webkit-fill-available;
+  box-sizing: border-box;
+  overflow: hidden;
+  font-family: "Fira Mono", monospace;
+  font-weight: 400;
+  font-style: normal;
+  font-size: 14px;
+}
+
+/* Layout */
+#main {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  height: -webkit-fill-available;
+}
+
+#preview {
+  flex: 3;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem 1rem 2rem 2rem;
+  background-color: white;
+}
+
+#preview svg {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  display: block;
+  border: 1px solid rgba(255, 255, 255, 0.1)
+}
+
+#controls {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 2rem 2rem 2rem 1rem;
+  overflow-y: auto;
+  color: var(--textColor);
+  justify-content: space-between;
+  overflow: auto;
+}
+
+#controls .sliders {
+  padding: 1rem;
+  border: 1px solid var(--textColor);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+#controls .sliders fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+#controls .buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+}
+
+button {
+  font-size: 1rem;
+  border: 1px solid var(--textColor);
+  color: var(--textColor);
+  padding: 0.5rem 0.75rem;
+  background: transparent;
+  cursor: pointer;
+}
+
+/* Primary button variant */
+.primary {
+  background: rgba(0, 0, 255, 0.1);
+  border: 1px solid var(--textColor);
+  color: var(--textColor);
+  cursor: pointer;
+}
+
+input[type="number"] {
+  font-size: 1rem;
+  border: 1px solid var(--textColor);
+  color: var(--textColor);
+  padding: 0.5rem 0.75rem;
+  background: transparent;
+  cursor: pointer;
+}
+
+button:hover,
+button:active {
+  background: var(--button-hover-bg);
+  color: var(--button-hover-text);
+}
+
+.buttons button {
+  width: 100%;
+  padding: 0.75rem 1rem;
+}
+
+/* Slider styles */
+input[type="range"] {
+  margin: 0 0 var(--margin-xsmall);
+  width: 100%;
+  appearance: none;
+}
+
+.ranger {
+  width: 100%;
+  height: var(--slider-track-height);
+  background: var(--slider-track-color);
+  outline: none;
+  transition: opacity var(--slider-transition-duration);
+}
+
+.ranger::-webkit-slider-thumb {
+  appearance: none;
+  width: var(--slider-thumb-size);
+  height: var(--slider-thumb-size);
+  border-radius: var(--slider-thumb-radius);
+  background: var(--slider-thumb-background);
+  border: 1px solid var(--slider-thumb-strokeColor);
+  cursor: pointer;
+}
+
+.ranger::-moz-range-thumb {
+  width: var(--slider-thumb-size);
+  height: var(--slider-thumb-size);
+  border-radius: var(--slider-thumb-radius);
+  background: var(--slider-thumb-background);
+  border: 1px solid var(--slider-thumb-strokeColor);
+  cursor: pointer;
+  border: none;
+}
+
+.ranger::-moz-range-track {
+  width: 100%;
+  height: var(--strokeWeight);
+  background: var(--textColor);
+  outline: none;
+}
+
+.ranger::-ms-thumb {
+  width: var(--slider-thumb-size);
+  height: var(--slider-thumb-size);
+  border-radius: var(--slider-thumb-radius);
+  background: var(--slider-thumb-background);
+  border: 1px solid var(--slider-thumb-strokeColor);
+  cursor: pointer;
+}
+
+.ranger:focus::-webkit-slider-thumb {
+  background: var(--textColor);
+  border: 1px solid var(--slider-thumb-strokeColor);
+}
+
+.ranger:focus::-moz-range-thumb {
+  background: var(--textColor);
+  border: 1px solid var(--slider-thumb-strokeColor);
+}
+
+.ranger:focus::-ms-thumb {
+  background: var(--textColor);
+  border: 1px solid var(--slider-thumb-strokeColor);
+}
+
+/* Active state (same as focus) */
+.ranger.active::-webkit-slider-thumb {
+  background: var(--textColor);
+  border: 1px solid var(--slider-thumb-strokeColor);
+}
+
+.ranger.active::-moz-range-thumb {
+  background: var(--textColor);
+  border: 1px solid var(--slider-thumb-strokeColor);
+}
+
+.ranger.active::-ms-thumb {
+  background: var(--textColor);
+  border: 1px solid var(--slider-thumb-strokeColor);
+}
+
+.ranger::-ms-track {
+  width: 100%;
+  height: var(--strokeWeight);
+  background: transparent;
+  border-color: transparent;
+  color: transparent;
+}
+
+/* Control group layouts */
+.group {
+  width: 100%;
+}
+
+.group-horizontalFlexBlock {
+  display: flex;
+  justify-content: space-between;
+  box-sizing: border-box;
+}
+
+.group > input[type="range"] {
+  margin-bottom: 0.666rem;
+}
+
+/* Responsive stacking */
+@media (max-width: 1024px) {
+  html,
+  body {
+    font-size: 16px;
+  }
+  :root {
+    --slider-thumb-size: 1.33rem;
+  }
+  body {
+    overflow: auto;
+  }
+  #main {
+    flex-direction: column;
+    width: 100vw;
+    height: auto;
+  }
+  #preview,
+  #controls {
+   padding: 1rem;
+  }
+  .group > input[type="range"] {
+    margin-bottom: 1.333rem;
+  }
+
+  #controls .sliders fieldset {
+    gap: 1rem;
+  }
+}
+
+/* Checkbox Styles */
+input[type="checkbox"] {
+  appearance: none;
+  width: 1rem;
+  height: 1rem;
+  border: 1px solid var(--textColor);
+  border-radius: 0;
+  background-color: transparent;
+  cursor: pointer;
+}
+
+input[type="checkbox"]:checked {
+  background-color: var(--textColor);
+}
+
+/* Value Dialog Styling */
+#valueDialog {
+  padding: 2rem;
+  border: 1px solid var(--textColor);
+}
+#valueDialog form {
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+}
+
+dialog::backdrop {
+  background-color: rgba(0, 0, 255, 0.75);
+}
+
+fieldset {
+  border: none;
+  margin: 0;
+  padding: 0.33rem;
+}
+
+#info {
+  padding: 0.33rem;
+  opacity: 0.33;
+}
+
+legend {
+  opacity: 0.33;
+  padding: 0.5rem 0 0 0;
+  margin: 0 0 0.5rem 0;
+}
+
+/* Container styling for preview area */
+.previweContainer {
+  border: 1px solid var(--textColor);
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#tutorialDialog {
+  border: none;
+  padding: 2em;
+  box-sizing: border-box;
+  padding-top: 48px;
+}
+
+#tutorialDialog #closeTutorialButton {
+  position: absolute;
+  top: 1em;
+  right: 1em;
+  margin: 0;
+  background: transparent;
+  border: 1px solid var(--textColor);
+  color: var(--textColor);
+  cursor: pointer;
+  padding: 0.5rem 0.75rem;
+  font-size: 1rem;
+  z-index: 2;
+}
+
+#tutorialDialog > div {
+  position: relative;
+  margin-top: 48px;
+  height: calc(100% - 48px);
+}

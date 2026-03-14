@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Visual Cipher Pro - Layer Master</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root { --panel-bg: #121212; --accent: #00ffcc; }
+        body { background: #1e1e1e; color: #fff; font-family: 'Inter', sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        
+        .sidebar { width: 340px; background: var(--panel-bg); padding: 20px; display: flex; flex-direction: column; gap: 10px; border-right: 1px solid #333; z-index: 10; overflow-y: auto; }
+        .section-title { font-size: 10px; color: #666; text-transform: uppercase; letter-spacing: 1px; margin-top: 5px; }
+        
+        .shape-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        .shape-btn { background: #252525; border: 1px solid #333; color: #eee; padding: 8px; cursor: pointer; border-radius: 6px; font-size: 11px; }
+        .shape-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+        .canvas-area { flex: 1; display: flex; align-items: center; justify-content: center; background: #222; position: relative; }
+        #art-board {
+            width: 700px; height: 500px; position: relative;
+            background-image: linear-gradient(45deg, #2a2a2a 25%, transparent 25%), linear-gradient(-45deg, #2a2a2a 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #2a2a2a 75%), linear-gradient(-45deg, transparent 75%, #2a2a2a 75%);
+            background-size: 20px 20px;
+        }
+
+        .shape-instance { position: absolute; cursor: move; display: flex; align-items: center; justify-content: center; }
+        .shape-instance.selected::after { content: ''; position: absolute; inset: -5px; border: 2px solid var(--accent); pointer-events: none; border-radius: 4px; }
+
+        .shape-svg { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; }
+        .glyph-container { position: relative; z-index: 2; display: flex; flex-wrap: wrap; justify-content: center; align-content: center; width: 60%; height: 60%; pointer-events: none; }
+        .glyph { filter: brightness(0) invert(1); }
+        
+        .controls-panel { background: #1a1a1a; padding: 14px; border-radius: 8px; border: 1px solid #333; }
+        label { display: flex; justify-content: space-between; font-size: 10px; color: #888; margin: 8px 0 4px 0; }
+        
+        .color-row { display: flex; gap: 8px; align-items: center; }
+        input[type="range"] { width: 100%; cursor: pointer; accent-color: var(--accent); }
+        textarea { width: 100%; height: 50px; background: #000; color: var(--accent); border: 1px solid #333; padding: 8px; border-radius: 6px; outline: none; resize: none; }
+        
+        .btn-group { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+        .btn-small { flex: 1; min-width: 80px; padding: 8px; font-size: 10px; cursor: pointer; border-radius: 4px; border: 1px solid #444; background: #222; color: #fff; }
+        .btn-small:hover { border-color: var(--accent); }
+        .btn-main { width: 100%; padding: 14px; background: var(--accent); border: none; font-weight: bold; cursor: pointer; border-radius: 6px; margin-top: 10px; color: #000; }
+        
+        #counter-reset { font-size: 8px; color: #444; background: none; border: none; cursor: pointer; margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <h2 style="color: var(--accent); margin: 0; font-style: italic;">CIPHER GEN</h2>
+        
+        <div class="section-title">1. Text Input</div>
+        <textarea id="textInput">LAYERS</textarea>
+
+        <div class="section-title">2. Choose Shape</div>
+        <div class="shape-grid">
+            <button class="shape-btn" onclick="addShape('circle')">Circle</button>
+            <button class="shape-btn" onclick="addShape('square')">Square</button>
+            <button class="shape-btn" onclick="addShape('rhombus')">Rhombus</button>
+            <button class="shape-btn" onclick="addShape('triangle')">Triangle</button>
+            <button class="shape-btn" onclick="addShape('arrow')">Arrow</button>
+        </div>
+
+        <div class="controls-panel" id="adjustPanel" style="opacity: 0.3; pointer-events: none;">
+            <div class="section-title" style="margin:0 0 10px 0;">3. Layer & Transformation</div>
+            <div class="btn-group">
+                <button class="btn-small" onclick="changeLayer(1)">⬆️ Forward</button>
+                <button class="btn-small" onclick="changeLayer(-1)">⬇️ Backward</button>
+            </div>
+            <label>Colors</label>
+            <div class="color-row">
+                <input type="color" id="colorA" value="#00ffcc" oninput="updateSelected()">
+                <input type="color" id="colorB" value="#121212" oninput="updateSelected()">
+                <button class="btn-small" style="min-width: 40px" onclick="randomColors()">🎲</button>
+            </div>
+            <label>Rotation <span id="valRot">0°</span></label>
+            <input type="range" id="regRot" min="0" max="360" value="0" oninput="updateSelected()">
+            <label>Shape Size <span id="valSize">250</span></label>
+            <input type="range" id="regSize" min="100" max="600" value="250" oninput="updateSelected()">
+            <label>Pattern <span id="valPattern">10</span></label>
+            <input type="range" id="regPattern" min="2" max="30" value="10" oninput="updateSelected()">
+            <label>Glyph Size <span id="valGlyph">25</span></label>
+            <input type="range" id="regGlyph" min="10" max="100" value="25" oninput="updateSelected()">
+            <div class="btn-group">
+                <button class="btn-small" style="color:#ff4444;" onclick="removeSelected()">Delete</button>
+                <button class="btn-small" onclick="undo()">Undo</button>
+            </div>
+        </div>
+
+        <button class="btn-main" onclick="exportCanvas()">Export & Name</button>
+        <button id="counter-reset" onclick="resetCounter()">Reset count to 1</button>
+    </div>
+
+    <div class="canvas-area">
+        <div id="art-board"></div>
+    </div>
+
+    <script>
+        let selectedElement = null;
+        let history = [];
+        let maxZ = 10;
+        const artBoard = document.getElementById('art-board');
+        const textInput = document.getElementById('textInput');
+
+        // 初始化编号，从 1 开始
+        if (!localStorage.getItem('cipher_count')) {
+            localStorage.setItem('cipher_count', '1');
+        }
+
+        const paths = {
+            circle: '<circle cx="50" cy="50" r="50" />',
+            square: '<rect width="100" height="100" />',
+            rhombus: '<path d="M50 2 L98 50 L50 98 L2 50 Z" />',
+            triangle: '<path d="M50 5 L95 95 L5 95 Z" />',
+            arrow: '<path d="M50 2 L98 40 H75 V98 H25 V40 H2 Z" />'
+        };
+
+        function resetCounter() {
+            localStorage.setItem('cipher_count', '1');
+            alert("Counter reset to 1");
+        }
+
+        function saveState() {
+            if (history.length > 20) history.shift();
+            history.push(artBoard.innerHTML);
+        }
+
+        function undo() {
+            if (history.length > 0) {
+                artBoard.innerHTML = history.pop();
+                rebindAll();
+                selectedElement = null;
+                document.getElementById('adjustPanel').style.opacity = '0.3';
+            }
+        }
+
+        function randomColors() {
+            const rc = () => '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
+            document.getElementById('colorA').value = rc();
+            document.getElementById('colorB').value = rc();
+            updateSelected();
+        }
+
+        function addShape(type) {
+            saveState();
+            maxZ++;
+            const id = 'p_' + Date.now();
+            const el = document.createElement('div');
+            el.className = 'shape-instance';
+            el.dataset.type = type;
+            el.dataset.rot = 0;
+            el.dataset.glyphSize = 25;
+            el.style.width = '250px'; el.style.height = '250px';
+            el.style.left = '225px'; el.style.top = '125px';
+            el.style.zIndex = maxZ;
+            
+            el.innerHTML = `
+                <svg class="shape-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+                    <defs>
+                        <pattern id="${id}" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+                            <rect width="20" height="20" fill="#121212" class="bg-rect"/>
+                            <rect width="10" height="20" fill="#00ffcc" class="stripe-rect"/>
+                        </pattern>
+                    </defs>
+                    <g fill="url(#${id})">${paths[type]}</g>
+                </svg>
+                <div class="glyph-container"></div>
+            `;
+            
+            el.addEventListener('mousedown', (e) => selectShape(e, el));
+            artBoard.appendChild(el);
+            renderInside(el);
+            selectShape(null, el);
+        }
+
+        function changeLayer(dir) {
+            if (!selectedElement) return;
+            saveState();
+            let currentZ = parseInt(selectedElement.style.zIndex) || 1;
+            selectedElement.style.zIndex = currentZ + dir;
+        }
+
+        function renderInside(el) {
+            const container = el.querySelector('.glyph-container');
+            const gSize = el.dataset.glyphSize || 25;
+            container.innerHTML = '';
+            const text = textInput.value.toLowerCase();
+            for (let char of text) {
+                if (/^[a-z]$/.test(char)) {
+                    const img = document.createElement('img');
+                    img.src = `style2/${char}.png`;
+                    img.className = 'glyph';
+                    img.style.height = gSize + 'px';
+                    container.appendChild(img);
+                }
+            }
+        }
+
+        function selectShape(e, el) {
+            if (selectedElement) selectedElement.classList.remove('selected');
+            selectedElement = el;
+            selectedElement.classList.add('selected');
+            document.getElementById('adjustPanel').style.opacity = '1';
+            document.getElementById('adjustPanel').style.pointerEvents = 'auto';
+
+            const pattern = el.querySelector('pattern');
+            document.getElementById('colorA').value = pattern.querySelector('.stripe-rect').getAttribute('fill');
+            document.getElementById('colorB').value = pattern.querySelector('.bg-rect').getAttribute('fill');
+            document.getElementById('regSize').value = parseInt(el.style.width);
+            document.getElementById('regGlyph').value = el.dataset.glyphSize || 25;
+            document.getElementById('regRot').value = el.dataset.rot || 0;
+            document.getElementById('regPattern').value = pattern.getAttribute('width') / 2;
+            
+            updateLabels();
+
+            if (e) {
+                saveState();
+                let startX = e.clientX - el.offsetLeft;
+                let startY = e.clientY - el.offsetTop;
+                document.onmousemove = (ev) => {
+                    el.style.left = (ev.clientX - startX) + 'px';
+                    el.style.top = (ev.clientY - startY) + 'px';
+                };
+                document.onmouseup = () => document.onmousemove = null;
+            }
+        }
+
+        function updateLabels() {
+            document.getElementById('valPattern').innerText = document.getElementById('regPattern').value;
+            document.getElementById('valRot').innerText = document.getElementById('regRot').value + '°';
+            document.getElementById('valSize').innerText = document.getElementById('regSize').value;
+            document.getElementById('valGlyph').innerText = document.getElementById('regGlyph').value;
+        }
+
+        function updateSelected() {
+            if (!selectedElement) return;
+            updateLabels();
+            const cA = document.getElementById('colorA').value;
+            const cB = document.getElementById('colorB').value;
+            const dens = document.getElementById('regPattern').value;
+            const size = document.getElementById('regSize').value;
+            const gSize = document.getElementById('regGlyph').value;
+            const rot = document.getElementById('regRot').value;
+
+            const pattern = selectedElement.querySelector('pattern');
+            pattern.setAttribute('width', dens * 2);
+            pattern.setAttribute('height', dens * 2);
+            pattern.querySelector('.bg-rect').setAttribute('fill', cB);
+            pattern.querySelector('.bg-rect').setAttribute('width', dens * 2);
+            pattern.querySelector('.bg-rect').setAttribute('height', dens * 2);
+            pattern.querySelector('.stripe-rect').setAttribute('fill', cA);
+            pattern.querySelector('.stripe-rect').setAttribute('width', dens);
+            pattern.querySelector('.stripe-rect').setAttribute('height', dens * 2);
+
+            selectedElement.style.width = size + 'px';
+            selectedElement.style.height = size + 'px';
+            selectedElement.style.transform = `rotate(${rot}deg)`;
+            selectedElement.dataset.rot = rot;
+            selectedElement.dataset.glyphSize = gSize;
+            renderInside(selectedElement);
+        }
+
+        function removeSelected() {
+            if (selectedElement) { saveState(); selectedElement.remove(); selectedElement = null; document.getElementById('adjustPanel').style.opacity = '0.3'; }
+        }
+
+        function rebindAll() {
+            document.querySelectorAll('.shape-instance').forEach(el => el.addEventListener('mousedown', (e) => selectShape(e, el)));
+        }
+
+        textInput.addEventListener('input', () => document.querySelectorAll('.shape-instance').forEach(el => renderInside(el)));
+
+        async function exportCanvas() {
+            if (selectedElement) selectedElement.classList.remove('selected');
+            const originalBG = artBoard.style.backgroundImage;
+            artBoard.style.backgroundImage = 'none';
+
+            // 1. 生成图片
+            const canvas = await html2canvas(artBoard, { backgroundColor: null, useCORS: true, scale: 2 });
+            
+            // 2. 询问文件名
+            let currentNum = parseInt(localStorage.getItem('cipher_count'));
+            let defaultName = `back${currentNum}`;
+            let userFileName = prompt("Rename your file (saved to /card/ folder):", defaultName);
+
+            if (userFileName !== null) { // 用户没有点取消
+                const link = document.createElement('a');
+                link.download = userFileName + '.png';
+                link.href = canvas.toDataURL();
+                link.click();
+
+                // 只有在用户使用默认编号且确认的情况下才增加计数
+                if (userFileName === defaultName) {
+                    localStorage.setItem('cipher_count', (currentNum + 1).toString());
+                }
+            }
+            
+            artBoard.style.backgroundImage = originalBG;
+        }
+    </script>
+</body>
+</html>
