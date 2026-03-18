@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Michelle - Studio 2: Dual-Color Luminous Space</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #000000; color: white; font-family: 'Courier New', Courier, monospace; }
+        canvas { display: block; }
+        #ui {
+            position: absolute;
+            top: 20px; left: 20px;
+            pointer-events: none; z-index: 10;
+        }
+        h1 { font-size: 22px; font-weight: normal; margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 3px; color: #00ffff; text-shadow: 0 0 10px #00ffff; }
+        .description { font-size: 12px; opacity: 0.8; max-width: 400px; line-height: 1.6; letter-spacing: 1px; }
+    </style>
+</head>
+<body>
+
+    <div id="ui">
+        <h1>Catalog of Parts: The Scattered Void</h1>
+        <div class="description">
+           square
+        </div>
+    </div>
+
+    <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.156.1/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.156.1/examples/jsm/"
+        }
+    }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        let scene, camera, renderer, controls, group;
+        let cubeSize = 100; // 巨大空间尺寸
+
+        init();
+        animate();
+
+        function init() {
+            scene = new THREE.Scene();
+            // 雾气浓度
+            scene.fog = new THREE.FogExp2(0x000000, 0.005);
+
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 2000);
+            camera.position.set(80, 60, 120);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            document.body.appendChild(renderer.domElement);
+
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.autoRotate = true; // 开启自动旋转
+            controls.autoRotateSpeed = 0.5;
+
+            // --- 灯光系统 ---
+            const ambient = new THREE.AmbientLight(0xffffff, 1.2); 
+            scene.add(ambient);
+
+            // 多个点光源
+            const lightPositions = [
+                [50, 50, 50], [-50, 50, -50], [50, -50, -50], [-50, -50, 50]
+            ];
+            lightPositions.forEach(pos => {
+                const pLight = new THREE.PointLight(0x00ffff, 100, 300);
+                pLight.position.set(...pos);
+                scene.add(pLight);
+            });
+
+            // --- 1. 创建巨大的透明四方体 ---
+            createContainer();
+
+            // --- 2. 创建散落的几何体与箭头 ---
+            group = new THREE.Group();
+            createScatteredParts(group, 70); // 增加数量
+            scene.add(group);
+
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        // --- 核心：创建箭头几何体 ---
+        function createArrowGeometry(size) {
+            // 定义箭头的 2D 形状 (Shape)
+            const arrowShape = new THREE.Shape();
+            const w = size; // 尾部宽度
+            const l = size * 2; // 总长度
+            const h = size * 1.5; // 箭头头部宽度
+
+            arrowShape.moveTo(0, w / 2); // 尾部左上
+            arrowShape.lineTo(l / 2, w / 2); // 颈部左侧
+            arrowShape.lineTo(l / 2, h / 2); // 头部左侧顶点
+            arrowShape.lineTo(l, 0); // 箭头顶端
+            arrowShape.lineTo(l / 2, -h / 2); // 头部右侧顶点
+            arrowShape.lineTo(l / 2, -w / 2); // 颈部右侧
+            arrowShape.lineTo(0, -w / 2); // 尾部右下
+            arrowShape.closePath(); // 闭合
+
+            // 将 2D 形状拉伸为 3D (Extrude)
+            const extrudeSettings = { depth: size * 0.3, bevelEnabled: true, bevelThickness: 0.1, bevelSize: 0.1 };
+            const geometry = new THREE.ExtrudeGeometry(arrowShape, extrudeSettings);
+            
+            // 将箭头的几何中心平移到顶端，方便旋转和流动动画
+            geometry.center();
+            return geometry;
+        }
+
+        function createContainer() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 1024; canvas.height = 1024;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = 'black'; ctx.fillRect(0,0,1024,1024);
+            
+            // 绘制加密字体
+            ctx.strokeStyle = '#00ffff'; ctx.lineWidth = 2;
+            for(let i=0; i<120; i++) {
+                let x = Math.random()*1024, y = Math.random()*1024, s = 40;
+                ctx.beginPath(); ctx.moveTo(x, y-s); ctx.lineTo(x, y+s); ctx.stroke();
+                if(Math.random() > 0.5) ctx.strokeRect(x-10, y-10, 20, 20);
+                else { ctx.beginPath(); ctx.arc(x, y, 8, 0, Math.PI*2); ctx.stroke(); }
+            }
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+            texture.repeat.set(3, 3);
+
+            const wallMat = new THREE.MeshPhongMaterial({
+                map: texture,
+                color: 0x222222,
+                emissive: 0x00ffff,
+                emissiveIntensity: 0.4, // 墙面自发光
+                side: THREE.BackSide,
+                transparent: true,
+                opacity: 0.35, // 提高可见度
+                shininess: 100
+            });
+
+            const boxGeom = new THREE.BoxGeometry(cubeSize, cubeSize, cubeSize);
+            const container = new THREE.Mesh(boxGeom, wallMat);
+            scene.add(container);
+
+            // 强化边框线
+            const edges = new THREE.EdgesGeometry(boxGeom);
+            const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x00ffff, opacity: 0.6, transparent: true }));
+            scene.add(line);
+        }
+
+        function createScatteredParts(parentGroup, count) {
+            // 定义基础颜色
+            const cyanGroup = new THREE.Color(0x00ffff); // 青色 (A 组)
+            const magentaGroup = new THREE.Color(0xff00ff); // 洋红色 (B 组)
+
+            for (let i = 0; i < count; i++) {
+                let geometry;
+                const baseSize = 1.0 + Math.random() * 4.0; // 尺寸上限
+                const isArrow = Math.random() > 0.65; // 35% 的概率生成箭头
+
+                // 随机选择形状或箭头
+                if(isArrow) {
+                    geometry = createArrowGeometry(baseSize);
+                } else {
+                    const type = Math.floor(Math.random() * 4); // 其他四种形状
+                    const s = baseSize;
+                    if (type === 0) geometry = new THREE.TorusGeometry(s, s*0.3, 16, 100);
+                    else if (type === 1) geometry = new THREE.BoxGeometry(s*1.8, s*1.8, s*1.8);
+                    else if (type === 2) geometry = new THREE.IcosahedronGeometry(s*1.5, 1);
+                    else geometry = new THREE.OctahedronGeometry(s*1.5, 0); 
+                }
+
+                // 随机分配到 A (青色) 或 B (洋红色) 组
+                const isMagenta = Math.random() > 0.5;
+                const color偏向 = isMagenta ? magentaGroup.clone() : cyanGroup.clone();
+                // 在组颜色的基础上加轻微的随机色偏
+                const color = color偏向.lerp(new THREE.Color(Math.random(), Math.random(), Math.random()), 0.1);
+
+                const mat = new THREE.MeshPhongMaterial({
+                    color: color,
+                    wireframe: !isArrow && Math.random() > 0.4, // 箭头不使用线框，增强实体感
+                    transparent: true,
+                    opacity: 0.85,
+                    emissive: color,
+                    emissiveIntensity: 0.5, // 让物体本身发光
+                    shininess: 100,
+                    side: THREE.DoubleSide
+                });
+
+                const mesh = new THREE.Mesh(geometry, mat);
+
+                // 在 100x100x100 的空间内散落
+                const range = cubeSize / 2 - 10;
+                mesh.position.set(
+                    (Math.random() - 0.5) * range * 2,
+                    (Math.random() - 0.5) * range * 2,
+                    (Math.random() - 0.5) * range * 2
+                );
+
+                // 如果是箭头，给一个初始的随机指向
+                if(isArrow) {
+                    mesh.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, 0);
+                }
+
+                mesh.userData = {
+                    originalPos: mesh.position.clone(),
+                    phase: Math.random() * Math.PI * 2,
+                    speed: 0.3 + Math.random() * 1.2,
+                    isArrow: isArrow
+                };
+
+                parentGroup.add(mesh);
+            }
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            const time = performance.now() * 0.001;
+
+            group.children.forEach((mesh) => {
+                const p = mesh.userData;
+                const phase = p.phase;
+
+                // --- 共有动画：呼吸 (Scaling) ---
+                const s = 1 + Math.sin(time * p.speed + phase) * 0.25;
+                mesh.scale.set(s, s, s);
+
+                // --- 差移动画 ---
+                if(p.isArrow) {
+                    // 1. 箭头：向前流动 (Moving Forward based on rotation)
+                    // 获取箭头的世界方向向量 (假设箭头朝向顶端，即 X 轴或 Z 轴)
+                    const direction = new THREE.Vector3(0, 0, 1).applyQuaternion(mesh.quaternion);
+                    const flowSpeed = 0.5 + p.speed * 0.5;
+                    mesh.position.addScaledVector(direction, flowSpeed * Math.sin(time + phase)); // 周期性向前流动
+
+                    // 2. 箭头：闪烁 (Blinking)
+                    mesh.material.emissiveIntensity = 0.3 + Math.sin(time * 3 + phase) * 0.3;
+                } else {
+                    // 1. 其他形状：上下漂浮
+                    mesh.position.y = p.originalPos.y + Math.sin(time * 0.4 + phase) * 4.0;
+                    // mesh.position.x = p.originalPos.x + Math.cos(time * 0.2 + phase) * 2.0;
+
+                    // 2. 其他形状：持续自转
+                    mesh.rotation.x += 0.008;
+                    mesh.rotation.z += 0.004;
+                }
+            });
+
+            renderer.render(scene, camera);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+    </script>
+</body>
+</html>
