@@ -1,7 +1,9 @@
 {
   "dependencies": {
+    "firebase": "^12.10.0",
     "fs": "^0.0.1-security",
     "path": "^0.12.7",
-    "puppeteer": "^24.39.0"
+    "puppeteer": "^24.39.0",
+    "react-firebase-hooks": "^5.1.1"
   }
 }

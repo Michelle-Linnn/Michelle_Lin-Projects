@@ -3,59 +3,36 @@ const fs = require('fs');
 const path = require('path');
 
 (async () => {
-    console.log('🚀 正在启动浏览器...');
-    const browser = await puppeteer.launch({ 
-        headless: "new",
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
+    // 启动浏览器
+    const browser = await puppeteer.launch();
     const page = await browser.newPage();
 
-    // 创建保存目录
-    const distDir = path.join(__dirname, 'dist');
-    if (!fs.existsSync(distDir)) fs.mkdirSync(distDir);
-
-    // 监听响应
+    // 监听所有网络请求，抓取 JS 和 CSS 文件
     page.on('response', async (response) => {
-        try {
-            const url = response.url();
-            const status = response.status();
+        const url = response.url();
+        const filePath = path.resolve(__dirname, 'dist', new URL(url).pathname.slice(1) || 'index.html');
+        
+        // 只抓取该域名下的资源
+        if (url.includes('ap.cx')) {
+            const buffer = await response.buffer();
+            const dir = path.dirname(filePath);
+            if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
             
-            if (url.includes('ap.cx') && status === 200) {
-                const buffer = await response.buffer();
-                let urlPath = new URL(url).pathname;
-                if (urlPath === '/' || urlPath === '') urlPath = '/index.html';
-                
-                const filePath = path.join(distDir, urlPath);
-                const dir = path.dirname(filePath);
-                
-                if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-                fs.writeFileSync(filePath, buffer);
-                console.log('✅ 已保存:', url);
-            }
-        } catch (e) {
-            // 忽略某些无法获取 buffer 的请求
+            // 如果是 HTML 根路径，保存为 index.html
+            const finalPath = filePath.endsWith('/') ? path.join(filePath, 'index.html') : filePath;
+            fs.writeFileSync(finalPath, buffer);
+            console.log(`已下载: ${url}`);
         }
     });
 
-    try {
-        console.log('🌐 正在访问目标网页...');
-        await page.goto('https://spiral.ap.cx/?numPoints=2649', { 
-            waitUntil: 'networkidle2', 
-            timeout: 60000 
-        });
+    // 访问目标地址，并带上参数
+    const targetUrl = 'https://spiral.ap.cx/?numPoints=2649';
+    await page.goto(targetUrl, { waitUntil: 'networkidle0' });
 
-        // 额外等待 5 秒，确保动态脚本运行完毕
-        console.log('⏳ 等待资源加载...');
-        await new Promise(r => setTimeout(r, 5000));
+    // 获取最终生成的完整 HTML 结构（包括动态生成的 DOM）
+    const content = await page.content();
+    fs.writeFileSync(path.join(__dirname, 'dist', 'index.html'), content);
 
-        const content = await page.content();
-        fs.writeFileSync(path.join(distDir, 'index.html'), content);
-        console.log('✨ 网页结构(HTML)已保存完毕');
-
-    } catch (err) {
-        console.error('❌ 运行出错:', err.message);
-    } finally {
-        await browser.close();
-        console.log('🏁 任务结束。请检查 dist 文件夹。');
-    }
+    console.log('--- 克隆完成！资源已保存在 /dist 文件夹中 ---');
+    await browser.close();
 })();

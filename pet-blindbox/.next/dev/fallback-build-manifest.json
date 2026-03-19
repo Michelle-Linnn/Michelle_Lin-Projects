@@ -1,0 +1,36 @@
+{
+  "pages": {
+    "/_app": [
+      "static/chunks/10bk_next_dist_compiled_0fl0805._.js",
+      "static/chunks/10bk_next_dist_shared_lib_0svfm_.._.js",
+      "static/chunks/10bk_next_dist_client_0fjirsd._.js",
+      "static/chunks/10bk_next_dist_06.guic._.js",
+      "static/chunks/10bk_react-dom_12.aizg._.js",
+      "static/chunks/10bk_0omlgjs._.js",
+      "static/chunks/[root-of-the-server]__0wgtlkn._.js",
+      "static/chunks/pet-blindbox_styles_globals_0pngzt~.css",
+      "static/chunks/pet-blindbox_pages__app_07xvfw~._.js",
+      "static/chunks/turbopack-pet-blindbox_pages__app_0vl3.li._.js"
+    ],
+    "/_error": [
+      "static/chunks/10bk_next_dist_compiled_0fl0805._.js",
+      "static/chunks/10bk_next_dist_shared_lib_0fvkl.g._.js",
+      "static/chunks/10bk_next_dist_client_0fjirsd._.js",
+      "static/chunks/10bk_next_dist_0ozdxsg._.js",
+      "static/chunks/[next]_entry_page-loader_ts_0hjhv7d._.js",
+      "static/chunks/10bk_react-dom_12.aizg._.js",
+      "static/chunks/10bk_0zw.vir._.js",
+      "static/chunks/[root-of-the-server]__0z80huo._.js",
+      "static/chunks/pet-blindbox_pages__error_07xvfw~._.js",
+      "static/chunks/turbopack-pet-blindbox_pages__error_0w~~c.~._.js"
+    ]
+  },
+  "devFiles": [],
+  "polyfillFiles": [],
+  "lowPriorityFiles": [
+    "static/development/_buildManifest.js",
+    "static/development/_ssgManifest.js",
+    "static/development/_clientMiddlewareManifest.js"
+  ],
+  "rootMainFiles": []
+}

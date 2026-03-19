@@ -1,0 +1,14 @@
+{"timestamp":"00:00:00.675","source":"Server","level":"LOG","message":""}
+{"timestamp":"00:00:01.215","source":"Server","level":"ERROR","message":"⨯ Error: The default export is not a React Component in page: \"/\""}
+{"timestamp":"00:00:01.251","source":"Server","level":"ERROR","message":"⨯ Error: The default export is not a React Component in page: \"/\""}
+{"timestamp":"00:00:01.516","source":"Browser","level":"ERROR","message":"uncaughtError: Error: The default export is not a React Component in page: \"/\""}
+{"timestamp":"00:00:01.571","source":"Server","level":"ERROR","message":"[browser] \"\\u001b[31mUncaught Error: The default export is not a React Component in page: \\\"/\\\"\\u001b[39m\""}
+{"timestamp":"00:00:01.571","source":"Browser","level":"ERROR","message":"\u001b[31mUncaught Error: The default export is not a React Component in page: \"/\"\u001b[39m"}
+{"timestamp":"00:03:25.955","source":"Server","level":"ERROR","message":"⨯ Error: The default export is not a React Component in page: \"/\""}
+{"timestamp":"00:03:25.986","source":"Server","level":"ERROR","message":"⨯ Error: The default export is not a React Component in page: \"/\""}
+{"timestamp":"00:03:26.124","source":"Browser","level":"ERROR","message":"uncaughtError: Error: The default export is not a React Component in page: \"/\""}
+{"timestamp":"00:03:26.125","source":"Server","level":"ERROR","message":"[browser] \"\\u001b[31mUncaught Error: The default export is not a React Component in page: \\\"/\\\"\\u001b[39m\""}
+{"timestamp":"00:03:26.125","source":"Browser","level":"ERROR","message":"\u001b[31mUncaught Error: The default export is not a React Component in page: \"/\"\u001b[39m"}
+{"timestamp":"00:04:58.490","source":"Server","level":"WARN","message":"⚠ Fast Refresh had to perform a full reload due to a runtime error."}
+{"timestamp":"00:04:58.526","source":"Server","level":"WARN","message":"⚠ Fast Refresh had to perform a full reload due to a runtime error."}
+{"timestamp":"00:04:58.555","source":"Server","level":"WARN","message":"⚠ Fast Refresh had to perform a full reload due to a runtime error."}

@@ -1,0 +1,12 @@
+__turbopack_load_page_chunks__("/", [
+  "static/chunks/10bk_next_dist_compiled_0fl0805._.js",
+  "static/chunks/10bk_next_dist_shared_lib_0bcdigw._.js",
+  "static/chunks/10bk_next_dist_client_0tubqj-._.js",
+  "static/chunks/10bk_next_dist_06.guic._.js",
+  "static/chunks/10bk_next_link_0k-zqtp.js",
+  "static/chunks/10bk_react-dom_12.aizg._.js",
+  "static/chunks/10bk_0omlgjs._.js",
+  "static/chunks/[root-of-the-server]__13k3m3q._.js",
+  "static/chunks/pet-blindbox_pages_index_07xvfw~._.js",
+  "static/chunks/turbopack-pet-blindbox_pages_index_0gqte6j._.js"
+])
