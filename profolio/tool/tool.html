@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Creative Tools | Michelle X Artwork</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;900&display=swap');
+        
+        body { margin: 0; padding: 0; background-color: #000; color: #fff; overflow-x: hidden; font-family: 'Inter', sans-serif; }
+        canvas { position: fixed; top: 0; left: 0; z-index: -1; }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* 鼠标悬停时的“感动”交互效果：发光和缩放 */
+        .tool-card:hover {
+            border: 1px solid rgba(30, 144, 255, 0.5);
+            box-shadow: 0 0 30px rgba(30, 144, 255, 0.15);
+            transform: scale(1.02);
+        }
+
+        /* 视频静音播放时的微妙渐入 */
+        video {
+            filter: grayscale(0.2) brightness(0.8);
+            transition: all 0.8s ease;
+        }
+        .tool-card:hover video {
+            filter: grayscale(0) brightness(1);
+        }
+
+        .glow-text { text-shadow: 0 0 10px rgba(255, 255, 255, 0.3); }
+        ::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body>
+
+    <nav class="flex justify-between items-center p-8 fixed top-0 w-full z-10">
+        <a href="/profolio/main.html" class="text-[10px] font-black tracking-[0.4em] uppercase hover:text-blue-400 transition-all duration-500">
+            ← Back to Gallery
+        </a>
+        <div class="text-xs font-light opacity-40 tracking-[0.2em] uppercase">Digital Toolbox / 2026</div>
+    </nav>
+
+    <main class="pt-32 pb-20 px-6 max-w-7xl mx-auto">
+        <header class="mb-20 text-center">
+            <h1 class="text-5xl font-black mb-4 tracking-tighter glow-text uppercase italic">The Sandbox</h1>
+            <p class="text-gray-400 text-[10px] tracking-[0.5em] uppercase">Experiments in Code & Motion</p>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            
+            <div class="tool-card glass-card rounded-3xl overflow-hidden group">
+                <div class="aspect-video relative overflow-hidden bg-white/5">
+                    <video class="w-full h-full object-cover" autoplay loop muted playsinline>
+                        <source src="video1.mp4" type="video/mp4">
+                    </video>
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                </div>
+                <div class="p-6">
+                    <div class="text-[10px] text-blue-400 font-bold tracking-widest mb-2 uppercase">Tool 01</div>
+                    <h2 class="text-lg font-bold mb-3 italic">Geometric Solver</h2>
+                    <p class="text-gray-400 text-[11px] leading-relaxed font-light">
+                        A custom tool for generating complex geometric patterns based on user input. 
+                        Exploring the boundaries between rigid math and fluid art.
+                    </p>
+                </div>
+            </div>
+
+            <div class="tool-card glass-card rounded-3xl overflow-hidden group">
+                <div class="aspect-video relative overflow-hidden bg-white/5">
+                    <video class="w-full h-full object-cover" autoplay loop muted playsinline>
+                        <source src="video2.mp4" type="video/mp4">
+                    </video>
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                </div>
+                <div class="p-6">
+                    <div class="text-[10px] text-blue-400 font-bold tracking-widest mb-2 uppercase">Tool 02</div>
+                    <h2 class="text-lg font-bold mb-3 italic">Aura Visualizer</h2>
+                    <p class="text-gray-400 text-[11px] leading-relaxed font-light">
+                        Real-time emotion tracking converted into abstract color palettes. 
+                        Designed for interactive installations.
+                    </p>
+                </div>
+            </div>
+
+            </div>
+    </main>
+
+    <script>
+        let particles = [];
+        function setup() { 
+            let cnv = createCanvas(windowWidth, windowHeight); 
+            cnv.style('display', 'block'); 
+            for (let i = 0; i < 80; i++) { particles.push(new AuraParticle()); } 
+        }
+        function draw() { 
+            background(0, 0, 0, 50); 
+            particles.forEach(p => { p.update(); p.display(); }); 
+        }
+        class AuraParticle {
+            constructor() { 
+                this.pos = createVector(random(width), random(height)); 
+                this.vel = createVector(random(-0.3, 0.3), random(-0.3, 0.3)); 
+            }
+            update() { 
+                this.pos.add(this.vel); 
+                if (this.pos.x < 0 || this.pos.x > width) this.vel.x *= -1; 
+                if (this.pos.y < 0 || this.pos.y > height) this.vel.y *= -1; 
+            }
+            display() { 
+                noStroke(); 
+                fill(255, 255, 255, 30); 
+                ellipse(this.pos.x, this.pos.y, 1); 
+            }
+        }
+        function windowResized() { resizeCanvas(windowWidth, windowHeight); }
+    </script>
+
+</body>
+</html>
