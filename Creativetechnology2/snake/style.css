@@ -1,0 +1,21 @@
+body { 
+    margin: 0; 
+    overflow: hidden; 
+    background-color: #000; 
+    cursor: crosshair; 
+}
+
+#ui {
+    position: absolute;
+    top: 30px;
+    left: 30px;
+    color: #fff;
+    font-family: 'Orbitron', sans-serif; /* 建议在HTML引入该字体 */
+    font-size: 28px;
+    text-transform: uppercase;
+    letter-spacing: 4px;
+    border-left: 5px solid #00f2ff;
+    padding-left: 15px;
+    text-shadow: 0 0 20px #00f2ff;
+    pointer-events: none;
+}

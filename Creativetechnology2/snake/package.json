@@ -1,0 +1,12 @@
+{
+  "name": "3d-2048-snake-pro",
+  "private": true,
+  "version": "1.1.0",
+  "type": "module",
+  "scripts": { "dev": "vite", "build": "vite build" },
+  "dependencies": {
+    "three": "^0.160.0",
+    "gsap": "^3.12.5"
+  },
+  "devDependencies": { "vite": "^5.0.0" }
+}
