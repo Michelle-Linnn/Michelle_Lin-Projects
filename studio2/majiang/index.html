@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mahjong HUD - Story Mode</title>
+    <style>
+        body, html {
+            margin: 0; padding: 0;
+            width: 100%; height: 100%;
+            overflow: hidden;
+            background-color: #000;
+            font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+        }
+
+        .scene {
+            position: relative;
+            width: 100vw; height: 100vh;
+            background-image: url('bg.png'); 
+            background-size: cover;
+            background-position: center;
+            perspective: 1500px; /* 增加一点深度感 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .glass-display {
+            position: absolute;
+            /* 保持你之前调整好的位置 */
+            top: 42%; 
+            left: 25%;
+            width: 480px; /* 稍微加宽以容纳长句 */
+            height: 220px; /* 增加高度以容纳多行 */
+
+            /* 保持你之前的透视参数 */
+            transform: rotateX(35deg) rotateY(58deg) rotateZ(-18deg) skewX(-8deg);
+            
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+            overflow: hidden; /* 防止文字溢出板子 */
+        }
+
+        .hud-text {
+            color: #00ffcc;
+            /* 针对大段文字缩小字号，并增加行高 */
+            font-size: 18px; 
+            line-height: 1.4;
+            font-weight: 600;
+            text-align: left; /* 大段文字左对齐更易读 */
+            letter-spacing: 1px;
+            
+            text-shadow: 0 0 8px rgba(0, 255, 204, 0.6);
+            
+            /* 核心修改：允许换行并保留换行符 */
+            white-space: pre-wrap; 
+            word-wrap: break-word;
+            
+            opacity: 0;
+            transform: translateY(15px);
+            transition: all 0.8s ease-out;
+            padding: 20px;
+        }
+
+        .hud-text.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* 增强的扫描线效果 */
+        .glass-display::after {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(rgba(0, 255, 204, 0.03) 50%, transparent 50%);
+            background-size: 100% 4px;
+            pointer-events: none;
+        }
+
+        .hint {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(0, 255, 204, 0.4);
+            font-size: 12px;
+            letter-spacing: 3px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="scene" onclick="changeText()">
+        <div class="glass-display">
+            <div id="display-text" class="hud-text">INITIALIZING...</div>
+        </div>
+        <div class="hint">CLICK TO READ NEXT CHAPTER</div>
+    </div>
+
+    <script>
+        const content = [
+            `Chapter 1: The Opening\n\nThe Deal: Each player begins with 13 tiles. The objective is to organize these fragments into a cohesive structure of four sets and one pair. Order is the only path to victory.`,
+            `The Weight: I stare at the 13 voids in my hand. 13 chances to fail. I arrange them, but my fingers remember the coldness of every loss. Order is a fragile mask for the chaos in my chest. `,
+
+            `Chapter 2: The Conflict\n\nThe Draw and Discard: On each turn, a player must draw one tile from the wall and subsequently discard one. This cycle continues until the wall is exhausted or a hand is completed.`,
+            `The Sacrifice: Every tile I throw away is a secret I’ve exposed. I watch the discarded pile grow like a cemetery of missed opportunities. My palm is sweating against the foil—am I discarding the tile, or am I discarding my luck?`,
+
+            `Chapter 3: The Interruption\n\nThe Pung: A player may claim a discarded tile from any opponent to complete a triplet. This action interrupts the natural flow of the turn. `,
+            `The Theft: Pung is the sound of a heartbeat skipped. I stole your tile; I stole your rhythm. I am an intruder in your logic. Every triplet is a cage I built to keep my anxiety from screaming.`,
+
+            `Chapter 4: The Win (Hu): The moment of completion. A perfect symmetry achieved. The game terminates immediately upon the declaration of a valid hand. `,
+            `The Void: Silence falls, but the noise in my head continues. I won the game, but I lost the peace. The foil is crinkled beyond repair now. When the tiles are packed away, I am still left with the same shaking hands. `,
+        ];
+
+        let index = 0;
+        const textEl = document.getElementById('display-text');
+
+        function changeText() {
+            textEl.classList.remove('active');
+
+            setTimeout(() => {
+                // 使用 textContent 以确保换行符生效
+                textEl.textContent = content[index];
+                textEl.classList.add('active');
+                index = (index + 1) % content.length;
+            }, 400);
+        }
+
+        window.onload = changeText;
+    </script>
+</body>
+</html>
