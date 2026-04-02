@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Arctic Pulse | Installation Core</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body { 
+            background-image: url('https://hakkanews.tw/wp-content/uploads/2023/01/jokulsarlon-glacier-ice-lagoon-iceland-2022-01-19-00-13-08-utc.jpg');
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-position: center bottom;
+            background-attachment: fixed; 
+            background-color: #010203; 
+            margin: 0; 
+            overflow: hidden; 
+            font-family: 'Inter', -apple-system, sans-serif; 
+        }
+
+        body::after {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 5, 15, 0.5); 
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        #installation-ui { 
+            position: absolute; 
+            top: 40px; 
+            left: 40px; 
+            z-index: 100; 
+            pointer-events: none;
+            border-left: 2px solid rgba(0, 210, 255, 0.9); 
+            padding-left: 25px;
+        }
+
+        .melt-title { 
+            font-weight: 100; 
+            letter-spacing: 12px; 
+            font-size: 36px; 
+            margin: 0; 
+            background: linear-gradient(to bottom, #ffffff, #00d2ff); 
+            -webkit-background-clip: text; 
+            background-clip: text; 
+            -webkit-text-fill-color: transparent; 
+            text-transform: uppercase;
+            text-shadow: 0 0 15px rgba(0,0,0,0.8);
+        }
+
+        .installation-meta { 
+            color: rgba(255, 255, 255, 0.9); 
+            font-family: monospace; 
+            font-size: 13px; 
+            margin-top: 10px; 
+            letter-spacing: 1px;
+            text-shadow: 0 1px 3px rgba(0,0,0,1);
+        }
+
+        .conclusion-box {
+            margin-top: 25px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 14px;
+            line-height: 1.6;
+            letter-spacing: 0.5px;
+            max-width: 450px;
+            font-weight: 200;
+            text-shadow: 0 1px 3px rgba(0,0,0,1);
+        }
+
+        #main-canvas { 
+            width: 100vw; 
+            height: 100vh; 
+            position: absolute;
+            top: 0; left: 0;
+            z-index: 2; 
+        }
+    </style>
+</head>
+<body>
+
+    <div id="installation-ui">
+        <h1 class="melt-title">Pulse of Decay</h1>
+        <div class="installation-meta">MULTIMEDIA INSTALLATION // DIGITAL CORE // MICHELLE LIN</div>
+        
+        <div class="conclusion-box">
+            <b>DATA SPEAKS:</b> Every falling particle represents an actual monthly loss in Greenland's ice mass, now collapsing at <span style="color:#ff4e50;font-weight:bold;">-265.80 Gt/yr</span>. This screen isn't just data; it is the fading pulse of our planet's primary regulator. As you view this through my installation of reclaimed materials, consider how our legacy can be one of restoration, not disintegration.
+        </div>
+    </div>
+
+    <div id="main-canvas"></div>
+
+    <script>
+        const chartDom = document.getElementById('main-canvas');
+        const myChart = echarts.init(chartDom);
+
+        d3.csv("cleaned_greenland_data.csv").then(data => {
+            const points = data.map((d, i) => ({
+                name: d.Date,
+                value: [i, parseFloat(d.Mass_Gt)],
+                uncertainty: d.Uncertainty_Gt, // 注意：这里的逗号曾导致报错
+                symbolRotate: Math.random() * 360
+            }));
+
+            myChart.setOption({
+                backgroundColor: 'transparent',
+                tooltip: {
+                    show: true,
+                    trigger: 'item',
+                    backgroundColor: 'rgba(0,0,0,0.9)',
+                    borderColor: '#00d2ff',
+                    textStyle: { color: '#fff' },
+                    formatter: (p) => `${p.name}<br/><span style="color:#ff4e50">${p.value[1]} Gt Lost</span>`
+                },
+                grid: { top: '55%', bottom: '10%', left: '10%', right: '10%' },
+                xAxis: { type: 'value', show: false, min: -20, max: data.length + 20 },
+                yAxis: { 
+                    type: 'value', 
+                    show: true, 
+                    splitLine: { show: false }, 
+                    axisLabel: { color: 'rgba(255,255,255,0.2)', fontSize: 10 },
+                    axisLine: { show: false }
+                },
+                series: [{
+                    type: 'scatter',
+                    symbol: 'diamond', 
+                    data: points,
+                    symbolSize: (val) => Math.max(7, 26 - (Math.abs(val[1]) / 320)),
+                    itemStyle: {
+                        color: new echarts.graphic.RadialGradient(0.4, 0.3, 1, [
+                            { offset: 0, color: '#fff' },   
+                            { offset: 0.5, color: '#00d2ff' }, 
+                            { offset: 1, color: 'rgba(0, 50, 150, 0)' }    
+                        ]),
+                        shadowBlur: 25,
+                        shadowColor: 'rgba(0, 210, 255, 0.9)',
+                        opacity: 0.9 
+                    },
+                    animationDelay: (idx) => idx * 10,
+                    animationDuration: 2500,
+                    animationEasing: 'elasticOut',
+                    emphasis: { scale: 3 }
+                }]
+            });
+        }).catch(err => {
+            console.error("CSV Loading Failed!", err);
+        });
+
+        window.addEventListener('resize', () => myChart.resize());
+    </script>
+</body>
+</html>

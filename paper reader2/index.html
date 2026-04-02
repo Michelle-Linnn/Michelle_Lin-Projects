@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>Personal Finance Topology - Personal System</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <script src="https://unpkg.com/tesseract.js@v2.1.0/dist/tesseract.min.js"></script>
+    <style>
+        body { margin: 0; padding: 0; background: #0f0f19; color: white; font-family: sans-serif; overflow: hidden; }
+        #ui-layer { position: absolute; top: 20; left: 20; z-index: 10; background: rgba(0,0,0,0.7); padding: 15px; border-radius: 8px; border: 1px solid #333; }
+        button { cursor: pointer; background: #3498db; color: white; border: none; padding: 8px 12px; border-radius: 4px; margin: 5px 0; width: 100%; }
+        button:hover { background: #2980b9; }
+        .log { font-size: 12px; color: #aaa; margin-top: 10px; max-height: 100px; overflow-y: auto; }
+        input[type="file"] { display: none; }
+    </style>
+</head>
+<body>
+
+<div id="ui-layer">
+    <h3>Finance Topology</h3>
+    <div id="status">System Ready</div>
+    <hr>
+    <button onclick="document.getElementById('file-input').click()">📸 Scan Receipt (Expense)</button>
+    <input type="file" id="file-input" accept="image/*" onchange="handleOCR(this.files[0])">
+    
+    <button onclick="makeTransfer()">💸 Internal Transfer</button>
+    
+    <div class="log" id="console-log">Logs: Waiting for input...</div>
+</div>
+
+<script>
+let accounts = [];
+let flows = []; // 记录转账线条
+
+function setup() {
+    createCanvas(windowWidth, windowHeight);
+    // 初始化账户: Name, X, Y, Balance, Color
+    accounts.push(new Account("Bank Account", 300, 400, 5000, "#3498db"));
+    accounts.push(new Account("Credit Card", 500, 250, -1200, "#e74c3c"));
+    accounts.push(new Account("Digital Wallet", 700, 450, 800, "#2ecc71"));
+}
+
+function draw() {
+    background(15, 15, 25);
+    
+    // 绘制流动连线
+    drawFlowLines();
+
+    for (let acc of accounts) {
+        acc.update();
+        acc.display();
+    }
+    
+    // 显示总资产
+    displayTotal();
+}
+
+class Account {
+    constructor(name, x, y, bal, col) {
+        this.name = name;
+        this.pos = createVector(x, y);
+        this.balance = bal;
+        this.color = col;
+        this.radius = 60;
+        this.isDragging = false;
+    }
+
+    update() {
+        if (this.isDragging) {
+            this.pos.x = mouseX;
+            this.pos.y = mouseY;
+        }
+        // 余额影响球体大小
+        let targetR = map(abs(this.balance), 0, 10000, 40, 180);
+        this.radius = lerp(this.radius, targetR, 0.1);
+    }
+
+    display() {
+        noStroke();
+        fill(this.color);
+        // 增加发光效果
+        drawingContext.shadowBlur = 15;
+        drawingContext.shadowColor = this.color;
+        ellipse(this.pos.x, this.pos.y, this.radius);
+        drawingContext.shadowBlur = 0;
+
+        fill(255);
+        textAlign(CENTER);
+        textSize(14);
+        text(this.name, this.pos.x, this.pos.y - 5);
+        textSize(12);
+        text("$" + this.balance.toFixed(2), this.pos.x, this.pos.y + 15);
+    }
+}
+
+// 处理 OCR 小票识别
+async function handleOCR(file) {
+    if (!file) return;
+    const status = document.getElementById('status');
+    const log = document.getElementById('console-log');
+    
+    status.innerText = "Scanning... 🔍";
+    log.innerText = "Processing image with Tesseract.js...";
+
+    try {
+        const result = await Tesseract.recognize(file, 'eng');
+        const text = result.data.text;
+        const amounts = text.match(/\d+\.\d{2}/g); // 匹配金额格式
+
+        if (amounts) {
+            let val = parseFloat(amounts[0]);
+            // 默认从第一个账户扣除
+            accounts[0].balance -= val;
+            status.innerText = "Success! -$ " + val;
+            log.innerText = "Found amount: $" + val + "\nDeducted from " + accounts[0].name;
+        } else {
+            status.innerText = "Amount not found";
+            log.innerText = "Full Text: " + text.substring(0, 50) + "...";
+        }
+    } catch (e) {
+        status.innerText = "Error scanning";
+    }
+}
+
+// 模拟内部转账
+function makeTransfer() {
+    let amt = parseFloat(prompt("Enter transfer amount:"));
+    if (amt > 0) {
+        // 从银行账户转到钱包
+        accounts[0].balance -= amt;
+        accounts[2].balance += amt;
+        flows.push({from: 0, to: 2, time: 60}); // 动画持续60帧
+        document.getElementById('status').innerText = "Transfer Complete";
+    }
+}
+
+function drawFlowLines() {
+    stroke(255, 150);
+    strokeWeight(1);
+    for (let i = flows.length - 1; i >= 0; i--) {
+        let f = flows[i];
+        line(accounts[f.from].pos.x, accounts[f.from].pos.y, accounts[f.to].pos.x, accounts[f.to].pos.y);
+        f.time--;
+        if (f.time <= 0) flows.splice(i, 1);
+    }
+}
+
+function displayTotal() {
+    let total = accounts.reduce((s, a) => s + a.balance, 0);
+    fill(255);
+    textSize(18);
+    textAlign(LEFT);
+    text("Total Net Worth: $" + total.toFixed(2), 20, height - 30);
+}
+
+function mousePressed() {
+    for (let acc of accounts) {
+        if (dist(mouseX, mouseY, acc.pos.x, acc.pos.y) < acc.radius / 2) {
+            acc.isDragging = true;
+        }
+    }
+}
+
+function mouseReleased() {
+    for (let acc of accounts) acc.isDragging = false;
+}
+
+function windowResized() { resizeCanvas(windowWidth, windowHeight); }
+</script>
+
+</body>
+</html>
