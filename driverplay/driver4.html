@@ -3,65 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Driver's Daily Log v2</title>
+    <title>Driver's Archive v3</title>
     <style>
         :root { --paper-color: #e8e8e8; --ink-color: #111; }
         body {
             background-color: #1a1a1a; color: var(--paper-color);
-            font-family: 'Courier New', Courier, monospace;
+            font-family: 'Courier New', Courier, 'PingFang SC', monospace;
             display: flex; flex-direction: column; align-items: center;
             min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box;
         }
 
-        /* 导航栏 / Nav */
-        .nav { margin-bottom: 20px; display: flex; gap: 8px; width: 100%; max-width: 320px; justify-content: center; }
+        /* Nav */
+        .nav { margin-bottom: 20px; display: flex; gap: 8px; width: 100%; max-width: 320px; }
         .nav-btn {
             background: none; border: 1px solid var(--paper-color);
-            color: var(--paper-color); padding: 8px 12px; border-radius: 4px;
-            cursor: pointer; font-family: inherit; font-size: 0.75rem; flex: 1;
-            transition: 0.2s;
+            color: var(--paper-color); padding: 10px 5px; border-radius: 4px;
+            cursor: pointer; font-family: inherit; font-size: 0.7rem; flex: 1;
+            transition: 0.2s; -webkit-tap-highlight-color: transparent;
         }
         .nav-btn.active { background: var(--paper-color); color: #000; font-weight: bold; }
 
-        /* 收据纸张 / Receipt */
+        /* Receipt */
         .receipt {
             background-color: var(--paper-color); color: var(--ink-color);
             width: 100%; max-width: 320px; padding: 30px 20px; box-sizing: border-box;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
             display: none; position: relative;
             clip-path: polygon(0% 0%, 100% 0%, 100% 98%, 95% 100%, 90% 98%, 85% 100%, 80% 98%, 75% 100%, 70% 98%, 65% 100%, 60% 98%, 55% 100%, 50% 98%, 45% 100%, 40% 98%, 35% 100%, 30% 98%, 25% 100%, 20% 98%, 15% 100%, 10% 98%, 5% 100%, 0% 98%);
         }
         .receipt.active { display: block; animation: printOut 0.4s ease-out; }
-        @keyframes printOut { from { transform: translateY(-15px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes printOut { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
-        .dash { border-bottom: 1px dashed #444; margin: 15px 0; }
+        .dash { border-bottom: 1px dashed #666; margin: 15px 0; }
         .center { text-align: center; }
         
-        /* 输入框 / Input */
+        /* Diary Area */
         textarea {
-            width: 100%; height: 120px; background: #f0f0f0; border: 1px solid #ccc;
-            font-family: inherit; padding: 10px; box-sizing: border-box;
-            resize: none; margin: 15px 0; outline: none; border-radius: 0;
-            color: #000; font-size: 0.9rem;
+            width: 100%; height: 140px; background: #ddd; border: 1px solid #bbb;
+            font-family: inherit; padding: 12px; box-sizing: border-box;
+            resize: none; margin: 15px 0; outline: none;
+            color: #000; font-size: 1rem; line-height: 1.4;
         }
 
-        /* 黑色块大按钮 / Big Black Button */
-        .save-btn {
+        .btn-black {
             background: #000; color: #fff; width: 100%;
-            padding: 15px; border: none; font-family: inherit;
+            padding: 18px; border: none; font-family: inherit;
             font-weight: bold; cursor: pointer; letter-spacing: 2px;
-            -webkit-tap-highlight-color: transparent;
+            text-transform: uppercase;
         }
-        .save-btn:active { background: #333; transform: scale(0.98); }
+        .btn-black:active { background: #444; }
 
-        /* 历史列表 / History List */
-        #history-list { max-height: 350px; overflow-y: auto; text-align: left; }
-        .history-item { border-bottom: 1px solid #bbb; padding: 15px 0; }
-        .history-date { font-size: 0.7rem; color: #666; margin-bottom: 5px; text-decoration: underline; }
-        .history-content { font-size: 0.85rem; line-height: 1.5; color: #000; word-break: break-all; }
+        /* History List */
+        #history-list { max-height: 400px; overflow-y: auto; padding-right: 5px; }
+        .history-item { border-bottom: 1px solid #ccc; padding: 15px 0; text-align: left; }
+        .history-meta { font-size: 0.65rem; color: #777; margin-bottom: 6px; display: flex; justify-content: space-between; }
+        .history-content { font-size: 0.9rem; color: #111; white-space: pre-wrap; word-break: break-all; }
 
         .barcode {
-            height: 35px; margin-top: 20px;
+            height: 30px; margin: 20px 0;
             background: repeating-linear-gradient(90deg, #000, #000 2px, transparent 2px, transparent 5px);
         }
     </style>
@@ -69,115 +68,125 @@
 <body>
 
     <div class="nav">
-        <button id="btn-lunch" class="nav-btn active" onclick="showTab('lunch')">能量补给</button>
-        <button id="btn-diary" class="nav-btn" onclick="showTab('diary')">行车日记</button>
-        <button id="btn-history" class="nav-btn" onclick="showTab('history')">往日档案</button>
+        <button id="btn-lunch" class="nav-btn active" onclick="switchTab('lunch')">能量补给</button>
+        <button id="btn-diary" class="nav-btn" onclick="switchTab('diary')">记一笔</button>
+        <button id="btn-history" class="nav-btn" onclick="switchTab('history')">往日档案</button>
     </div>
 
     <div id="lunch" class="receipt active">
-        <div class="center" style="font-weight:bold;">ENERGY RECEIPT</div>
+        <div class="center" style="font-size: 0.7rem; letter-spacing: 2px;">DAILY ENERGY GPS</div>
         <div class="dash"></div>
-        <div id="lunch-result" class="center" style="font-size:1.3rem; font-weight:bold; margin:25px 0;">READY TO ORDER?</div>
-        <div id="encouragement" class="center" style="font-size:0.8rem; min-height: 40px; line-height: 1.4;"></div>
+        <div id="lunch-result" class="center" style="font-size:1.3rem; font-weight:bold; margin:25px 0;">吃饱了才有力气</div>
+        <div id="quote" class="center" style="font-size:0.8rem; min-height: 40px; color: #444;"></div>
         <div class="barcode"></div>
-        <button class="save-btn" onclick="generateLunch()">生成随机建议</button>
+        <button class="btn-black" onclick="getLunch()">派发午餐指令</button>
     </div>
 
     <div id="diary" class="receipt">
-        <div class="center" style="font-weight:bold;">DAILY LOG ENTRY</div>
+        <div class="center" style="font-size: 0.7rem; letter-spacing: 2px;">DRIVER'S LOG ENTRY</div>
         <div class="dash"></div>
-        <div style="font-size:0.8rem;">[ 输入今日见闻或心情 ]</div>
-        <textarea id="diary-input" placeholder="写下刚才发生的趣事..."></textarea>
-        <button class="save-btn" onclick="saveDiary()">存入档案 (SAVE)</button>
-        <div class="barcode"></div>
+        <textarea id="diary-text" placeholder="写下刚才发生的趣事、吐槽或者心情..."></textarea>
+        <button class="btn-black" onclick="saveToArchive()">存入档案库</button>
+        <div class="center" style="font-size: 0.6rem; margin-top: 10px; opacity: 0.5;">数据仅保存在手机本地</div>
     </div>
 
     <div id="history" class="receipt">
-        <div class="center" style="font-weight:bold;">HISTORY ARCHIVE</div>
+        <div class="center" style="font-size: 0.7rem; letter-spacing: 2px;">ARCHIVE HISTORY</div>
         <div class="dash"></div>
-        <div id="history-list">
-            </div>
+        <div id="history-list"></div>
         <div class="dash"></div>
-        <button class="save-btn" onclick="clearData()" style="background:#888; font-size:0.7rem; padding:8px;">清空所有档案</button>
+        <div class="center" style="font-size: 0.6rem; color: #888; cursor: pointer;" onclick="clearAll()">[ 清空所有档案 ]</div>
     </div>
 
     <script>
-        // 核心跳转逻辑 / Navigation
-        function showTab(tabId) {
-            // 隐藏所有页面
-            document.querySelectorAll('.receipt').forEach(r => r.classList.remove('active'));
-            // 取消所有按钮高亮
-            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        // 1. 初始化切换逻辑 (Initialization)
+        function switchTab(id) {
+            document.querySelectorAll('.receipt').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
             
-            // 激活当前页面和按钮
-            document.getElementById(tabId).classList.add('active');
-            const activeBtn = document.getElementById('btn-' + tabId);
-            if (activeBtn) activeBtn.classList.add('active');
+            document.getElementById(id).classList.add('active');
+            document.getElementById('btn-' + id).classList.add('active');
 
-            if(tabId === 'history') loadHistory();
+            if(id === 'history') renderHistory();
         }
 
-        // 午餐逻辑 / Lunch
-        const foods = ["【加满油/电 猪脚饭】", "【全绿灯 兰州拉面】", "【顺路单 麦当劳】", "【准时送达 黄焖鸡】", "【犒劳自己 烧烤】", "【暖胃 沙县小吃】"];
-        const tips = ["马路再堵，胃不能空。", "平安出车，平安回家，吃饱最重要。", "辛苦了！吃顿好的犒劳下双腿。", "每一单努力都值得一个大鸡腿。"];
-        
-        function generateLunch() {
+        // 2. 午餐逻辑 (Lunch)
+        const foods = ["【加满油/电 猪脚饭】", "【全绿灯 兰州拉面】", "【顺路单 麦当劳】", "【犒劳自己 烧烤】", "【温暖 沙县小吃】", "【避开拥堵 黄焖鸡】"];
+        const texts = ["辛苦了，师傅！吃完再跑下一单。", "马路再忙，胃不能荒。", "平安是福，吃饱是禄。", "刚才那一单辛苦了，给自己加个蛋！"];
+
+        function getLunch() {
             document.getElementById('lunch-result').innerText = foods[Math.floor(Math.random()*foods.length)];
-            document.getElementById('encouragement').innerText = tips[Math.floor(Math.random()*tips.length)];
-            if (navigator.vibrate) navigator.vibrate(40);
+            document.getElementById('quote').innerText = texts[Math.floor(Math.random()*texts.length)];
+            if(navigator.vibrate) navigator.vibrate(30);
         }
 
-        // 日记逻辑 / Diary
-        function saveDiary() {
-            const input = document.getElementById('diary-input');
-            const text = input.value.trim();
-            
-            if(!text) {
-                alert("老板，日记本还是空的呢！");
+        // 3. 核心存档逻辑 (The Core Storage Logic)
+        function saveToArchive() {
+            const textArea = document.getElementById('diary-text');
+            const content = textArea.value.trim();
+
+            if (!content) {
+                alert("请输入内容后再存档哦！");
                 return;
             }
-            
+
+            // 获取当前时间
             const now = new Date();
-            const dateStr = `${now.getMonth()+1}月${now.getDate()}日 ${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}`;
-            
-            const entry = { date: dateStr, content: text };
-            
-            // 获取并存入本地存储
-            let logs = JSON.parse(localStorage.getItem('driverLogs') || "[]");
-            logs.unshift(entry); 
-            localStorage.setItem('driverLogs', JSON.stringify(logs));
-            
-            // 清空输入并跳转
-            input.value = "";
-            if (navigator.vibrate) navigator.vibrate([50, 30, 50]);
-            
-            alert("档案已存入！正在查看往日记录...");
-            showTab('history');
+            const timeStr = `${now.getMonth()+1}/${now.getDate()} ${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}`;
+
+            // 构造新条目
+            const newEntry = { time: timeStr, text: content, id: Date.now() };
+
+            // 核心修复点：确保读取到的是数组
+            let existingData = [];
+            try {
+                const rawData = localStorage.getItem('driver_logs_v3');
+                existingData = rawData ? JSON.parse(rawData) : [];
+                if (!Array.isArray(existingData)) existingData = []; // 强制纠错
+            } catch (e) {
+                existingData = [];
+            }
+
+            // 压入新数据并保存
+            existingData.unshift(newEntry);
+            localStorage.setItem('driver_logs_v3', JSON.stringify(existingData));
+
+            // 反馈与跳转
+            textArea.value = "";
+            if(navigator.vibrate) navigator.vibrate([50, 30, 50]);
+            alert("档案已成功存入！");
+            switchTab('history');
         }
 
-        // 加载历史 / History
-        function loadHistory() {
+        // 4. 渲染历史记录 (Render History)
+        function renderHistory() {
             const list = document.getElementById('history-list');
-            const logs = JSON.parse(localStorage.getItem('driverLogs') || "[]");
-            
-            if(logs.length === 0) {
-                list.innerHTML = "<div class='center' style='padding:20px; color:#888;'>尚无档案记录<br>快去写第一篇日记吧！</div>";
+            let data = [];
+            try {
+                data = JSON.parse(localStorage.getItem('driver_logs_v3') || "[]");
+            } catch(e) { data = []; }
+
+            if (data.length === 0) {
+                list.innerHTML = "<div class='center' style='padding:40px; color:#999; font-size:0.8rem;'>档案柜空空如也...</div>";
                 return;
             }
 
-            list.innerHTML = logs.map(log => `
+            list.innerHTML = data.map(item => `
                 <div class="history-item">
-                    <div class="history-date">${log.date}</div>
-                    <div class="history-content">${log.content}</div>
+                    <div class="history-meta">
+                        <span>DATE: ${item.time}</span>
+                        <span>ID: ${item.id.toString().slice(-4)}</span>
+                    </div>
+                    <div class="history-content">${item.text}</div>
                 </div>
             `).join('');
         }
 
-        // 清空数据（谨慎使用）
-        function clearData() {
-            if(confirm("确定要删除所有行车日记吗？此操作不可撤销。")) {
-                localStorage.removeItem('driverLogs');
-                loadHistory();
+        // 5. 清空逻辑
+        function clearAll() {
+            if(confirm("确定要永久销毁所有行车档案吗？")) {
+                localStorage.removeItem('driver_logs_v3');
+                renderHistory();
             }
         }
     </script>
