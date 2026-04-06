@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Driver's Daily Log v2</title>
+    <style>
+        :root { --paper-color: #e8e8e8; --ink-color: #111; }
+        body {
+            background-color: #1a1a1a; color: var(--paper-color);
+            font-family: 'Courier New', Courier, monospace;
+            display: flex; flex-direction: column; align-items: center;
+            min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box;
+        }
+
+        /* 导航栏 / Nav */
+        .nav { margin-bottom: 20px; display: flex; gap: 8px; width: 100%; max-width: 320px; justify-content: center; }
+        .nav-btn {
+            background: none; border: 1px solid var(--paper-color);
+            color: var(--paper-color); padding: 8px 12px; border-radius: 4px;
+            cursor: pointer; font-family: inherit; font-size: 0.75rem; flex: 1;
+            transition: 0.2s;
+        }
+        .nav-btn.active { background: var(--paper-color); color: #000; font-weight: bold; }
+
+        /* 收据纸张 / Receipt */
+        .receipt {
+            background-color: var(--paper-color); color: var(--ink-color);
+            width: 100%; max-width: 320px; padding: 30px 20px; box-sizing: border-box;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            display: none; position: relative;
+            clip-path: polygon(0% 0%, 100% 0%, 100% 98%, 95% 100%, 90% 98%, 85% 100%, 80% 98%, 75% 100%, 70% 98%, 65% 100%, 60% 98%, 55% 100%, 50% 98%, 45% 100%, 40% 98%, 35% 100%, 30% 98%, 25% 100%, 20% 98%, 15% 100%, 10% 98%, 5% 100%, 0% 98%);
+        }
+        .receipt.active { display: block; animation: printOut 0.4s ease-out; }
+        @keyframes printOut { from { transform: translateY(-15px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        .dash { border-bottom: 1px dashed #444; margin: 15px 0; }
+        .center { text-align: center; }
+        
+        /* 输入框 / Input */
+        textarea {
+            width: 100%; height: 120px; background: #f0f0f0; border: 1px solid #ccc;
+            font-family: inherit; padding: 10px; box-sizing: border-box;
+            resize: none; margin: 15px 0; outline: none; border-radius: 0;
+            color: #000; font-size: 0.9rem;
+        }
+
+        /* 黑色块大按钮 / Big Black Button */
+        .save-btn {
+            background: #000; color: #fff; width: 100%;
+            padding: 15px; border: none; font-family: inherit;
+            font-weight: bold; cursor: pointer; letter-spacing: 2px;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .save-btn:active { background: #333; transform: scale(0.98); }
+
+        /* 历史列表 / History List */
+        #history-list { max-height: 350px; overflow-y: auto; text-align: left; }
+        .history-item { border-bottom: 1px solid #bbb; padding: 15px 0; }
+        .history-date { font-size: 0.7rem; color: #666; margin-bottom: 5px; text-decoration: underline; }
+        .history-content { font-size: 0.85rem; line-height: 1.5; color: #000; word-break: break-all; }
+
+        .barcode {
+            height: 35px; margin-top: 20px;
+            background: repeating-linear-gradient(90deg, #000, #000 2px, transparent 2px, transparent 5px);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="nav">
+        <button id="btn-lunch" class="nav-btn active" onclick="showTab('lunch')">能量补给</button>
+        <button id="btn-diary" class="nav-btn" onclick="showTab('diary')">行车日记</button>
+        <button id="btn-history" class="nav-btn" onclick="showTab('history')">往日档案</button>
+    </div>
+
+    <div id="lunch" class="receipt active">
+        <div class="center" style="font-weight:bold;">ENERGY RECEIPT</div>
+        <div class="dash"></div>
+        <div id="lunch-result" class="center" style="font-size:1.3rem; font-weight:bold; margin:25px 0;">READY TO ORDER?</div>
+        <div id="encouragement" class="center" style="font-size:0.8rem; min-height: 40px; line-height: 1.4;"></div>
+        <div class="barcode"></div>
+        <button class="save-btn" onclick="generateLunch()">生成随机建议</button>
+    </div>
+
+    <div id="diary" class="receipt">
+        <div class="center" style="font-weight:bold;">DAILY LOG ENTRY</div>
+        <div class="dash"></div>
+        <div style="font-size:0.8rem;">[ 输入今日见闻或心情 ]</div>
+        <textarea id="diary-input" placeholder="写下刚才发生的趣事..."></textarea>
+        <button class="save-btn" onclick="saveDiary()">存入档案 (SAVE)</button>
+        <div class="barcode"></div>
+    </div>
+
+    <div id="history" class="receipt">
+        <div class="center" style="font-weight:bold;">HISTORY ARCHIVE</div>
+        <div class="dash"></div>
+        <div id="history-list">
+            </div>
+        <div class="dash"></div>
+        <button class="save-btn" onclick="clearData()" style="background:#888; font-size:0.7rem; padding:8px;">清空所有档案</button>
+    </div>
+
+    <script>
+        // 核心跳转逻辑 / Navigation
+        function showTab(tabId) {
+            // 隐藏所有页面
+            document.querySelectorAll('.receipt').forEach(r => r.classList.remove('active'));
+            // 取消所有按钮高亮
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            
+            // 激活当前页面和按钮
+            document.getElementById(tabId).classList.add('active');
+            const activeBtn = document.getElementById('btn-' + tabId);
+            if (activeBtn) activeBtn.classList.add('active');
+
+            if(tabId === 'history') loadHistory();
+        }
+
+        // 午餐逻辑 / Lunch
+        const foods = ["【加满油/电 猪脚饭】", "【全绿灯 兰州拉面】", "【顺路单 麦当劳】", "【准时送达 黄焖鸡】", "【犒劳自己 烧烤】", "【暖胃 沙县小吃】"];
+        const tips = ["马路再堵，胃不能空。", "平安出车，平安回家，吃饱最重要。", "辛苦了！吃顿好的犒劳下双腿。", "每一单努力都值得一个大鸡腿。"];
+        
+        function generateLunch() {
+            document.getElementById('lunch-result').innerText = foods[Math.floor(Math.random()*foods.length)];
+            document.getElementById('encouragement').innerText = tips[Math.floor(Math.random()*tips.length)];
+            if (navigator.vibrate) navigator.vibrate(40);
+        }
+
+        // 日记逻辑 / Diary
+        function saveDiary() {
+            const input = document.getElementById('diary-input');
+            const text = input.value.trim();
+            
+            if(!text) {
+                alert("老板，日记本还是空的呢！");
+                return;
+            }
+            
+            const now = new Date();
+            const dateStr = `${now.getMonth()+1}月${now.getDate()}日 ${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}`;
+            
+            const entry = { date: dateStr, content: text };
+            
+            // 获取并存入本地存储
+            let logs = JSON.parse(localStorage.getItem('driverLogs') || "[]");
+            logs.unshift(entry); 
+            localStorage.setItem('driverLogs', JSON.stringify(logs));
+            
+            // 清空输入并跳转
+            input.value = "";
+            if (navigator.vibrate) navigator.vibrate([50, 30, 50]);
+            
+            alert("档案已存入！正在查看往日记录...");
+            showTab('history');
+        }
+
+        // 加载历史 / History
+        function loadHistory() {
+            const list = document.getElementById('history-list');
+            const logs = JSON.parse(localStorage.getItem('driverLogs') || "[]");
+            
+            if(logs.length === 0) {
+                list.innerHTML = "<div class='center' style='padding:20px; color:#888;'>尚无档案记录<br>快去写第一篇日记吧！</div>";
+                return;
+            }
+
+            list.innerHTML = logs.map(log => `
+                <div class="history-item">
+                    <div class="history-date">${log.date}</div>
+                    <div class="history-content">${log.content}</div>
+                </div>
+            `).join('');
+        }
+
+        // 清空数据（谨慎使用）
+        function clearData() {
+            if(confirm("确定要删除所有行车日记吗？此操作不可撤销。")) {
+                localStorage.removeItem('driverLogs');
+                loadHistory();
+            }
+        }
+    </script>
+</body>
+</html>
