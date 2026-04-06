@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Today's Receipt</title>
+    <style>
+        body {
+            background-color: #222;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        .receipt {
+            background-color: #f5f5f5;
+            width: 80%;
+            max-width: 320px;
+            padding: 40px 20px;
+            color: #333;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            position: relative;
+            /* 模拟收据撕裂效果 / Simulating torn paper effect */
+            clip-path: polygon(0% 0%, 100% 0%, 100% 95%, 95% 100%, 85% 95%, 75% 100%, 65% 95%, 55% 100%, 45% 95%, 35% 100%, 25% 95%, 15% 100%, 5% 95%, 0% 100%);
+        }
+
+        .header { text-align: center; border-bottom: 2px dashed #999; padding-bottom: 15px; }
+        .content { margin: 30px 0; text-align: left; }
+        .item { display: flex; justify-content: space-between; margin: 10px 0; }
+        
+        #result-food { font-weight: bold; font-size: 1.4rem; color: #000; text-align: center; display: block; margin: 20px 0; }
+        #result-msg { font-size: 0.85rem; line-height: 1.5; color: #555; border-top: 1px solid #ccc; padding-top: 15px; }
+
+        .btn-print {
+            background: #000;
+            color: #fff;
+            width: 100%;
+            padding: 15px;
+            border: none;
+            margin-top: 20px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: bold;
+            letter-spacing: 2px;
+        }
+
+        .btn-print:active { background: #444; }
+    </style>
+</head>
+<body>
+
+<div class="receipt">
+    <div class="header">
+        <div style="font-size: 1.2rem; font-weight: bold;">能量补给单</div>
+        <div style="font-size: 0.7rem;">OFFICIAL ENERGY RECEIPT</div>
+    </div>
+
+    <div class="content">
+        <div class="item"><span>单号:</span> <span>#20260405</span></div>
+        <div class="item"><span>状态:</span> <span>待派送...</span></div>
+        <div id="result-food">点击下方“打印”</div>
+        <div id="result-msg"></div>
+    </div>
+
+    <button class="btn-print" onclick="generate()">打印建议 (PRINT)</button>
+</div>
+
+<script>
+    const foods = ["【热乎乎的汤面】", "【双层吉士堡套餐】", "【排队也要吃的猪脚饭】", "【全家便利店便当】", "【路边最具烟火气的炒粉】"];
+    const tips = [
+        "温馨提示：为了这顿饭，刚才的辛苦都值了。吃的时候把手机静音5分钟吧。",
+        "温馨提示：你是城市里的摆渡人，这一单，我们要把好运摆渡给你。",
+        "温馨提示：不论刚才遇到了什么样的乘客，此刻的胃只属于美味。",
+        "温馨提示：这顿饭的卡路里，会化作你下午握紧方向盘的力量。"
+    ];
+
+    function generate() {
+        document.getElementById('result-food').innerText = foods[Math.floor(Math.random()*foods.length)];
+        document.getElementById('result-msg').innerText = tips[Math.floor(Math.random()*tips.length)];
+        
+        // 模拟打印震动反馈 / Simple vibration feedback
+        if (navigator.vibrate) navigator.vibrate(50);
+    }
+</script>
+
+</body>
+</html>

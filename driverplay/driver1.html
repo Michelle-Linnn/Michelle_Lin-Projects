@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Driver's Oasis</title>
+    <style>
+        :root {
+            --neon-green: #00ff41;
+            --soft-white: #e0e0e0;
+            --bg-dark: #080808;
+            --accent-blue: #00d4ff;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--soft-white);
+            font-family: 'Segoe UI', 'PingFang SC', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        .card {
+            width: 88%;
+            max-width: 380px;
+            background: linear-gradient(145deg, #121212, #1a1a1a);
+            border: 1px solid #333;
+            border-radius: 24px; /* 柔和的圆角矩形 */
+            padding: 30px 20px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        #lunch-display {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--neon-green);
+            margin: 20px 0;
+            min-height: 40px;
+        }
+
+        #message-display {
+            font-size: 0.95rem;
+            color: var(--accent-blue);
+            line-height: 1.6;
+            margin: 20px 0;
+            min-height: 60px;
+            font-style: italic;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        .btn {
+            background: var(--neon-green);
+            color: #000;
+            border: none;
+            width: 100%;
+            padding: 18px;
+            font-size: 1.1rem;
+            font-weight: 800;
+            border-radius: 16px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 255, 65, 0.3);
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .btn:active { transform: scale(0.98); opacity: 0.9; }
+
+        .header { font-size: 0.7rem; color: #666; letter-spacing: 3px; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <div class="header">DRIVER COMFORT SYSTEM</div>
+        <div id="lunch-display">准备好出发了吗？</div>
+        <div id="message-display">辛苦了，这一单结束后记得伸个懒腰。</div>
+        <button class="btn" id="goBtn">获取能量补给</button>
+    </div>
+
+    <script>
+        const lunches = ["黄焖鸡米饭", "热气腾腾的拉面", "便利店关东煮", "深井烧鹅饭", "麦当劳双层牛堡", "萨莉亚意面", "路边摊小炒", "温暖的麻辣烫"];
+        
+        const messages = [
+            "辛苦了，师傅！马路再堵，心也不要堵呀。✨",
+            "这一单之后，找个阴凉地儿停5分钟，喝口水休息下吧。☕",
+            "你护送了那么多人回家，也要记得好好照顾自己。🏠",
+            "别赶时间，平安才是最快的捷径。道路千万条，安全第一条。🛡️",
+            "遇到不讲理的乘客别往心里去，生活里还有很多美好在等你。🌈",
+            "虽然坐在驾驶位很累，但你专注开车的样子真的很帅气！💪",
+            "今天的服务分一定是满分，因为你一直都在努力生活。🌟",
+            "吃顿好的，把刚才的疲惫都吃掉！加油，老司机！🚀"
+        ];
+
+        const lDisplay = document.getElementById('lunch-display');
+        const mDisplay = document.getElementById('message-display');
+        const btn = document.getElementById('goBtn');
+        let spinning = false;
+
+        function run() {
+            if (spinning) return;
+            spinning = true;
+            mDisplay.style.opacity = 0;
+            btn.innerText = "正在寻找最佳能量...";
+
+            let count = 0;
+            const timer = setInterval(() => {
+                lDisplay.innerText = lunches[Math.floor(Math.random() * lunches.length)];
+                count++;
+                if (count > 12) {
+                    clearInterval(timer);
+                    spinning = false;
+                    btn.innerText = "换个口味";
+                    
+                    // 显示随机鼓励话语 / Show random encouragement
+                    mDisplay.innerText = messages[Math.floor(Math.random() * messages.length)];
+                    mDisplay.style.opacity = 1;
+                }
+            }, 80);
+        }
+
+        btn.addEventListener('click', run);
+        btn.addEventListener('touchstart', (e) => { e.preventDefault(); run(); });
+    </script>
+</body>
+</html>
