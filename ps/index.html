@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>AI Inpaint Tool - 简易去水印工具</title>
+    <style>
+        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; background: #f4f4f9; padding: 20px; }
+        .controls { margin-bottom: 20px; display: flex; gap: 10px; align-items: center; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        canvas { border: 1px solid #ccc; cursor: crosshair; background-color: #eee; max-width: 100%; height: auto; }
+        button { padding: 8px 16px; cursor: pointer; border-radius: 4px; border: none; background: #007bff; color: white; transition: 0.3s; }
+        button:hover { background: #0056b3; }
+        input[type="file"] { border: 1px solid #ddd; padding: 5px; }
+        .canvas-container { position: relative; }
+    </style>
+</head>
+<body>
+
+    <h2>图片去水印工具 / Image Remover Tool</h2>
+
+    <div class="controls">
+        <input type="file" id="upload" accept="image/*">
+        <label>粗细 (Brush Size): </label>
+        <input type="range" id="brushSize" min="5" max="50" value="20">
+        <button id="processBtn">开始处理 (Process)</button>
+        <button id="downloadBtn">导出图片 (Export)</button>
+    </div>
+
+    <div class="canvas-container">
+        <canvas id="canvas"></canvas>
+    </div>
+
+<script>
+    const upload = document.getElementById('upload');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    const brushSizeInput = document.getElementById('brushSize');
+    const processBtn = document.getElementById('processBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+
+    let img = new Image();
+    let isDrawing = false;
+    let maskCanvas = document.createElement('canvas'); // 用于记录涂抹区域
+    let maskCtx = maskCanvas.getContext('2d');
+
+    // 1. 上传图片 (Upload Image)
+    upload.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            img.onload = () => {
+                canvas.width = img.width;
+                canvas.height = img.height;
+                maskCanvas.width = img.width;
+                maskCanvas.height = img.height;
+                ctx.drawImage(img, 0, 0);
+                maskCtx.fillStyle = 'black';
+                maskCtx.fillRect(0, 0, maskCanvas.width, maskCanvas.height);
+            };
+            img.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+    });
+
+    // 2. 涂抹交互 (Drawing Interaction)
+    canvas.addEventListener('mousedown', () => isDrawing = true);
+    canvas.addEventListener('mouseup', () => isDrawing = false);
+    canvas.addEventListener('mousemove', draw);
+
+    function draw(e) {
+        if (!isDrawing) return;
+        const rect = canvas.getBoundingClientRect();
+        const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+        const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+
+        // 在主画布上显示红色涂抹痕迹
+        ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
+        ctx.beginPath();
+        ctx.arc(x, y, brushSizeInput.value, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 在遮罩画布上标记为白色 (代表需要修复的区域)
+        maskCtx.fillStyle = 'white';
+        maskCtx.beginPath();
+        maskCtx.arc(x, y, brushSizeInput.value, 0, Math.PI * 2);
+        maskCtx.fill();
+    }
+
+    // 3. 处理图片 (Inpainting Logic)
+    // 注意：这是一个基础的邻近像素填充模拟
+    processBtn.addEventListener('click', () => {
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const maskData = maskCtx.getImageData(0, 0, maskCanvas.width, maskCanvas.height);
+        const data = imageData.data;
+        const mData = maskData.data;
+
+        // 简单的快速修补算法：寻找涂抹边缘并向内填充
+        for (let i = 0; i < mData.length; i += 4) {
+            if (mData[i] === 255) { // 如果是白色区域（涂抹处）
+                // 向上寻找最近的非涂抹像素
+                let pos = i;
+                data[pos] = data[pos - 4] || data[pos + 4];     // R
+                data[pos + 1] = data[pos - 3] || data[pos + 5]; // G
+                data[pos + 2] = data[pos - 2] || data[pos + 6]; // B
+            }
+        }
+        ctx.putImageData(imageData, 0, 0);
+        alert("处理完成！(基本算法模拟)");
+    });
+
+    // 4. 下载 (Download)
+    downloadBtn.addEventListener('click', () => {
+        const link = document.createElement('a');
+        link.download = 'result.png';
+        link.href = canvas.toDataURL();
+        link.click();
+    });
+</script>
+</body>
+</html>

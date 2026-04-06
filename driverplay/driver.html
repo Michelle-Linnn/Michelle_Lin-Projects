@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>网约车王牌驾驶舱</title>
+    <style>
+        body { 
+            background: #1a1a1a; color: white; font-family: sans-serif; 
+            text-align: center; padding-top: 50px; transition: background 0.5s;
+        }
+        .card {
+            background: #333; border-radius: 15px; padding: 20px;
+            margin: 20px auto; width: 80%; max-width: 400px; box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+        }
+        button {
+            background: #ffcc00; border: none; padding: 10px 20px;
+            border-radius: 5px; font-weight: bold; cursor: pointer;
+        }
+        #pax-display { font-size: 1.2rem; color: #ffcc00; margin-top: 15px; }
+    </style>
+</head>
+<body>
+
+    <h1>🚖 城市摆渡人·专属空间</h1>
+
+    <div class="card">
+        <h3>今日战绩</h3>
+        <p style="font-size: 3rem; margin: 10px 0;" id="count">0</p>
+        <button onclick="addOrder()">接单成功！🔥</button>
+    </div>
+
+    <div class="card">
+        <h3>乘客图鉴抽奖</h3>
+        <div id="pax-display">点击下方探测乘客...</div>
+        <br>
+        <button onclick="detectPax()">扫描后座</button>
+    </div>
+
+    <script>
+        let orders = 0;
+        const paxes = ["🤫 静音模式大佬 (全程零交流)", "🗣️ 社牛话痨 (从盘古开天聊到自动驾驶)", "⌚️ 赶飞机特工 (师傅能快点吗？)", "😴 深度睡眠者 (到站可能叫不醒)", "📍 活地图 (别听导航的，走这条小路)"];
+
+        function addOrder() {
+            orders++;
+            document.getElementById('count').innerText = orders;
+            // 改变一下背景色庆祝
+            document.body.style.backgroundColor = "#2d5a27";
+            setTimeout(() => document.body.style.backgroundColor = "#1a1a1a", 500);
+        }
+
+        function detectPax() {
+            const randomPax = paxes[Math.floor(Math.random() * paxes.length)];
+            document.getElementById('pax-display').innerText = randomPax;
+        }
+    </script>
+</body>
+</html>
