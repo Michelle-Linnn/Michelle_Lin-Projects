@@ -1,57 +1,158 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>网约车王牌驾驶舱</title>
+    <title>Cyber Pickup 8-bit</title>
     <style>
-        body { 
-            background: #1a1a1a; color: white; font-family: sans-serif; 
-            text-align: center; padding-top: 50px; transition: background 0.5s;
+        :root {
+            --bg-color: #0a0a0a;
+            --grid-color: #1a1a1a;
+            --player-color: #00ff41; /* 经典黑客绿 */
+            --star-color: #ff00ff;   /* 霓虹粉 */
+            --obstacle-color: #ff3131; /* 警示红 */
         }
-        .card {
-            background: #333; border-radius: 15px; padding: 20px;
-            margin: 20px auto; width: 80%; max-width: 400px; box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+
+        body {
+            background-color: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            font-family: 'Courier New', Courier, monospace;
+            color: white;
+            overflow: hidden;
         }
-        button {
-            background: #ffcc00; border: none; padding: 10px 20px;
-            border-radius: 5px; font-weight: bold; cursor: pointer;
+
+        #game-board {
+            display: grid;
+            grid-template-columns: repeat(20, 20px);
+            grid-template-rows: repeat(20, 20px);
+            gap: 1px;
+            background-color: var(--grid-color);
+            border: 4px solid #333;
+            box-shadow: 0 0 20px rgba(0, 255, 65, 0.2);
         }
-        #pax-display { font-size: 1.2rem; color: #ffcc00; margin-top: 15px; }
+
+        .cell { width: 20px; height: 20px; }
+        .player { background-color: var(--player-color); box-shadow: 0 0 10px var(--player-color); border-radius: 2px; }
+        .star { background-color: var(--star-color); clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); }
+        .obstacle { background-color: var(--obstacle-color); }
+
+        .stats { margin-bottom: 10px; text-align: center; }
+        h1 { font-size: 1.5rem; text-shadow: 2px 2px #ff00ff; }
     </style>
 </head>
 <body>
 
-    <h1>🚖 城市摆渡人·专属空间</h1>
-
-    <div class="card">
-        <h3>今日战绩</h3>
-        <p style="font-size: 3rem; margin: 10px 0;" id="count">0</p>
-        <button onclick="addOrder()">接单成功！🔥</button>
+    <div class="stats">
+        <h1>CYBER PICKUP v1.0</h1>
+        <div>接单量 (Orders): <span id="score">0</span></div>
     </div>
-
-    <div class="card">
-        <h3>乘客图鉴抽奖</h3>
-        <div id="pax-display">点击下方探测乘客...</div>
-        <br>
-        <button onclick="detectPax()">扫描后座</button>
-    </div>
+    
+    <div id="game-board"></div>
 
     <script>
-        let orders = 0;
-        const paxes = ["🤫 静音模式大佬 (全程零交流)", "🗣️ 社牛话痨 (从盘古开天聊到自动驾驶)", "⌚️ 赶飞机特工 (师傅能快点吗？)", "😴 深度睡眠者 (到站可能叫不醒)", "📍 活地图 (别听导航的，走这条小路)"];
+        const boardSize = 20;
+        const board = document.getElementById('game-board');
+        const scoreElement = document.getElementById('score');
+        
+        let player = { x: 10, y: 10 };
+        let star = { x: 5, y: 5 };
+        let obstacles = [];
+        let direction = { x: 0, y: 0 };
+        let score = 0;
+        let gameSpeed = 150;
 
-        function addOrder() {
-            orders++;
-            document.getElementById('count').innerText = orders;
-            // 改变一下背景色庆祝
-            document.body.style.backgroundColor = "#2d5a27";
-            setTimeout(() => document.body.style.backgroundColor = "#1a1a1a", 500);
+        // 初始化棋盘 (Initialize Board)
+        function createBoard() {
+            board.innerHTML = '';
+            for (let i = 0; i < boardSize * boardSize; i++) {
+                const cell = document.createElement('div');
+                cell.classList.add('cell');
+                board.appendChild(cell);
+            }
         }
 
-        function detectPax() {
-            const randomPax = paxes[Math.floor(Math.random() * paxes.length)];
-            document.getElementById('pax-display').innerText = randomPax;
+        // 绘制更新 (Draw and Update)
+        function draw() {
+            const cells = document.querySelectorAll('.cell');
+            cells.forEach(c => c.className = 'cell');
+
+            // 绘制障碍 (Draw Obstacles)
+            obstacles.forEach(obs => {
+                cells[obs.y * boardSize + obs.x].classList.add('obstacle');
+            });
+
+            // 绘制星星 (Draw Star)
+            cells[star.y * boardSize + star.x].classList.add('star');
+
+            // 绘制玩家 (Draw Player)
+            cells[player.y * boardSize + player.x].classList.add('player');
         }
+
+        function move() {
+            const nextX = player.x + direction.x;
+            const nextY = player.y + direction.y;
+
+            // 碰撞检测 (Collision Detection)
+            if (nextX < 0 || nextX >= boardSize || nextY < 0 || nextY >= boardSize || 
+                obstacles.some(o => o.x === nextX && o.y === nextY)) {
+                alert("路况太差，接单结束！ Score: " + score);
+                resetGame();
+                return;
+            }
+
+            player.x = nextX;
+            player.y = nextY;
+
+            // 吃到好评 (Score Point)
+            if (player.x === star.x && player.y === star.y) {
+                score++;
+                scoreElement.innerText = score;
+                placeStar();
+                addObstacle();
+            }
+        }
+
+        function placeStar() {
+            star = { 
+                x: Math.floor(Math.random() * boardSize), 
+                y: Math.floor(Math.random() * boardSize) 
+            };
+        }
+
+        function addObstacle() {
+            obstacles.push({
+                x: Math.floor(Math.random() * boardSize),
+                y: Math.floor(Math.random() * boardSize)
+            });
+        }
+
+        function resetGame() {
+            player = { x: 10, y: 10 };
+            direction = { x: 0, y: 0 };
+            score = 0;
+            obstacles = [];
+            scoreElement.innerText = score;
+            placeStar();
+        }
+
+        window.addEventListener('keydown', e => {
+            switch(e.key) {
+                case 'ArrowUp': if(direction.y === 0) direction = { x: 0, y: -1 }; break;
+                case 'ArrowDown': if(direction.y === 0) direction = { x: 0, y: 1 }; break;
+                case 'ArrowLeft': if(direction.x === 0) direction = { x: -1, y: 0 }; break;
+                case 'ArrowRight': if(direction.x === 0) direction = { x: 1, y: 0 }; break;
+            }
+        });
+
+        createBoard();
+        setInterval(() => {
+            if (direction.x !== 0 || direction.y !== 0) move();
+            draw();
+        }, gameSpeed);
     </script>
 </body>
 </html>
