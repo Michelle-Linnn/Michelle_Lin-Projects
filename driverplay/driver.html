@@ -2,120 +2,129 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lunch Driver Picker</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Driver's Oasis</title>
     <style>
         :root {
             --neon-green: #00ff41;
-            --bg-dark: #050505;
-            --accent-pink: #ff00ff;
+            --soft-white: #e0e0e0;
+            --bg-dark: #080808;
+            --accent-blue: #00d4ff;
         }
 
         body {
             background-color: var(--bg-dark);
-            color: white;
-            font-family: 'Courier New', monospace;
+            color: var(--soft-white);
+            font-family: 'Segoe UI', 'PingFang SC', sans-serif;
             display: flex;
-            flex-direction: column;
-            align-items: center;
             justify-content: center;
+            align-items: center;
             height: 100vh;
             margin: 0;
-            text-transform: uppercase;
+            overflow: hidden;
         }
 
-        .container {
+        .card {
+            width: 88%;
+            max-width: 380px;
+            background: linear-gradient(145deg, #121212, #1a1a1a);
+            border: 1px solid #333;
+            border-radius: 24px; /* 柔和的圆角矩形 */
+            padding: 30px 20px;
             text-align: center;
-            border: 3px solid var(--neon-green);
-            padding: 40px;
-            /* 延续你喜欢的圆角风格 / Your preferred rounded style */
-            border-radius: 25px;
-            box-shadow: 0 0 15px var(--neon-green);
-            background: rgba(0, 255, 65, 0.05);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
-        #display {
-            font-size: 2.5rem;
-            margin: 30px 0;
-            height: 60px;
-            color: var(--accent-pink);
-            text-shadow: 0 0 10px var(--accent-pink);
-        }
-
-        button {
-            background: var(--neon-green);
-            color: black;
-            border: none;
-            padding: 15px 30px;
-            font-size: 1.2rem;
+        #lunch-display {
+            font-size: 2rem;
             font-weight: bold;
-            font-family: inherit;
+            color: var(--neon-green);
+            margin: 20px 0;
+            min-height: 40px;
+        }
+
+        #message-display {
+            font-size: 0.95rem;
+            color: var(--accent-blue);
+            line-height: 1.6;
+            margin: 20px 0;
+            min-height: 60px;
+            font-style: italic;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        .btn {
+            background: var(--neon-green);
+            color: #000;
+            border: none;
+            width: 100%;
+            padding: 18px;
+            font-size: 1.1rem;
+            font-weight: 800;
+            border-radius: 16px;
             cursor: pointer;
-            border-radius: 12px;
-            transition: all 0.2s;
-            box-shadow: 0 4px 0 #008f24;
+            box-shadow: 0 4px 15px rgba(0, 255, 65, 0.3);
+            -webkit-tap-highlight-color: transparent;
         }
 
-        button:active {
-            transform: translateY(4px);
-            box-shadow: 0 0 0 #008f24;
-        }
+        .btn:active { transform: scale(0.98); opacity: 0.9; }
 
-        .hint {
-            margin-top: 20px;
-            font-size: 0.8rem;
-            color: #666;
-        }
+        .header { font-size: 0.7rem; color: #666; letter-spacing: 3px; margin-bottom: 10px; }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <div style="font-size: 1rem; letter-spacing: 2px;">LUNCH SELECTOR v2.0</div>
-        <div id="display">READY?</div>
-        <button onclick="pickLunch()">开始派单 (START)</button>
-        <div class="hint">按 Enter 或 点击按钮随机抽取</div>
+    <div class="card">
+        <div class="header">DRIVER COMFORT SYSTEM</div>
+        <div id="lunch-display">准备好出发了吗？</div>
+        <div id="message-display">辛苦了，这一单结束后记得伸个懒腰。</div>
+        <button class="btn" id="goBtn">获取能量补给</button>
     </div>
 
     <script>
-        const menu = [
-            "黄焖鸡米饭 (HP +50)",
-            "兰州拉面 (速度 +10)",
-            "路边摊炒粉 (顺路首选)",
-            "便利店饭团 (赶单神器)",
-            "猪脚饭 (能量补满)",
-            "萨莉亚 (性价比之王)",
-            "麦当劳 (全城有店)",
-            "回家吃 (亲情 Buff)"
+        const lunches = ["黄焖鸡米饭", "热气腾腾的拉面", "便利店关东煮", "深井烧鹅饭", "麦当劳双层牛堡", "萨莉亚意面", "路边摊小炒", "温暖的麻辣烫"];
+        
+        const messages = [
+            "辛苦了，师傅！马路再堵，心也不要堵呀。✨",
+            "这一单之后，找个阴凉地儿停5分钟，喝口水休息下吧。☕",
+            "你护送了那么多人回家，也要记得好好照顾自己。🏠",
+            "别赶时间，平安才是最快的捷径。道路千万条，安全第一条。🛡️",
+            "遇到不讲理的乘客别往心里去，生活里还有很多美好在等你。🌈",
+            "虽然坐在驾驶位很累，但你专注开车的样子真的很帅气！💪",
+            "今天的服务分一定是满分，因为你一直都在努力生活。🌟",
+            "吃顿好的，把刚才的疲惫都吃掉！加油，老司机！🚀"
         ];
 
-        let isSpinning = false;
+        const lDisplay = document.getElementById('lunch-display');
+        const mDisplay = document.getElementById('message-display');
+        const btn = document.getElementById('goBtn');
+        let spinning = false;
 
-        function pickLunch() {
-            if (isSpinning) return;
-            isSpinning = true;
-            
-            const display = document.getElementById('display');
-            let counter = 0;
-            const duration = 20; // 闪烁次数
-            
-            const interval = setInterval(() => {
-                display.innerText = menu[Math.floor(Math.random() * menu.length)];
-                counter++;
-                
-                if (counter > duration) {
-                    clearInterval(interval);
-                    isSpinning = false;
-                    display.style.color = "#00ff41"; // 最终选定变绿色
-                    setTimeout(() => { display.style.color = "#ff00ff"; }, 1000);
+        function run() {
+            if (spinning) return;
+            spinning = true;
+            mDisplay.style.opacity = 0;
+            btn.innerText = "正在寻找最佳能量...";
+
+            let count = 0;
+            const timer = setInterval(() => {
+                lDisplay.innerText = lunches[Math.floor(Math.random() * lunches.length)];
+                count++;
+                if (count > 12) {
+                    clearInterval(timer);
+                    spinning = false;
+                    btn.innerText = "换个口味";
+                    
+                    // 显示随机鼓励话语 / Show random encouragement
+                    mDisplay.innerText = messages[Math.floor(Math.random() * messages.length)];
+                    mDisplay.style.opacity = 1;
                 }
             }, 80);
         }
 
-        // 监听回车键 (Listen for Enter key)
-        window.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') pickLunch();
-        });
+        btn.addEventListener('click', run);
+        btn.addEventListener('touchstart', (e) => { e.preventDefault(); run(); });
     </script>
 </body>
 </html>
