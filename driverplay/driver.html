@@ -2,157 +2,120 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>Cyber Pickup 8-bit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lunch Driver Picker</title>
     <style>
         :root {
-            --bg-color: #0a0a0a;
-            --grid-color: #1a1a1a;
-            --player-color: #00ff41; /* 经典黑客绿 */
-            --star-color: #ff00ff;   /* 霓虹粉 */
-            --obstacle-color: #ff3131; /* 警示红 */
+            --neon-green: #00ff41;
+            --bg-dark: #050505;
+            --accent-pink: #ff00ff;
         }
 
         body {
-            background-color: var(--bg-color);
+            background-color: var(--bg-dark);
+            color: white;
+            font-family: 'Courier New', monospace;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             height: 100vh;
             margin: 0;
-            font-family: 'Courier New', Courier, monospace;
-            color: white;
-            overflow: hidden;
+            text-transform: uppercase;
         }
 
-        #game-board {
-            display: grid;
-            grid-template-columns: repeat(20, 20px);
-            grid-template-rows: repeat(20, 20px);
-            gap: 1px;
-            background-color: var(--grid-color);
-            border: 4px solid #333;
-            box-shadow: 0 0 20px rgba(0, 255, 65, 0.2);
+        .container {
+            text-align: center;
+            border: 3px solid var(--neon-green);
+            padding: 40px;
+            /* 延续你喜欢的圆角风格 / Your preferred rounded style */
+            border-radius: 25px;
+            box-shadow: 0 0 15px var(--neon-green);
+            background: rgba(0, 255, 65, 0.05);
         }
 
-        .cell { width: 20px; height: 20px; }
-        .player { background-color: var(--player-color); box-shadow: 0 0 10px var(--player-color); border-radius: 2px; }
-        .star { background-color: var(--star-color); clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); }
-        .obstacle { background-color: var(--obstacle-color); }
+        #display {
+            font-size: 2.5rem;
+            margin: 30px 0;
+            height: 60px;
+            color: var(--accent-pink);
+            text-shadow: 0 0 10px var(--accent-pink);
+        }
 
-        .stats { margin-bottom: 10px; text-align: center; }
-        h1 { font-size: 1.5rem; text-shadow: 2px 2px #ff00ff; }
+        button {
+            background: var(--neon-green);
+            color: black;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            font-family: inherit;
+            cursor: pointer;
+            border-radius: 12px;
+            transition: all 0.2s;
+            box-shadow: 0 4px 0 #008f24;
+        }
+
+        button:active {
+            transform: translateY(4px);
+            box-shadow: 0 0 0 #008f24;
+        }
+
+        .hint {
+            margin-top: 20px;
+            font-size: 0.8rem;
+            color: #666;
+        }
     </style>
 </head>
 <body>
 
-    <div class="stats">
-        <h1>CYBER PICKUP v1.0</h1>
-        <div>接单量 (Orders): <span id="score">0</span></div>
+    <div class="container">
+        <div style="font-size: 1rem; letter-spacing: 2px;">LUNCH SELECTOR v2.0</div>
+        <div id="display">READY?</div>
+        <button onclick="pickLunch()">开始派单 (START)</button>
+        <div class="hint">按 Enter 或 点击按钮随机抽取</div>
     </div>
-    
-    <div id="game-board"></div>
 
     <script>
-        const boardSize = 20;
-        const board = document.getElementById('game-board');
-        const scoreElement = document.getElementById('score');
-        
-        let player = { x: 10, y: 10 };
-        let star = { x: 5, y: 5 };
-        let obstacles = [];
-        let direction = { x: 0, y: 0 };
-        let score = 0;
-        let gameSpeed = 150;
+        const menu = [
+            "黄焖鸡米饭 (HP +50)",
+            "兰州拉面 (速度 +10)",
+            "路边摊炒粉 (顺路首选)",
+            "便利店饭团 (赶单神器)",
+            "猪脚饭 (能量补满)",
+            "萨莉亚 (性价比之王)",
+            "麦当劳 (全城有店)",
+            "回家吃 (亲情 Buff)"
+        ];
 
-        // 初始化棋盘 (Initialize Board)
-        function createBoard() {
-            board.innerHTML = '';
-            for (let i = 0; i < boardSize * boardSize; i++) {
-                const cell = document.createElement('div');
-                cell.classList.add('cell');
-                board.appendChild(cell);
-            }
+        let isSpinning = false;
+
+        function pickLunch() {
+            if (isSpinning) return;
+            isSpinning = true;
+            
+            const display = document.getElementById('display');
+            let counter = 0;
+            const duration = 20; // 闪烁次数
+            
+            const interval = setInterval(() => {
+                display.innerText = menu[Math.floor(Math.random() * menu.length)];
+                counter++;
+                
+                if (counter > duration) {
+                    clearInterval(interval);
+                    isSpinning = false;
+                    display.style.color = "#00ff41"; // 最终选定变绿色
+                    setTimeout(() => { display.style.color = "#ff00ff"; }, 1000);
+                }
+            }, 80);
         }
 
-        // 绘制更新 (Draw and Update)
-        function draw() {
-            const cells = document.querySelectorAll('.cell');
-            cells.forEach(c => c.className = 'cell');
-
-            // 绘制障碍 (Draw Obstacles)
-            obstacles.forEach(obs => {
-                cells[obs.y * boardSize + obs.x].classList.add('obstacle');
-            });
-
-            // 绘制星星 (Draw Star)
-            cells[star.y * boardSize + star.x].classList.add('star');
-
-            // 绘制玩家 (Draw Player)
-            cells[player.y * boardSize + player.x].classList.add('player');
-        }
-
-        function move() {
-            const nextX = player.x + direction.x;
-            const nextY = player.y + direction.y;
-
-            // 碰撞检测 (Collision Detection)
-            if (nextX < 0 || nextX >= boardSize || nextY < 0 || nextY >= boardSize || 
-                obstacles.some(o => o.x === nextX && o.y === nextY)) {
-                alert("路况太差，接单结束！ Score: " + score);
-                resetGame();
-                return;
-            }
-
-            player.x = nextX;
-            player.y = nextY;
-
-            // 吃到好评 (Score Point)
-            if (player.x === star.x && player.y === star.y) {
-                score++;
-                scoreElement.innerText = score;
-                placeStar();
-                addObstacle();
-            }
-        }
-
-        function placeStar() {
-            star = { 
-                x: Math.floor(Math.random() * boardSize), 
-                y: Math.floor(Math.random() * boardSize) 
-            };
-        }
-
-        function addObstacle() {
-            obstacles.push({
-                x: Math.floor(Math.random() * boardSize),
-                y: Math.floor(Math.random() * boardSize)
-            });
-        }
-
-        function resetGame() {
-            player = { x: 10, y: 10 };
-            direction = { x: 0, y: 0 };
-            score = 0;
-            obstacles = [];
-            scoreElement.innerText = score;
-            placeStar();
-        }
-
-        window.addEventListener('keydown', e => {
-            switch(e.key) {
-                case 'ArrowUp': if(direction.y === 0) direction = { x: 0, y: -1 }; break;
-                case 'ArrowDown': if(direction.y === 0) direction = { x: 0, y: 1 }; break;
-                case 'ArrowLeft': if(direction.x === 0) direction = { x: -1, y: 0 }; break;
-                case 'ArrowRight': if(direction.x === 0) direction = { x: 1, y: 0 }; break;
-            }
+        // 监听回车键 (Listen for Enter key)
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') pickLunch();
         });
-
-        createBoard();
-        setInterval(() => {
-            if (direction.x !== 0 || direction.y !== 0) move();
-            draw();
-        }, gameSpeed);
     </script>
 </body>
 </html>
