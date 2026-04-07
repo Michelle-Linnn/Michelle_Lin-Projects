@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Driver's Archive v3</title>
+    <title>Driver's Archive v4</title>
     <style>
         :root { --paper-color: #e8e8e8; --ink-color: #111; }
         body {
@@ -13,7 +13,7 @@
             min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box;
         }
 
-        /* Nav */
+        /* Nav导航栏 */
         .nav { margin-bottom: 20px; display: flex; gap: 8px; width: 100%; max-width: 320px; }
         .nav-btn {
             background: none; border: 1px solid var(--paper-color);
@@ -23,7 +23,7 @@
         }
         .nav-btn.active { background: var(--paper-color); color: #000; font-weight: bold; }
 
-        /* Receipt */
+        /* Receipt收据卡片 */
         .receipt {
             background-color: var(--paper-color); color: var(--ink-color);
             width: 100%; max-width: 320px; padding: 30px 20px; box-sizing: border-box;
@@ -37,7 +37,7 @@
         .dash { border-bottom: 1px dashed #666; margin: 15px 0; }
         .center { text-align: center; }
         
-        /* Diary Area */
+        /* Diary Area输入区 */
         textarea {
             width: 100%; height: 140px; background: #ddd; border: 1px solid #bbb;
             font-family: inherit; padding: 12px; box-sizing: border-box;
@@ -53,8 +53,8 @@
         }
         .btn-black:active { background: #444; }
 
-        /* History List */
-        #history-list { max-height: 400px; overflow-y: auto; padding-right: 5px; }
+        /* History List历史记录 */
+        #history-list { max-height: 380px; overflow-y: auto; padding-right: 5px; }
         .history-item { border-bottom: 1px solid #ccc; padding: 15px 0; text-align: left; }
         .history-meta { font-size: 0.65rem; color: #777; margin-bottom: 6px; display: flex; justify-content: space-between; }
         .history-content { font-size: 0.9rem; color: #111; white-space: pre-wrap; word-break: break-all; }
@@ -63,6 +63,9 @@
             height: 30px; margin: 20px 0;
             background: repeating-linear-gradient(90deg, #000, #000 2px, transparent 2px, transparent 5px);
         }
+
+        .tool-links { margin-top: 15px; display: flex; justify-content: space-between; gap: 10px; }
+        .tool-btn { font-size: 0.6rem; color: #888; text-decoration: underline; cursor: pointer; border: none; background: none; padding: 0; font-family: inherit; }
     </style>
 </head>
 <body>
@@ -76,8 +79,8 @@
     <div id="lunch" class="receipt active">
         <div class="center" style="font-size: 0.7rem; letter-spacing: 2px;">DAILY ENERGY GPS</div>
         <div class="dash"></div>
-        <div id="lunch-result" class="center" style="font-size:1.3rem; font-weight:bold; margin:25px 0;">吃饱了才有力气</div>
-        <div id="quote" class="center" style="font-size:0.8rem; min-height: 40px; color: #444;"></div>
+        <div id="lunch-result" class="center" style="font-size:1.3rem; font-weight:bold; margin:25px 0;">这一单，送给自己</div>
+        <div id="quote" class="center" style="font-size:0.8rem; min-height: 40px; color: #444; line-height: 1.4;">[等待派单指令...]</div>
         <div class="barcode"></div>
         <button class="btn-black" onclick="getLunch()">派发午餐指令</button>
     </div>
@@ -95,11 +98,14 @@
         <div class="dash"></div>
         <div id="history-list"></div>
         <div class="dash"></div>
-        <div class="center" style="font-size: 0.6rem; color: #888; cursor: pointer;" onclick="clearAll()">[ 清空所有档案 ]</div>
+        <div class="tool-links">
+            <button class="tool-btn" onclick="exportData()">[ 导出备份到剪贴板 ]</button>
+            <button class="tool-btn" style="color: #c00;" onclick="clearAll()">[ 清空所有档案 ]</button>
+        </div>
     </div>
 
     <script>
-        // 1. 初始化切换逻辑 (Initialization)
+        // 1. 切换逻辑
         function switchTab(id) {
             document.querySelectorAll('.receipt').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
@@ -110,9 +116,16 @@
             if(id === 'history') renderHistory();
         }
 
-        // 2. 午餐逻辑 (Lunch)
-        const foods = ["【加满油/电 猪脚饭】", "【全绿灯 兰州拉面】", "【顺路单 麦当劳】", "【犒劳自己 烧烤】", "【温暖 沙县小吃】", "【避开拥堵 黄焖鸡】"];
-        const texts = ["辛苦了，师傅！吃完再跑下一单。", "马路再忙，胃不能荒。", "平安是福，吃饱是禄。", "刚才那一单辛苦了，给自己加个蛋！"];
+        // 2. 午餐逻辑
+        const foods = ["【加满油/电 猪脚饭】", "【全绿灯 兰州拉面】", "【顺路单 麦当劳】", "【犒劳自己 烧烤】", "【暖心 沙县小吃】", "【避开拥堵 黄焖鸡】", "【能量补给 肥牛饭】"];
+        const texts = [
+            "辛苦了，师傅！吃完再跑下一单。",
+            "马路再忙，胃不能荒。",
+            "平安是福，吃饱是禄。",
+            "这一路你照顾了很多人，现在轮到照顾你的胃了。",
+            "刚才那一单辛苦了，给自己加个蛋！",
+            "不必总是那么匆忙，停下来，世界依然在运行。"
+        ];
 
         function getLunch() {
             document.getElementById('lunch-result').innerText = foods[Math.floor(Math.random()*foods.length)];
@@ -120,7 +133,7 @@
             if(navigator.vibrate) navigator.vibrate(30);
         }
 
-        // 3. 核心存档逻辑 (The Core Storage Logic)
+        // 3. 核心存档逻辑
         function saveToArchive() {
             const textArea = document.getElementById('diary-text');
             const content = textArea.value.trim();
@@ -130,40 +143,34 @@
                 return;
             }
 
-            // 获取当前时间
             const now = new Date();
             const timeStr = `${now.getMonth()+1}/${now.getDate()} ${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}`;
-
-            // 构造新条目
             const newEntry = { time: timeStr, text: content, id: Date.now() };
 
-            // 核心修复点：确保读取到的是数组
             let existingData = [];
             try {
-                const rawData = localStorage.getItem('driver_logs_v3');
+                const rawData = localStorage.getItem('driver_logs_v4');
                 existingData = rawData ? JSON.parse(rawData) : [];
-                if (!Array.isArray(existingData)) existingData = []; // 强制纠错
+                if (!Array.isArray(existingData)) existingData = [];
             } catch (e) {
                 existingData = [];
             }
 
-            // 压入新数据并保存
             existingData.unshift(newEntry);
-            localStorage.setItem('driver_logs_v3', JSON.stringify(existingData));
+            localStorage.setItem('driver_logs_v4', JSON.stringify(existingData));
 
-            // 反馈与跳转
             textArea.value = "";
             if(navigator.vibrate) navigator.vibrate([50, 30, 50]);
             alert("档案已成功存入！");
             switchTab('history');
         }
 
-        // 4. 渲染历史记录 (Render History)
+        // 4. 渲染历史
         function renderHistory() {
             const list = document.getElementById('history-list');
             let data = [];
             try {
-                data = JSON.parse(localStorage.getItem('driver_logs_v3') || "[]");
+                data = JSON.parse(localStorage.getItem('driver_logs_v4') || "[]");
             } catch(e) { data = []; }
 
             if (data.length === 0) {
@@ -182,10 +189,29 @@
             `).join('');
         }
 
-        // 5. 清空逻辑
+        // 5. 导出备份
+        function exportData() {
+            const data = localStorage.getItem('driver_logs_v4');
+            if (!data || data === "[]") return alert("档案库是空的，无需导出。");
+            
+            const logs = JSON.parse(data);
+            const textBlob = logs.map(item => `[${item.time}]\n${item.text}\n---`).join('\n');
+            
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(textBlob).then(() => {
+                    alert("所有日记已成功复制到剪贴板！快去粘贴到微信收藏或备忘录备份吧。");
+                }).catch(err => {
+                    alert("复制失败，请手动长按文字复制。");
+                });
+            } else {
+                alert("浏览器版本较低，请手动截图或长按日记复制。");
+            }
+        }
+
+        // 6. 清空逻辑
         function clearAll() {
-            if(confirm("确定要永久销毁所有行车档案吗？")) {
-                localStorage.removeItem('driver_logs_v3');
+            if(confirm("确定要永久销毁所有行车档案吗？此操作不可恢复。")) {
+                localStorage.removeItem('driver_logs_v4');
                 renderHistory();
             }
         }
