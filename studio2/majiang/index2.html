@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MAHJONG_HUD - Chat App Glitch</title>
+    <link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap" rel="stylesheet">
+    <style>
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; font-family: "Segoe UI", sans-serif; cursor: pointer; }
+
+        .chat-app-scene {
+            position: relative;
+            width: 100vw; height: 100vh;
+            background-image: url('bg.png'); /* 网页背景图片，确保路径正确 */
+            background-size: cover; background-position: center;
+            display: flex; flex-direction: column; align-items: center;
+        }
+
+        /* 顶部遮罩，增加黑暗感 */
+        .chat-app-scene::before {
+            content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.7); pointer-events: none; z-index: 1;
+        }
+
+        /* --- Text A: System Notifications (Rules) --- */
+        #hud-rules-container {
+            position: fixed; top: 20px; width: 90%; max-width: 600px;
+            z-index: 100; pointer-events: none;
+            display: flex; flex-direction: column; align-items: center;
+        }
+
+        .system-message {
+            color: #00ffcc; font-size: 16px; font-weight: 700; line-height: 1.4;
+            background: rgba(0, 255, 204, 0.08); border-left: 2px solid #00ffcc;
+            padding: 10px 15px; margin-bottom: 10px; border-radius: 4px;
+            text-shadow: 0 0 10px rgba(0, 255, 204, 0.8);
+            opacity: 0; animation: systemFadeIn 0.5s ease forwards;
+        }
+
+        @keyframes systemFadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- Text B: Intrusive Thoughts (Scattered Glitch) --- */
+        #fragments-container {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 10; pointer-events: none;
+        }
+
+        .scattered-thought {
+            position: absolute;
+            color: rgba(255, 255, 255, var(--op)); /* 随机透明度 */
+            font-family: 'Permanent Marker', cursive; 
+            font-size: var(--s);
+            pointer-events: none;
+            white-space: nowrap;
+            text-shadow: 2px 2px 0px #000, -2px -2px 0px #000;
+            opacity: 0; filter: blur(3px); /* 初始模糊，模拟由于消息过快导致的阅读模糊 */
+            transition: all 0.3s cubic-bezier(0.19, 1, 0.22, 1);
+            
+            /* 关键逻辑：这里不使用防碰撞，故意制造重叠和堆砌 */
+            transform-origin: center center;
+        }
+
+        .scattered-thought.active {
+            opacity: 1; filter: blur(0px); /* 蹦出来时变清晰 */
+            transform: translate(0, 0) rotate(var(--r)) scale(1);
+        }
+
+        /* 崩溃状态：当消息太多时，给一个全局模糊 */
+        .chat-app-scene.glitch { animation: fullSceneBlur 0.1s infinite; }
+        @keyframes fullSceneBlur { 0% { filter: blur(0px); } 50% { filter: blur(2px); } 100% { filter: blur(0px); } }
+
+        .hint {
+            position: fixed; bottom: 25px; width: 100%; text-align: center;
+            color: rgba(0, 255, 204, 0.3); font-size: 10px; letter-spacing: 4px; z-index: 110;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="chat-app-scene" id="scene" onclick="nextGlitchStep()">
+        <div id="hud-rules-container"></div>
+        
+        <div id="fragments-container"></div>
+
+        <div class="hint">CLICK TO SIMULATE博弈 / Notification Anxiety</div>
+    </div>
+
+    <script>
+        // Text A: 冷冰冰的规则通知
+        const systemRules = [
+            "System / Rules (Phase 1):\nThe Opening.\nOrder is the only path to victory.",
+            "System / Rules (Phase 2):\nDraw and Discard.\nThe wall must be exhausted.",
+            "System / Rules (Phase 3):\nThe Pung!\nStealing rhythm.",
+            "System / Rules (Phase 4):\nThe Win (Hu).\nThe game terminates immediately."
+        ];
+
+        // 极大化扩充的内心独白词库 (Phase 2 Mediated Texts)
+        const fragmentsDictionary = [
+            ["13 voids", "13 chances to fail", "Fragile mask", "Chaos in my chest", "Order is a lie", "Empty hands", "Fail", "Loss", "Anxiety", "Fear"],
+            ["Exposed secrets", "Cemetery missed ops", "Discarding my luck?", "Sweating palm", "Luck?", "Every tile", "A secret", "opportunities", "Palm"],
+            ["Heartbeat skipped", "I stole your rhythm", "Intruder!", "A cage for anxiety", "Broken logic", "Screaming inside", "Theft", "Logic", "My anxiety"],
+            ["Silence falls", "I lost the peace", "Shaking hands", "Crinkled beyond repair", "Void", "Packing away", "Final", "Broken", "Done"]
+        ];
+
+        let currentIndex = 0;
+        let systemRuleCount = 0;
+        const rulesContainer = document.getElementById('hud-rules-container');
+        const fragContainer = document.getElementById('fragments-container');
+        const sceneEl = document.getElementById('scene');
+
+        function nextGlitchStep() {
+            fragContainer.innerHTML = '';
+            currentIndex = (currentIndex + 1) % systemRules.length;
+
+            // 1. 每隔两三次点击，发送一条系统规则通知
+            if(systemRuleCount % 3 === 0){
+                const systemMsg = document.createElement('div');
+                systemMsg.className = 'system-message';
+                systemMsg.textContent = systemRules[currentIndex];
+                rulesContainer.appendChild(systemMsg);
+                
+                // 自动清理过旧的系统通知
+                if(rulesContainer.children.length > 3) {
+                    rulesContainer.removeChild(rulesContainer.firstChild);
+                }
+            }
+            systemRuleCount++;
+
+            // 2. 核心逻辑：疯狂蹦出几十条未读消息碎片 (多文本编码)
+            const currentFrags = fragmentsDictionary[currentIndex];
+            // 将词库随机打乱并重复，增加侵入感
+            const pool = [...currentFrags, ...currentFrags, ...currentFrags].sort(() => 0.5 - Math.random());
+
+            pool.forEach((txt, i) => {
+                const frag = document.createElement('div');
+                frag.className = 'scattered-thought';
+                frag.textContent = txt;
+                
+                // 随机全屏位置 (这里故意不使用防碰撞)
+                const top = 10 + Math.random() * 80; 
+                const left = 5 + Math.random() * 85;
+
+                // 大号字号差距大，有些极大，有些极小
+                let randomSize;
+                if(i < 3) { 
+                    randomSize = 60 + Math.random() * 60; // 60px - 120px 巨大
+                } else {
+                    randomSize = 14 + Math.random() * 36; // 14px - 50px 小
+                }
+
+                const randomRot = Math.random() * 60 - 30; // 旋转 -30 到 30 度
+                const randomAlpha = 0.5 + Math.random() * 0.5;
+
+                // 应用随机样式
+                frag.style.top = top + '%';
+                frag.style.left = left + '%';
+                frag.style.setProperty('--r', `${randomRot}deg`);
+                frag.style.setProperty('--s', `${randomSize}px`);
+                frag.style.setProperty('--op', randomAlpha);
+
+                // 进场动画延迟 (极大化，极快蹦出)
+                frag.style.transform = `scale(0.8) translateY(30px)`;
+                
+                fragContainer.appendChild(frag);
+                setTimeout(() => frag.classList.add('active'), i * 60); // 极短的延迟
+            });
+
+            // 3. 崩溃状态检测：如果消息数量超过 20 条，给整个场景一个 Glitch 动画
+            if (fragContainer.children.length > 20) {
+                sceneEl.classList.add('glitch');
+                setTimeout(() => sceneEl.classList.remove('glitch'), 500);
+            }
+        }
+
+        // 初始化
+        window.onload = nextGlitchStep;
+    </script>
+</body>
+</html>
