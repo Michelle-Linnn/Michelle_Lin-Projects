@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>账单看板 · 林文杰</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0e0f11;
+    --surface: #16181c;
+    --surface2: #1e2127;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.13);
+    --text: #e8eaf0;
+    --muted: #6b7280;
+    --accent: #7c6ff7;
+    --accent2: #a78bfa;
+    --green: #34d399;
+    --red: #f87171;
+    --amber: #fbbf24;
+    --blue: #60a5fa;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  /* subtle grid bg */
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 0;
+    background-image:
+      linear-gradient(rgba(124,111,247,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(124,111,247,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+  }
+
+  .wrap { position: relative; z-index: 1; max-width: 1280px; margin: 0 auto; padding: 28px 24px; }
+
+  /* ── HEADER ── */
+  .header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 28px; flex-wrap: wrap; gap: 12px;
+  }
+  .logo { display: flex; align-items: center; gap: 10px; }
+  .logo-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: linear-gradient(135deg, #7c6ff7 0%, #a78bfa 100%);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .logo-text { font-size: 17px; font-weight: 500; letter-spacing: -0.3px; }
+  .logo-sub { font-size: 12px; color: var(--muted); font-family: 'DM Mono', monospace; }
+
+  .header-actions { display: flex; gap: 8px; }
+  .btn {
+    padding: 7px 14px; border-radius: 8px; font-size: 12px; font-weight: 500;
+    cursor: pointer; border: 1px solid var(--border2);
+    background: var(--surface2); color: var(--text);
+    transition: all 0.15s; font-family: 'DM Sans', sans-serif;
+  }
+  .btn:hover { background: var(--surface); border-color: var(--accent); color: var(--accent2); }
+  .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent2); border-color: var(--accent2); color: #fff; }
+  input[type=file] { display: none; }
+
+  /* ── ACCOUNT PILLS ── */
+  .pills { display: flex; gap: 6px; margin-bottom: 24px; flex-wrap: wrap; }
+  .pill {
+    padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 500;
+    cursor: pointer; border: 1px solid var(--border2);
+    background: var(--surface2); color: var(--muted);
+    transition: all 0.15s;
+  }
+  .pill:hover { border-color: var(--accent); color: var(--accent2); }
+  .pill.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  /* ── METRICS ── */
+  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 24px; }
+  .metric {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px; padding: 18px 20px;
+    position: relative; overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .metric:hover { border-color: var(--border2); }
+  .metric-label { font-size: 11px; color: var(--muted); letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 8px; }
+  .metric-val { font-size: 24px; font-weight: 500; font-family: 'DM Mono', monospace; letter-spacing: -1px; }
+  .metric-val.pos { color: var(--green); }
+  .metric-val.neg { color: var(--red); }
+  .metric-val.neu { color: var(--text); }
+  .metric-sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
+  .metric-glow {
+    position: absolute; top: -20px; right: -20px;
+    width: 80px; height: 80px; border-radius: 50%;
+    opacity: 0.08; filter: blur(20px);
+  }
+
+  /* ── MAIN LAYOUT ── */
+  .main { display: grid; grid-template-columns: 1fr 320px; gap: 16px; }
+
+  /* ── PANELS ── */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px; padding: 20px;
+    overflow: hidden;
+  }
+  .panel-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .panel-title { font-size: 12px; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+
+  /* ── ADD FORM ── */
+  .add-form { margin-bottom: 16px; }
+  .form-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; align-items: center; }
+  .field {
+    padding: 7px 10px; border-radius: 8px; font-size: 13px;
+    border: 1px solid var(--border2);
+    background: var(--surface2); color: var(--text);
+    outline: none; font-family: 'DM Sans', sans-serif;
+    transition: border-color 0.15s;
+  }
+  .field:focus { border-color: var(--accent); }
+  .field.f-date { width: 130px; }
+  .field.f-acc { width: 130px; }
+  .field.f-desc { flex: 1; min-width: 120px; }
+  .field.f-amt { width: 110px; font-family: 'DM Mono', monospace; }
+  input[type=date]::-webkit-calendar-picker-indicator { filter: invert(0.5); cursor: pointer; }
+
+  /* ── TAGS ── */
+  .tags-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .tag {
+    padding: 3px 10px; border-radius: 12px; font-size: 11px;
+    border: 1px solid var(--border2); background: var(--surface2);
+    color: var(--muted); cursor: pointer; transition: all 0.12s;
+  }
+  .tag:hover, .tag.sel { background: rgba(124,111,247,0.2); border-color: var(--accent); color: var(--accent2); }
+  .tag.transfer { border-color: rgba(251,191,36,0.3); }
+  .tag.transfer.sel { background: rgba(251,191,36,0.15); border-color: var(--amber); color: var(--amber); }
+
+  /* ── TABLE ── */
+  .tbl-wrap { overflow-y: auto; max-height: 380px; }
+  .tbl-wrap::-webkit-scrollbar { width: 4px; }
+  .tbl-wrap::-webkit-scrollbar-track { background: transparent; }
+  .tbl-wrap::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+
+  table { width: 100%; border-collapse: separate; border-spacing: 0 3px; }
+  thead th {
+    font-size: 10px; color: var(--muted); font-weight: 500;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    padding: 0 8px 8px; text-align: left; position: sticky; top: 0;
+    background: var(--surface); z-index: 1;
+  }
+  thead th:last-child { text-align: right; }
+
+  .trow td {
+    padding: 8px; font-size: 12.5px;
+    background: var(--surface2);
+  }
+  .trow:hover td { background: rgba(124,111,247,0.08); cursor: pointer; }
+  .trow td:first-child { border-radius: 8px 0 0 8px; color: var(--muted); font-family: 'DM Mono', monospace; font-size: 11px; white-space: nowrap; }
+  .trow td:last-child { border-radius: 0 8px 8px 0; text-align: right; font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 500; white-space: nowrap; }
+  .trow.xfer td { opacity: 0.35; }
+
+  .cat-chip {
+    display: inline-block; padding: 2px 8px; border-radius: 8px; font-size: 10px;
+    background: rgba(124,111,247,0.15); color: var(--accent2);
+  }
+
+  /* ── SIDE ── */
+  .side { display: flex; flex-direction: column; gap: 14px; }
+
+  .acct-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .acct-item:last-child { border: none; }
+  .acct-name { font-size: 12px; color: var(--muted); }
+  .acct-bal { font-size: 14px; font-weight: 500; font-family: 'DM Mono', monospace; }
+
+  .chart-wrap { position: relative; width: 100%; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+  .leg { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); }
+  .leg-sq { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+
+  .save-badge {
+    font-size: 10px; color: var(--muted); font-family: 'DM Mono', monospace;
+    padding: 4px 8px; background: var(--surface2); border-radius: 6px;
+    border: 1px solid var(--border);
+  }
+
+  @media (max-width: 900px) {
+    .metrics { grid-template-columns: repeat(2,1fr); }
+    .main { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 500px) {
+    .metrics { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="logo">
+      <div class="logo-icon">💎</div>
+      <div>
+        <div class="logo-text">账单看板</div>
+        <div class="logo-sub">LIN WENJIE · BANK OF AMERICA</div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <span class="save-badge" id="saveStatus">已加载银行数据</span>
+      <button class="btn" onclick="exportCSV()">导出 CSV</button>
+      <label class="btn" for="csvFile">导入 CSV</label>
+      <input type="file" id="csvFile" accept=".csv" onchange="importCSV(event)">
+    </div>
+  </div>
+
+  <!-- PILLS -->
+  <div class="pills" id="pills">
+    <div class="pill active" onclick="setAcc('all',this)">全部账户</div>
+    <div class="pill" onclick="setAcc('1221',this)">Checking 1221</div>
+    <div class="pill" onclick="setAcc('1218',this)">Savings 1218</div>
+    <div class="pill" onclick="setAcc('7808',this)">Credit 7808</div>
+  </div>
+
+  <!-- METRICS -->
+  <div class="metrics" id="metrics"></div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div>
+      <!-- ADD FORM -->
+      <div class="panel add-form" style="margin-bottom:14px;">
+        <div class="panel-head"><span class="panel-title">记一笔</span></div>
+        <div class="form-row">
+          <input class="field f-date" type="date" id="nDate">
+          <select class="field f-acc" id="nAcc">
+            <option value="1221">Checking 1221</option>
+            <option value="1218">Savings 1218</option>
+            <option value="7808">Credit 7808</option>
+          </select>
+          <input class="field f-desc" type="text" id="nDesc" placeholder="交易描述">
+          <input class="field f-amt" type="number" id="nAmt" placeholder="金额 (负=支出)" step="0.01">
+          <button class="btn btn-primary" onclick="addTx()">+ 添加</button>
+        </div>
+        <div class="tags-row" id="tagList"></div>
+        <div style="display:flex;gap:8px;margin-top:8px;align-items:center;">
+          <input class="field" id="newTagInput" placeholder="新建分类..." style="width:130px;font-size:12px;" onkeydown="if(event.key==='Enter')addTag()">
+          <button class="btn" onclick="addTag()" style="font-size:12px;">+ 新建</button>
+        </div>
+      </div>
+
+      <!-- TABLE -->
+      <div class="panel">
+        <div class="panel-head">
+          <span class="panel-title" id="tblTitle">交易记录</span>
+          <span style="font-size:11px;color:var(--muted);">点击行删除</span>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>日期</th><th>账户</th><th>描述</th><th>分类</th><th>金额</th></tr></thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- SIDE -->
+    <div class="side">
+      <div class="panel">
+        <div class="panel-title" style="margin-bottom:12px;">账户余额</div>
+        <div style="font-size:28px;font-weight:500;font-family:'DM Mono',monospace;letter-spacing:-1.5px;margin-bottom:14px;" id="netBal">—</div>
+        <div id="acctBals"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title" style="margin-bottom:12px;">月度真实消费</div>
+        <div class="chart-wrap" style="height:170px;">
+          <canvas id="barChart" role="img" aria-label="月度真实消费柱状图">月度支出趋势。</canvas>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title" style="margin-bottom:10px;">消费类别占比</div>
+        <div class="legend" id="pieLegend"></div>
+        <div class="chart-wrap" style="height:160px;">
+          <canvas id="pieChart" role="img" aria-label="消费分类饼图">各分类支出占比。</canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── SEED DATA (从银行账单提取) ──
+const SEED = [
+  {d:'2025-09-09',a:'1221',desc:'BOFA现金存入',v:1700,n:'收入'},
+  {d:'2025-09-09',a:'1221',desc:'Zelle收款 TONG YANG',v:500,n:'收入'},
+  {d:'2025-09-09',a:'1221',desc:'Zelle支出 APPA INVESTMENTS',v:-290,n:'其他支出'},
+  {d:'2025-09-09',a:'1218',desc:'BOFA现金存入',v:100,n:'收入'},
+  {d:'2025-09-24',a:'1218',desc:'国际电汇 RUIQING WU (农行)',v:10000,n:'收入'},
+  {d:'2025-09-24',a:'1218',desc:'Wire Transfer Fee',v:-15,n:'手续费'},
+  {d:'2025-09-25',a:'1221',desc:'THE STAND-PASADENA',v:-16.02,n:'餐饮美食'},
+  {d:'2025-09-26',a:'1218',desc:'转账至信用卡7808',v:-223,n:'内部互转'},
+  {d:'2025-09-27',a:'1221',desc:'Amazon Prime',v:-8.28,n:'订阅服务'},
+  {d:'2025-09-29',a:'1218',desc:'转账至信用卡7808',v:-1440.4,n:'内部互转'},
+  {d:'2025-09-29',a:'1221',desc:'Zelle收款 HUAIJIN ZHANG',v:176,n:'收入'},
+  {d:'2025-09-30',a:'1221',desc:'AT&T手机账单',v:-101.84,n:'生活账单'},
+  {d:'2025-09-30',a:'1218',desc:'Zelle支出 YI YANG',v:-203.68,n:'家庭支持'},
+  {d:'2025-10-01',a:'1221',desc:'Zelle收款 YI YANG',v:101.84,n:'收入'},
+  {d:'2025-10-05',a:'1221',desc:'ATM取现',v:-2000,n:'现金'},
+  {d:'2025-10-05',a:'1221',desc:'Cash App JAMES OSCAR',v:-1000,n:'其他支出'},
+  {d:'2025-10-06',a:'1218',desc:'转账至CHK1221',v:-2860.08,n:'内部互转'},
+  {d:'2025-10-06',a:'1218',desc:'Zelle支出 EMMANUEL GONZALES',v:-1000,n:'其他支出'},
+  {d:'2025-10-09',a:'1218',desc:'联邦备用预扣税',v:-0.01,n:'税费'},
+  {d:'2025-10-14',a:'1218',desc:'转账至CHK1221',v:-2000,n:'内部互转'},
+  {d:'2025-10-15',a:'1218',desc:'转账至信用卡7808',v:-290,n:'内部互转'},
+  {d:'2025-10-15',a:'1218',desc:'Zelle支出 ASG AUTOREPAIR',v:-160,n:'汽车维修'},
+  {d:'2025-10-16',a:'1221',desc:'Wire转账 Bank of China 家庭支持',v:-1800,n:'家庭支持'},
+  {d:'2025-10-16',a:'1221',desc:'Amazon Fresh',v:-11.26,n:'超市购物'},
+  {d:'2025-10-17',a:'1221',desc:'Starbucks',v:-4.45,n:'餐饮美食'},
+  {d:'2025-10-18',a:'7808',desc:'WEEE INC. 生鲜电商',v:26.01,n:'超市购物'},
+  {d:'2025-10-18',a:'7808',desc:'Universal Studios 游乐',v:30.17,n:'娱乐游玩'},
+  {d:'2025-10-18',a:'7808',desc:'Pasadena停车',v:3.2,n:'交通出行'},
+  {d:'2025-10-18',a:'7808',desc:'Shell Oil 加油',v:20.42,n:'加油'},
+  {d:'2025-10-19',a:'7808',desc:'Pasadena停车',v:3.2,n:'交通出行'},
+  {d:'2025-10-20',a:'7808',desc:'Target',v:4.91,n:'超市购物'},
+  {d:'2025-10-20',a:'7808',desc:'USPS邮局',v:3.99,n:'其他支出'},
+  {d:'2025-10-20',a:'7808',desc:'Noodle St 餐饮',v:34.61,n:'餐饮美食'},
+  {d:'2025-10-20',a:'7808',desc:'Pasadena停车',v:6.4,n:'交通出行'},
+  {d:'2025-10-20',a:'7808',desc:'Urth Caffe',v:39.51,n:'餐饮美食'},
+  {d:'2025-10-20',a:'1221',desc:'USH B2B Ticket 环球影城',v:-169,n:'娱乐游玩'},
+  {d:'2025-10-20',a:'1218',desc:'转账至信用卡7808',v:-1505.05,n:'内部互转'},
+  {d:'2025-10-21',a:'7808',desc:'Target',v:26.93,n:'超市购物'},
+  {d:'2025-10-21',a:'7808',desc:'Marshalls',v:32.97,n:'购物服饰'},
+  {d:'2025-10-21',a:'7808',desc:'Pasadena停车',v:3.2,n:'交通出行'},
+  {d:'2025-10-22',a:'7808',desc:'Big 5 Sporting Goods',v:78.67,n:'购物服饰'},
+  {d:'2025-10-22',a:'7808',desc:'Pasadena停车',v:3.2,n:'交通出行'},
+  {d:'2025-10-22',a:'7808',desc:'A&J Seafood Shack Long Beach',v:40.88,n:'餐饮美食'},
+  {d:'2025-10-23',a:'7808',desc:'eBay购物',v:5.25,n:'网购'},
+  {d:'2025-10-23',a:'7808',desc:"McDonald's",v:12.28,n:'餐饮美食'},
+  {d:'2025-10-23',a:'7808',desc:'Pasadena停车',v:3.2,n:'交通出行'},
+  {d:'2025-10-23',a:'7808',desc:'ARCO加油',v:4.34,n:'加油'},
+  {d:'2025-10-23',a:'1221',desc:'Walmart',v:-58.56,n:'超市购物'},
+  {d:'2025-10-24',a:'7808',desc:'USH Universal Studios 门票',v:74,n:'娱乐游玩'},
+  {d:'2025-10-24',a:'7808',desc:'Universal Studios 餐饮',v:59.25,n:'餐饮美食'},
+  {d:'2025-10-24',a:'7808',desc:'Pasadena停车',v:3.2,n:'交通出行'},
+  {d:'2025-10-25',a:'7808',desc:'ARCO加油',v:6.77,n:'加油'},
+  {d:'2025-10-26',a:'7808',desc:'Target',v:10.15,n:'超市购物'},
+  {d:'2025-10-27',a:'7808',desc:'Copa Vida Cafe',v:14.09,n:'餐饮美食'},
+  {d:'2025-10-27',a:'7808',desc:'Pasadena停车',v:5.9,n:'交通出行'},
+  {d:'2025-10-27',a:'7808',desc:'Whole Foods',v:25.43,n:'超市购物'},
+  {d:'2025-10-27',a:'7808',desc:'ART CTR STUDENT STORE',v:39.78,n:'教育文具'},
+  {d:'2025-10-28',a:'7808',desc:'Pasadena停车',v:3.2,n:'交通出行'},
+  {d:'2025-10-30',a:'7808',desc:'Amazon Fresh',v:41.95,n:'超市购物'},
+  {d:'2025-10-29',a:'7808',desc:'Pasadena停车',v:3.2,n:'交通出行'},
+  {d:'2025-10-30',a:'7808',desc:'Pasadena停车',v:3.2,n:'交通出行'},
+  {d:'2025-10-31',a:'7808',desc:'BMB Oil Inc 加油',v:53.48,n:'加油'},
+  {d:'2025-10-31',a:'7808',desc:'1-UP Factory Universal',v:37.32,n:'娱乐游玩'},
+  {d:'2025-10-31',a:'7808',desc:"Cletus' Chickin Shack Universal",v:18.65,n:'餐饮美食'},
+  {d:'2025-11-01',a:'7808',desc:'Dodgers Clubhouse Universal',v:43.89,n:'娱乐游玩'},
+  {d:'2025-10-31',a:'7808',desc:'Pasadena停车',v:3.2,n:'交通出行'},
+  {d:'2025-11-02',a:'7808',desc:'The North Face',v:82.98,n:'购物服饰'},
+  {d:'2025-11-02',a:'7808',desc:'TRBJ 338 Citadel购物中心',v:365.72,n:'购物服饰'},
+  {d:'2025-11-02',a:'7808',desc:'Tommy Hilfiger',v:26.2,n:'购物服饰'},
+  {d:'2025-11-02',a:'7808',desc:'Coach',v:62.99,n:'购物服饰'},
+  {d:'2025-11-02',a:'7808',desc:'零食&加油',v:10.47,n:'餐饮美食'},
+  {d:'2025-11-02',a:'7808',desc:'Pasadena停车',v:3.2,n:'交通出行'},
+  {d:'2025-11-03',a:'7808',desc:'168 MKT 亚超',v:101.51,n:'超市购物'},
+  {d:'2025-11-03',a:'7808',desc:'Sun Nong Dan 餐饮',v:46.28,n:'餐饮美食'},
+  {d:'2025-11-03',a:'7808',desc:'Pasadena停车',v:3.2,n:'交通出行'},
+  {d:'2025-11-03',a:'1218',desc:'Zelle支出 YI YANG',v:-1857.75,n:'家庭支持'},
+  {d:'2025-11-03',a:'1221',desc:'AT&T手机账单',v:-20.34,n:'生活账单'},
+  {d:'2025-11-03',a:'1221',desc:'Zelle收款 YI YANG',v:2000,n:'收入'},
+  {d:'2025-11-04',a:'7808',desc:'Marshalls',v:37.77,n:'购物服饰'},
+  {d:'2025-11-04',a:'1218',desc:'Zelle支出 JIAXING GUO',v:-1000,n:'其他支出'},
+  {d:'2025-11-04',a:'1218',desc:'DOMUSO 房租',v:-3565.49,n:'住房租金'},
+  {d:'2025-11-04',a:'1221',desc:'Zelle收款 YI YANG',v:1065.04,n:'收入'},
+  {d:'2025-11-05',a:'7808',desc:'Sticky Rice餐饮',v:27.44,n:'餐饮美食'},
+  {d:'2025-11-05',a:'7808',desc:'Shiku GCM',v:7.13,n:'餐饮美食'},
+  {d:'2025-11-05',a:'7808',desc:'Saritas Pupuseria',v:5,n:'餐饮美食'},
+  {d:'2025-11-05',a:'7808',desc:'Pasadena停车',v:3.2,n:'交通出行'},
+  {d:'2025-11-06',a:'7808',desc:'HomeGoods',v:45.67,n:'家居用品'},
+  {d:'2025-11-07',a:'7808',desc:"Ben & Jerry's 冰淇淋",v:8,n:'餐饮美食'},
+  {d:'2025-11-07',a:'7808',desc:'ARCO加油 Hollywood',v:30.62,n:'加油'},
+  {d:'2025-11-07',a:'7808',desc:'Pasadena停车',v:3.2,n:'交通出行'},
+  {d:'2025-11-08',a:'7808',desc:'Old Town Caffe',v:10.15,n:'餐饮美食'},
+  {d:'2025-11-08',a:'7808',desc:'Matsuri Japanese 餐饮',v:107.81,n:'餐饮美食'},
+  {d:'2025-11-09',a:'7808',desc:'Exxon Circle K 加油',v:11.24,n:'加油'},
+  {d:'2025-11-09',a:'7808',desc:'Target',v:30.91,n:'超市购物'},
+  {d:'2025-11-09',a:'7808',desc:'ARCO加油',v:4.07,n:'加油'},
+  {d:'2025-11-10',a:'7808',desc:'Pasadena停车',v:3.2,n:'交通出行'},
+  {d:'2025-11-12',a:'7808',desc:'ARCO加油',v:22.21,n:'加油'},
+  {d:'2025-11-12',a:'7808',desc:'Pasadena停车',v:3.2,n:'交通出行'},
+  {d:'2025-11-13',a:'1221',desc:'CA DMV 车辆管理费',v:-91.9,n:'汽车相关'},
+  {d:'2025-11-13',a:'1221',desc:'Linden Opticians 眼镜',v:-613.8,n:'医疗健康'},
+  {d:'2025-11-14',a:'1221',desc:'Autozone退款',v:50.26,n:'汽车维修'},
+  {d:'2025-11-14',a:'1221',desc:'Autozone汽车零件',v:-72.34,n:'汽车维修'},
+  {d:'2025-11-14',a:'1218',desc:'Zelle支出 JIA YANG',v:-32.24,n:'其他支出'},
+  {d:'2025-11-14',a:'7808',desc:'Pasadena停车',v:3.2,n:'交通出行'},
+  {d:'2025-11-15',a:'1221',desc:"Trader Joe's",v:-21.15,n:'超市购物'},
+  {d:'2025-11-15',a:'1221',desc:'In-N-Out汉堡',v:-19.06,n:'餐饮美食'},
+  {d:'2025-11-16',a:'1221',desc:'Circle K 加油',v:-24.74,n:'加油'},
+  {d:'2025-11-16',a:'1221',desc:'Walmart',v:-131.67,n:'超市购物'},
+  {d:'2025-11-16',a:'1221',desc:'San Gabriel Sprint超市',v:-50.73,n:'超市购物'},
+  {d:'2025-11-16',a:'7808',desc:'Pasadena停车',v:3.2,n:'交通出行'},
+  {d:'2025-11-16',a:'1221',desc:'Vapor Times 烟草',v:-58.57,n:'其他消费'},
+  {d:'2025-11-18',a:'1221',desc:'Armstrong Garden',v:-37.21,n:'家居用品'},
+  {d:'2025-11-18',a:'1221',desc:'Salvation Army 旧货店',v:-115,n:'购物服饰'},
+  {d:'2025-11-21',a:'7808',desc:'Pasadena停车',v:3.2,n:'交通出行'},
+  {d:'2025-11-22',a:'7808',desc:'ARCO加油',v:56.32,n:'加油'},
+  {d:'2025-11-22',a:'1221',desc:'The Stand餐厅',v:-33.98,n:'餐饮美食'},
+  {d:'2025-11-22',a:'1221',desc:'ARCO加油',v:-21.45,n:'加油'},
+  {d:'2025-11-23',a:'1221',desc:'99 Ranch亚超',v:-134.68,n:'超市购物'},
+  {d:'2025-11-24',a:'7808',desc:'Stussy 街头服饰',v:87.8,n:'购物服饰'},
+  {d:'2025-11-24',a:'7808',desc:'Pasadena停车',v:3.2,n:'交通出行'},
+  {d:'2025-11-24',a:'1221',desc:'HK Market华人超市',v:-19.56,n:'超市购物'},
+  {d:'2025-11-24',a:'1218',desc:'转账至CHK1221',v:-600,n:'内部互转'},
+  {d:'2025-11-24',a:'1221',desc:'信用卡7808还款',v:-1567.78,n:'内部互转'},
+  {d:'2025-11-25',a:'1221',desc:'BBQ Chungdam LA',v:-58.04,n:'餐饮美食'},
+  {d:'2025-11-25',a:'7808',desc:'Pasadena停车',v:3.2,n:'交通出行'},
+  {d:'2025-11-26',a:'7808',desc:'ARCO & Exxon 加油',v:23.43,n:'加油'},
+  {d:'2025-11-26',a:'1221',desc:'Amazon Prime',v:-7.73,n:'订阅服务'},
+  {d:'2025-11-26',a:'7808',desc:'Johnny Rockets Luxor 餐饮',v:57.28,n:'餐饮美食'},
+  {d:'2025-11-27',a:'7808',desc:'Urth Caffe Wynn',v:61.88,n:'餐饮美食'},
+  {d:'2025-11-27',a:'7808',desc:'Walgreens Las Vegas',v:32.33,n:'超市购物'},
+  {d:'2025-11-27',a:'7808',desc:'Wynn Las Vegas 酒店',v:62.36,n:'旅行住宿'},
+  {d:'2025-11-28',a:'7808',desc:'Wynn Sundries & Snack',v:49.93,n:'旅行住宿'},
+  {d:'2025-11-28',a:'1221',desc:'Wynn Las Vegas酒店ATM',v:-164.4,n:'旅行住宿'},
+  {d:'2025-11-29',a:'1221',desc:'EVI Venetian提现',v:-511.99,n:'旅行住宿'},
+  {d:'2025-11-30',a:'7808',desc:'Uber Eats',v:45.96,n:'餐饮美食'},
+  {d:'2025-11-30',a:'7808',desc:'Emporia P Store Las Vegas',v:9,n:'旅行住宿'},
+  {d:'2025-11-30',a:'7808',desc:'Venetian/Palazzo餐饮',v:235.84,n:'旅行住宿'},
+  {d:'2025-12-01',a:'7808',desc:'Avis租车',v:564.67,n:'交通出行'},
+  {d:'2025-12-01',a:'1218',desc:'转账至CHK1221',v:-600,n:'内部互转'},
+  {d:'2025-12-01',a:'1221',desc:'AT&T手机账单',v:-57.1,n:'生活账单'},
+  {d:'2025-12-01',a:'1221',desc:'BofA Cash Reward返现',v:37.75,n:'收入'},
+  {d:'2025-12-01',a:'1221',desc:'Wynn ATM手续费',v:-5,n:'手续费'},
+  {d:'2025-12-02',a:'1221',desc:'ATM取现 Alhambra',v:-300,n:'现金'},
+  {d:'2025-12-03',a:'1218',desc:'转账至CHK1221',v:-300,n:'内部互转'},
+  {d:'2025-12-03',a:'7808',desc:'Pasadena停车',v:3.2,n:'交通出行'},
+  {d:'2025-12-04',a:'1221',desc:'Salvation Army旧货',v:-22.5,n:'购物服饰'},
+  {d:'2025-12-04',a:'1221',desc:'SQ 6007 Pasadena',v:-8.95,n:'餐饮美食'},
+  {d:'2025-12-05',a:'1218',desc:'Zelle支出 YI YANG',v:-567.8,n:'家庭支持'},
+  {d:'2025-12-05',a:'7808',desc:'Ross Store',v:10.55,n:'购物服饰'},
+  {d:'2025-12-05',a:'1221',desc:'Zelle收款 YI YANG',v:2205.75,n:'收入'},
+  {d:'2025-12-05',a:'1221',desc:'BOFA现金存入',v:1000,n:'收入'},
+  {d:'2025-12-05',a:'1221',desc:'Pillow Talk',v:-20.92,n:'家居用品'},
+  {d:'2025-12-05',a:'1221',desc:'Zelle支出 YI YANG',v:-3500,n:'家庭支持'},
+  {d:'2025-12-06',a:'7808',desc:'Target',v:13.31,n:'超市购物'},
+  {d:'2025-12-08',a:'1221',desc:'Ross Store',v:-16.56,n:'购物服饰'},
+  {d:'2025-12-11',a:'1221',desc:'In-N-Out El Segundo',v:-28.37,n:'餐饮美食'},
+  {d:'2025-12-12',a:'1221',desc:'LA World Airports停车',v:-25.5,n:'交通出行'},
+  {d:'2025-12-12',a:'1221',desc:'Club 54 Lounge',v:-30,n:'娱乐游玩'},
+  {d:'2025-12-14',a:'1221',desc:'99 Ranch Arcadia',v:-25.15,n:'超市购物'},
+  {d:'2025-12-14',a:'1221',desc:'Panda Express',v:-15.47,n:'餐饮美食'},
+  {d:'2025-12-14',a:'7808',desc:'ARCO加油',v:19.86,n:'加油'},
+  {d:'2025-12-15',a:'1221',desc:'Bowlero保龄球',v:-33.96,n:'娱乐游玩'},
+  {d:'2025-12-15',a:'1221',desc:"It's Boba Time",v:-11.75,n:'餐饮美食'},
+  {d:'2025-12-17',a:'1221',desc:'BMB Oil Inc 加油',v:-103.25,n:'加油'},
+  {d:'2025-12-17',a:'1221',desc:'Target Glendale',v:-19.07,n:'超市购物'},
+  {d:'2025-12-17',a:'1221',desc:"Victoria's Secret",v:-160.11,n:'购物服饰'},
+  {d:'2025-12-17',a:'1218',desc:'国际电汇 RUIQING WU',v:2000,n:'收入'},
+  {d:'2025-12-17',a:'1218',desc:'转账至CHK1221',v:-1000,n:'内部互转'},
+  {d:'2025-12-18',a:'1221',desc:'The Funnel House Long Beach',v:-14.49,n:'餐饮美食'},
+  {d:'2025-12-18',a:'1221',desc:'Circle K 加油',v:-15.92,n:'加油'},
+  {d:'2025-12-19',a:'1221',desc:'Kumadori Sushi',v:-77.76,n:'餐饮美食'},
+  {d:'2025-12-19',a:'1221',desc:'JCPenney Glendale',v:-33.07,n:'购物服饰'},
+  {d:'2025-12-19',a:'1221',desc:'BMB Oil Inc 加油',v:-3.19,n:'加油'},
+  {d:'2025-12-22',a:'1218',desc:'Zelle支出 YI YANG',v:-567.8,n:'家庭支持'},
+  {d:'2025-12-22',a:'1218',desc:'转账至CHK1221',v:-100,n:'内部互转'},
+  {d:'2025-12-22',a:'1221',desc:'Churros La Espanola Long Beach',v:-23.92,n:'餐饮美食'},
+  {d:'2025-12-22',a:'1221',desc:'Venetian/Palazzo结算',v:-393.42,n:'旅行住宿'},
+  {d:'2025-12-22',a:'1221',desc:'Yin Tang Spicy Hot Arcadia',v:-40,n:'餐饮美食'},
+  {d:'2025-12-22',a:'1221',desc:'CVS Pharmacy',v:-20.12,n:'医疗健康'},
+  {d:'2025-12-22',a:'1221',desc:'ARCO加油',v:-20.32,n:'加油'},
+  {d:'2025-12-22',a:'1221',desc:'Ralphs超市',v:-77.84,n:'超市购物'},
+  {d:'2025-12-22',a:'1221',desc:'168 MKT亚超',v:-80.06,n:'超市购物'},
+  {d:'2025-12-24',a:'1218',desc:'转账至CHK1221',v:-100,n:'内部互转'},
+  {d:'2025-12-24',a:'1221',desc:'Target Pasadena',v:-53.7,n:'超市购物'},
+  {d:'2025-12-24',a:'1221',desc:'ARCO加油',v:-17.11,n:'加油'},
+  {d:'2025-12-26',a:'1221',desc:'Amazon Prime',v:-8.28,n:'订阅服务'},
+  {d:'2025-12-28',a:'7808',desc:'The Magic Nut',v:22.5,n:'餐饮美食'},
+  {d:'2025-12-29',a:'1218',desc:'转账至CHK1221',v:-232,n:'内部互转'},
+  {d:'2025-12-29',a:'1221',desc:'LA Metro地铁',v:-5,n:'交通出行'},
+  {d:'2025-12-30',a:'1218',desc:'Zelle支出 SHUN LOK TSE 餐饮',v:-175,n:'餐饮美食'},
+  {d:'2025-12-30',a:'1218',desc:'国际电汇 RUIQING WU',v:2000,n:'收入'},
+  {d:'2025-12-30',a:'1221',desc:'Lyft打车',v:-25.17,n:'交通出行'},
+  {d:'2025-12-31',a:'7808',desc:'Arco加油',v:31.41,n:'加油'},
+  {d:'2025-12-31',a:'1218',desc:'Credit Card 7808还款',v:-500,n:'内部互转'},
+  {d:'2025-12-31',a:'1218',desc:'转账至CHK1221',v:-947,n:'内部互转'},
+  {d:'2025-12-31',a:'1221',desc:'Lyft打车',v:-26.98,n:'交通出行'},
+  {d:'2025-12-31',a:'7808',desc:'Panda Express Commerce',v:27.63,n:'餐饮美食'},
+  {d:'2025-12-31',a:'7808',desc:'TRBJ 338 Citadel购物',v:211.59,n:'购物服饰'},
+  {d:'2025-12-31',a:'7808',desc:'AC Hotel Pasadena',v:56.93,n:'旅行住宿'},
+  {d:'2025-12-31',a:'7808',desc:'ParkWhiz停车',v:10.97,n:'交通出行'},
+  {d:'2026-01-02',a:'1221',desc:'BofA Cash Reward返现',v:25.86,n:'收入'},
+  {d:'2026-01-02',a:'1221',desc:'Queen Kapiolani Hotel Honolulu',v:-58.99,n:'旅行住宿'},
+  {d:'2026-01-02',a:'1221',desc:'Hilo Hawaiian Hotel',v:-82.57,n:'旅行住宿'},
+  {d:'2026-01-02',a:'1221',desc:'Suisan Company Hilo餐饮',v:-19.37,n:'餐饮美食'},
+  {d:'2026-01-02',a:'1221',desc:'Uber & Lyft 夏威夷',v:-61.71,n:'交通出行'},
+  {d:'2026-01-02',a:'1221',desc:'7-Eleven Hilo',v:-21.96,n:'超市购物'},
+  {d:'2026-01-02',a:'1221',desc:'FH Hawaii Performance',v:-53.86,n:'娱乐游玩'},
+  {d:'2026-01-05',a:'1221',desc:'停车罚单 2张',v:-415,n:'罚款'},
+  {d:'2026-01-05',a:'1221',desc:'Grand Naniloa Hotel Hilo',v:-214.23,n:'旅行住宿'},
+  {d:'2026-01-05',a:'1221',desc:'Lanikai Brewing Volcano',v:-17.86,n:'餐饮美食'},
+  {d:'2026-01-05',a:'1221',desc:'Hilo Hawaiian Hotel (2nd stay)',v:-71.22,n:'旅行住宿'},
+  {d:'2026-01-05',a:'1218',desc:'转账至CHK1221',v:-260,n:'内部互转'},
+  {d:'2026-01-06',a:'7808',desc:'Apple.com订阅',v:7.95,n:'订阅服务'},
+  {d:'2026-01-07',a:'7808',desc:'Hertz租车 Hawaii',v:187.81,n:'交通出行'},
+  {d:'2026-01-08',a:'7808',desc:'Uber打车',v:50.93,n:'交通出行'},
+  {d:'2026-01-08',a:'7808',desc:'Dollar租车 Hawaii',v:71.32,n:'交通出行'},
+  {d:'2026-01-11',a:'7808',desc:'ARCO加油',v:16.85,n:'加油'},
+  {d:'2026-01-12',a:'7808',desc:'Boba Cha Cha',v:7.95,n:'餐饮美食'},
+  {d:'2026-01-13',a:'7808',desc:'Ralphs超市',v:91.83,n:'超市购物'},
+  {d:'2026-01-15',a:'7808',desc:'ARCO加油',v:18.95,n:'加油'},
+  {d:'2026-01-15',a:'7808',desc:'Universal Studios餐饮&门票',v:40.6,n:'娱乐游玩'},
+];
+
+const KEY = 'lwj_v3';
+const XFER = '内部互转';
+const COLORS = ['#7c6ff7','#34d399','#f87171','#fbbf24','#60a5fa','#f472b6','#a3e635','#fb923c','#22d3ee','#818cf8'];
+
+let data = (() => { try { const s=localStorage.getItem(KEY); return s?JSON.parse(s):null; } catch(e){return null;} })() || JSON.parse(JSON.stringify(SEED));
+let tags = [...new Set(data.map(x=>x.n).filter(Boolean))];
+if (!tags.includes(XFER)) tags.push(XFER);
+let selTag = '';
+let acc = 'all';
+let barChart, pieChart;
+
+function save() { try { localStorage.setItem(KEY, JSON.stringify(data)); document.getElementById('saveStatus').textContent = '已保存 ' + new Date().toLocaleTimeString(); } catch(e){} }
+
+function fmt(v) {
+  const s = Math.abs(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  return (v>=0?'+':'-')+'$'+s;
+}
+
+function setAcc(a, el) {
+  acc = a;
+  document.querySelectorAll('.pill').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  render();
+}
+
+function filtered() { return acc==='all' ? data : data.filter(x=>x.a===acc); }
+function realSpend() { return (acc==='all'?data:data.filter(x=>x.a===acc)).filter(x=>x.v<0&&x.n!==XFER); }
+
+function render() { renderTags(); renderMetrics(); renderTable(); renderSide(); renderCharts(); }
+
+function renderTags() {
+  const tl = document.getElementById('tagList');
+  tl.innerHTML = '';
+  tags.forEach(t => {
+    const el = document.createElement('div');
+    el.className = 'tag' + (selTag===t?' sel':'') + (t===XFER?' transfer':'');
+    el.textContent = t;
+    el.onclick = () => { selTag = selTag===t?'':t; renderTags(); if(t!==XFER) document.getElementById('newTagInput').value=t; };
+    tl.appendChild(el);
+  });
+}
+
+function renderMetrics() {
+  const f = filtered();
+  const rs = realSpend();
+  const bal = f.reduce((s,x)=>s+x.v,0);
+  const inc = f.filter(x=>x.v>0).reduce((s,x)=>s+x.v,0);
+  const out = f.filter(x=>x.v<0).reduce((s,x)=>s+Math.abs(x.v),0);
+  const spend = rs.reduce((s,x)=>s+Math.abs(x.v),0);
+  const cards = [
+    {label:'账户余额',val:fmt(bal),cls:bal>=0?'pos':'neg',sub:'选定账户合计',glow:'#7c6ff7'},
+    {label:'真实消费',val:'-$'+spend.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}),cls:'neg',sub:'剔除账户互转',glow:'#f87171'},
+    {label:'累计收入',val:'+$'+inc.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}),cls:'pos',sub:'全部存入',glow:'#34d399'},
+    {label:'累计支出',val:'-$'+out.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}),cls:'neg',sub:'含互转',glow:'#fbbf24'},
+  ];
+  document.getElementById('metrics').innerHTML = cards.map(c=>`
+    <div class="metric">
+      <div class="metric-glow" style="background:${c.glow};"></div>
+      <div class="metric-label">${c.label}</div>
+      <div class="metric-val ${c.cls}">${c.val}</div>
+      <div class="metric-sub">${c.sub}</div>
+    </div>`).join('');
+}
+
+function renderTable() {
+  const rows = filtered().slice().sort((a,b)=>b.d.localeCompare(a.d));
+  const tbody = document.getElementById('tbody');
+  tbody.innerHTML = '';
+  rows.forEach(tx => {
+    const gi = data.indexOf(tx);
+    const tr = document.createElement('tr');
+    tr.className = 'trow' + (tx.n===XFER?' xfer':'');
+    const cls = tx.v>=0?'pos':'neg';
+    tr.innerHTML = `<td>${tx.d}</td><td style="color:var(--muted);font-family:'DM Mono',monospace;font-size:11px;">${tx.a}</td><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${tx.desc}</td><td><span class="cat-chip">${tx.n||''}</span></td><td class="${cls}">${fmt(tx.v)}</td>`;
+    tr.onclick = () => { if(confirm('删除这条记录？')) { data.splice(gi,1); save(); render(); } };
+    tbody.appendChild(tr);
+  });
+  document.getElementById('tblTitle').textContent = `交易记录 (${rows.length} 笔，点击行删除)`;
+}
+
+function renderSide() {
+  const accts = ['1221','1218','7808'];
+  const names = {'1221':'Checking 1221','1218':'Savings 1218','7808':'Credit 7808'};
+  let net = 0, html = '';
+  accts.forEach(a => {
+    const bal = data.filter(x=>x.a===a).reduce((s,x)=>s+x.v,0);
+    net += bal;
+    html += `<div class="acct-item"><span class="acct-name">${names[a]}</span><span class="acct-bal" style="color:${bal>=0?'var(--green)':'var(--red)'}">${fmt(bal)}</span></div>`;
+  });
+  document.getElementById('acctBals').innerHTML = html;
+  const nb = document.getElementById('netBal');
+  nb.textContent = fmt(net);
+  nb.style.color = net>=0?'var(--green)':'var(--red)';
+}
+
+function renderCharts() {
+  const rs = acc==='all'?data.filter(x=>x.v<0&&x.n!==XFER):data.filter(x=>x.a===acc&&x.v<0&&x.n!==XFER);
+  
+  // bar
+  const months = {};
+  rs.forEach(tx => { const m=tx.d.substring(0,7); months[m]=(months[m]||0)+Math.abs(tx.v); });
+  const ml = Object.keys(months).sort();
+  const mv = ml.map(m=>parseFloat(months[m].toFixed(2)));
+
+  if (barChart) barChart.destroy();
+  barChart = new Chart(document.getElementById('barChart'), {
+    type:'bar',
+    data:{labels:ml.map(m=>m.replace('2025-','').replace('2026-','26/')), datasets:[{label:'真实消费',data:mv,backgroundColor:'rgba(124,111,247,0.6)',borderRadius:6,borderSkipped:false}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'$'+c.raw.toLocaleString('en-US',{minimumFractionDigits:2})}}},
+      scales:{x:{grid:{display:false},ticks:{font:{size:10},color:'#6b7280',autoSkip:false}},y:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{font:{size:10},color:'#6b7280',callback:v=>'$'+v}}}}
+  });
+
+  // pie
+  const cats = {};
+  rs.forEach(tx => { cats[tx.n]=(cats[tx.n]||0)+Math.abs(tx.v); });
+  const cl = Object.keys(cats).sort((a,b)=>cats[b]-cats[a]);
+  const cv = cl.map(c=>parseFloat(cats[c].toFixed(2)));
+  const total = cv.reduce((a,b)=>a+b,0);
+
+  document.getElementById('pieLegend').innerHTML = cl.slice(0,6).map((l,i)=>`<div class="leg"><span class="leg-sq" style="background:${COLORS[i%COLORS.length]};"></span>${l}</div>`).join('');
+
+  if (pieChart) pieChart.destroy();
+  pieChart = new Chart(document.getElementById('pieChart'), {
+    type:'doughnut',
+    data:{labels:cl,datasets:[{data:cv,backgroundColor:COLORS.slice(0,cl.length),borderWidth:2,borderColor:'#16181c'}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'58%',
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>{const pct=(c.raw/total*100).toFixed(1);return `$${c.raw.toLocaleString('en-US',{minimumFractionDigits:2})} (${pct}%)`}}}}}
+  });
+}
+
+function addTag() {
+  const t = document.getElementById('newTagInput').value.trim();
+  if (!t || tags.includes(t)) return;
+  tags.push(t); selTag=t;
+  document.getElementById('newTagInput').value='';
+  renderTags();
+}
+
+function addTx() {
+  const d=document.getElementById('nDate').value;
+  const a=document.getElementById('nAcc').value;
+  const desc=document.getElementById('nDesc').value.trim();
+  const v=parseFloat(document.getElementById('nAmt').value);
+  if(!d||!desc||isNaN(v)){alert('请填写日期、描述和金额');return;}
+  const n=selTag||document.getElementById('newTagInput').value.trim()||'未分类';
+  if(!tags.includes(n))tags.push(n);
+  data.push({d,a,desc,v,n});
+  save(); render();
+  document.getElementById('nDesc').value='';
+  document.getElementById('nAmt').value='';
+}
+
+function exportCSV() {
+  let csv='\uFEFF日期,账户,描述,金额,分类\n';
+  data.forEach(x=>{csv+=`${x.d},${x.a},"${x.desc}",${x.v},${x.n}\n`;});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  a.download=`账单备份_${new Date().toISOString().split('T')[0]}.csv`;
+  a.click();
+}
+
+function importCSV(e) {
+  const file=e.target.files[0]; if(!file)return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    const lines=ev.target.result.split('\n');
+    const rows=[];
+    for(let i=1;i<lines.length;i++){
+      const c=lines[i].match(/(".*?"|[^,]+)(?=,|$)/g);
+      if(c&&c.length>=5)rows.push({d:c[0].trim(),a:c[1].trim(),desc:c[2].replace(/"/g,'').trim(),v:parseFloat(c[3]),n:c[4].trim()});
+    }
+    if(!rows.length){alert('未识别到数据');return;}
+    if(confirm(`识别到 ${rows.length} 条，是否覆盖当前数据？`)){
+      data=rows;
+      tags=[...new Set(data.map(x=>x.n).filter(Boolean))];
+      if(!tags.includes(XFER))tags.push(XFER);
+      save(); render();
+    }
+  };
+  r.readAsText(file,'utf-8');
+}
+
+document.getElementById('nDate').value=new Date().toISOString().split('T')[0];
+render();
+</script>
+</body>
+</html>
