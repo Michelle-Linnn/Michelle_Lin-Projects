@@ -536,7 +536,18 @@ const KEY = 'lwj_v3';
 const XFER = '内部互转';
 const COLORS = ['#7c6ff7','#34d399','#f87171','#fbbf24','#60a5fa','#f472b6','#a3e635','#fb923c','#22d3ee','#818cf8'];
 
-let data = (() => { try { const s=localStorage.getItem(KEY); return s?JSON.parse(s):null; } catch(e){return null;} })() || JSON.parse(JSON.stringify(SEED));
+// 在第 340 行左右，修改数据初始化逻辑
+  try { 
+    const s = localStorage.getItem(KEY); 
+    let parsed = s ? JSON.parse(s) : JSON.parse(JSON.stringify(SEED));
+    // 确保每条数据都有 details 字段和 whp 标记
+    return parsed.map(item => ({
+      ...item,
+      details: item.details || [], // 用于存储小票明细 [{item: '苹果', price: 5}]
+      isWHP: item.isWHP || false  // 是否属于 whp
+    }));
+  } catch(e) { return []; } 
+})();
 let tags = [...new Set(data.map(x=>x.n).filter(Boolean))];
 if (!tags.includes(XFER)) tags.push(XFER);
 let selTag = '';
@@ -599,15 +610,25 @@ function renderMetrics() {
 function renderTable() {
   const rows = filtered().slice().sort((a,b)=>b.d.localeCompare(a.d));
   const tbody = document.getElementById('tbody');
+  const isWHP = tx.isWHP;
+  const displayDesc = isWHP ? '***' : tx.desc;
+  const displayAmt = isWHP ? '***' : fmt(tx.v);
+  const displayTag = isWHP ? '***' : (tx.n || '');
   tbody.innerHTML = '';
+  
   rows.forEach(tx => {
+    const isWHP = tx.isWHP;
+    const displayDesc = isWHP ? '***' : tx.desc;
+    const displayAmt = isWHP ? '***' : fmt(tx.v);
+    const displayTag = isWHP ? '***' : (tx.n || '');
     const gi = data.indexOf(tx);
     const tr = document.createElement('tr');
     tr.className = 'trow' + (tx.n===XFER?' xfer':'');
     const cls = tx.v>=0?'pos':'neg';
-    tr.innerHTML = `<td>${tx.d}</td><td style="color:var(--muted);font-family:'DM Mono',monospace;font-size:11px;">${tx.a}</td><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${tx.desc}</td><td><span class="cat-chip">${tx.n||''}</span></td><td class="${cls}">${fmt(tx.v)}</td>`;
+    tr.innerHTML = `<td>${tx.d}</td><td style="color:var(--muted);font-family:'DM Mono',monospace;font-size:11px;">${tx.a}</td><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${displayDesc}</td><td><span class="cat-chip">${displayTag}</span></td><td class="${cls}">${displayAmt}</td>`;
     tr.onclick = () => { if(confirm('删除这条记录？')) { data.splice(gi,1); save(); render(); } };
     tbody.appendChild(tr);
+    tr.onclick = () => toggleDrawer(gi);
   });
   document.getElementById('tblTitle').textContent = `交易记录 (${rows.length} 笔，点击行删除)`;
 }
@@ -713,10 +734,22 @@ function importCSV(e) {
     }
   };
   r.readAsText(file,'utf-8');
+  
 }
+</style>
+  .drawer { display: none; background: var(--surface); padding: 15px; border-bottom: 1px solid var(--accent); }
+  .drawer.open { display: block; }
+  .detail-item { display: flex; justify-content: space-between; font-size: 12px; padding: 4px 0; border-bottom: 1px dashed var(--border); }
+  .whp-toggle { margin-top: 10px; padding: 5px; background: var(--surface2); border-radius: 4px; cursor: pointer; }
+  .done-row { border-left: 4px solid var(--green) !important; }
+</style>
 
-document.getElementById('nDate').value=new Date().toISOString().split('T')[0];
-render();
+<script>
+  document.getElementById('nDate').value = new Date().toISOString().split('T')[0];
+  render();
+  
+  // 确保这里面只有 JS 代码，没有刚才那些 .drawer 之类的 CSS
+
 </script>
 </body>
 </html>
