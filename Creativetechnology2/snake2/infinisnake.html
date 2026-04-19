@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>INFINISNAKE — Endless Pixel Serpent</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0e1a;
+    --bg-2:#111725;
+    --panel:#161c2e;
+    --panel-2:#1d2540;
+    --grid:#1a2136;
+    --green:#39ff14;
+    --pink:#ff2a6d;
+    --cyan:#05d9e8;
+    --yellow:#ffd400;
+    --text:#e8ecf5;
+    --muted:#8a93ad;
+    --border:#2a3558;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--bg);color:var(--text);font-family:'VT323',monospace;font-size:20px;line-height:1.4;overflow-x:hidden}
+
+  body::before{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:9999;
+    background:repeating-linear-gradient(to bottom, rgba(0,0,0,0) 0 2px, rgba(0,0,0,0.18) 2px 3px);
+    mix-blend-mode:multiply;
+  }
+  body::after{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:9998;
+    background:radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.55) 100%);
+  }
+
+  h1,h2,h3,h4,.pixel{font-family:'Press Start 2P',monospace;letter-spacing:1px}
+  a{color:var(--cyan);text-decoration:none}
+  a:hover{color:var(--green)}
+
+  .nav{position:sticky;top:0;z-index:100;background:rgba(10,14,26,.92);border-bottom:2px solid var(--border);backdrop-filter:blur(6px);}
+  .nav-inner{max-width:1200px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:24px;flex-wrap:wrap}
+  .nav-logo{font-family:'Press Start 2P',monospace;font-size:14px;color:var(--green);text-shadow:0 0 8px rgba(57,255,20,.6)}
+  .nav a{font-size:22px}
+  .nav .spacer{flex:1}
+  .nav .play-link{
+    font-family:'Press Start 2P',monospace;font-size:12px;
+    background:var(--green);color:#000;padding:8px 14px;
+    box-shadow:3px 3px 0 var(--pink);
+  }
+  .nav .play-link:hover{background:var(--yellow);color:#000}
+
+  .hero{position:relative;max-width:1200px;margin:0 auto;padding:40px 20px 24px;}
+  .hero-title{font-size:56px;line-height:1;color:var(--green);text-shadow:4px 4px 0 var(--pink), 8px 8px 0 rgba(5,217,232,.4);margin-bottom:12px;}
+  .hero-sub{font-size:28px;color:var(--cyan);margin-bottom:8px}
+  .hero-tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .tag{background:var(--panel);border:1px solid var(--border);padding:4px 10px;font-size:16px;color:var(--muted)}
+
+  /* Big PLAY NOW CTA */
+  .cta-play{max-width:1200px;margin:30px auto;padding:0 20px;text-align:center}
+  .cta-btn{
+    display:inline-block;font-family:'Press Start 2P',monospace;font-size:22px;
+    background:var(--green);color:#000;padding:22px 40px;
+    box-shadow:6px 6px 0 var(--pink), 12px 12px 0 rgba(5,217,232,.4);
+    text-decoration:none;letter-spacing:2px;
+  }
+  .cta-btn:hover{transform:translate(-3px,-3px);box-shadow:9px 9px 0 var(--pink), 15px 15px 0 rgba(5,217,232,.4);color:#000}
+  .cta-sub{font-size:18px;color:var(--muted);margin-top:14px}
+
+  .store{max-width:1200px;margin:0 auto;padding:20px;display:grid;grid-template-columns:2fr 1fr;gap:24px}
+  @media (max-width:900px){.store{grid-template-columns:1fr}}
+
+  .media{background:var(--panel);border:2px solid var(--border);padding:8px}
+  .media-main{position:relative;aspect-ratio:16/9;background:#000;border:1px solid var(--border);overflow:hidden;}
+  .media-main video{width:100%;height:100%;display:block;object-fit:cover;background:#000}
+  .video-missing{
+    position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
+    background:repeating-linear-gradient(45deg,#0a0e1a 0 12px,#111725 12px 24px);
+    text-align:center;padding:20px;pointer-events:none;
+  }
+  .video-missing .filename{font-family:'Press Start 2P',monospace;font-size:14px;color:var(--yellow);padding:6px 12px;background:#000;border:2px dashed var(--yellow)}
+  .video-missing .note{font-size:18px;color:var(--muted);max-width:420px}
+
+  .side{display:flex;flex-direction:column;gap:16px}
+  .side-art{aspect-ratio:4/5;background:var(--panel);border:2px solid var(--border);position:relative;overflow:hidden;}
+  .boxart{
+    position:absolute;inset:0;
+    background:
+      radial-gradient(circle at 30% 20%,rgba(255,42,109,.25),transparent 50%),
+      radial-gradient(circle at 80% 80%,rgba(5,217,232,.25),transparent 55%),
+      linear-gradient(180deg,#0a0e1a 0%,#1a0b22 100%);
+    display:flex;flex-direction:column;justify-content:space-between;padding:16px;
+  }
+  .boxart h3{font-size:22px;color:var(--green);text-shadow:2px 2px 0 var(--pink)}
+  .boxart .bottom{font-family:'Press Start 2P',monospace;font-size:10px;color:var(--cyan)}
+  .side-info{background:var(--panel);border:2px solid var(--border);padding:14px}
+  .side-info p{font-size:18px;color:var(--text);margin-bottom:10px}
+  .side-info .row{display:flex;justify-content:space-between;border-bottom:1px dashed var(--border);padding:6px 0;font-size:18px}
+  .side-info .row span:first-child{color:var(--muted)}
+  .side-info .row span:last-child{color:var(--cyan)}
+  .price-box{background:var(--panel);border:2px solid var(--green);padding:14px;display:flex;align-items:center;gap:14px}
+  .discount{background:var(--green);color:#000;font-family:'Press Start 2P',monospace;font-size:14px;padding:8px 10px}
+  .price-old{color:var(--muted);text-decoration:line-through;font-size:18px}
+  .price-new{color:var(--green);font-family:'Press Start 2P',monospace;font-size:16px}
+  .addcart{display:block;text-align:center;background:var(--pink);color:#000;padding:12px;margin-top:10px;font-family:'Press Start 2P',monospace;font-size:12px;border:none;cursor:pointer;text-decoration:none}
+  .addcart:hover{background:var(--green);color:#000}
+
+  .section{max-width:1200px;margin:40px auto;padding:0 20px}
+  .section h2{font-size:22px;color:var(--green);border-bottom:2px solid var(--border);padding-bottom:10px;margin-bottom:18px}
+  .section p{font-size:22px;margin-bottom:14px;max-width:900px}
+
+  .story{background:var(--panel);border:2px solid var(--border);padding:24px;position:relative}
+  .story::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(to bottom,transparent 0 3px,rgba(255,255,255,.02) 3px 4px);pointer-events:none}
+  .story h3{font-size:14px;color:var(--pink);margin-bottom:10px}
+  .story em{color:var(--cyan);font-style:normal}
+
+  .features{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  @media (max-width:800px){.features{grid-template-columns:1fr 1fr}}
+  @media (max-width:500px){.features{grid-template-columns:1fr}}
+  .feat{background:var(--panel);border:2px solid var(--border);padding:16px}
+  .feat h4{font-size:12px;color:var(--cyan);margin-bottom:6px;font-family:'Press Start 2P',monospace}
+  .feat p{font-size:18px;color:var(--text);margin:0}
+
+  .controls{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+  @media (max-width:700px){.controls{grid-template-columns:1fr}}
+  .keymap{background:var(--panel);border:2px solid var(--border);padding:18px}
+  .key-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px dashed var(--border);font-size:20px}
+  .key-row:last-child{border:none}
+  .key{font-family:'Press Start 2P',monospace;font-size:12px;background:var(--bg-2);border:2px solid var(--border);padding:6px 10px;color:var(--green);min-width:40px;text-align:center;box-shadow:2px 2px 0 var(--border);}
+  .keys-inline{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+
+  .shots{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  @media (max-width:700px){.shots{grid-template-columns:1fr 1fr}}
+  .shot{aspect-ratio:16/10;border:2px solid var(--border);position:relative;overflow:hidden;image-rendering:pixelated;}
+  .shot.s1{background:linear-gradient(#0b1023,#0b1023),repeating-linear-gradient(90deg,transparent 0 24px,rgba(57,255,20,.08) 24px 25px),repeating-linear-gradient(0deg,transparent 0 24px,rgba(57,255,20,.08) 24px 25px);}
+  .shot.s1::after{content:"SCORE 04213";position:absolute;top:8px;left:8px;font-family:'Press Start 2P',monospace;font-size:10px;color:var(--green)}
+  .shot .snake{position:absolute;display:flex;gap:2px}
+  .shot .snake i{width:10px;height:10px;background:var(--green);display:block;box-shadow:0 0 4px rgba(57,255,20,.8)}
+  .shot .snake i:first-child{background:var(--yellow)}
+  .shot .food{position:absolute;width:10px;height:10px;background:var(--pink);box-shadow:0 0 6px var(--pink)}
+  .shot.s2{background:radial-gradient(circle at 70% 30%,rgba(255,42,109,.2),transparent 40%),repeating-linear-gradient(45deg,#0b1023 0 8px,#0e1430 8px 16px);}
+  .shot.s3{background:linear-gradient(180deg,#1a0b22 0%,#0a0e1a 100%),repeating-linear-gradient(0deg,transparent 0 20px,rgba(5,217,232,.06) 20px 21px);}
+  .shot-caption{position:absolute;bottom:0;left:0;right:0;padding:6px 8px;background:linear-gradient(transparent,rgba(0,0,0,.8));font-family:'Press Start 2P',monospace;font-size:9px;color:var(--cyan)}
+
+  .reviews{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media (max-width:700px){.reviews{grid-template-columns:1fr}}
+  .review{background:var(--panel);border:2px solid var(--border);padding:14px;display:grid;grid-template-columns:80px 1fr;gap:14px}
+  .review .avatar{width:80px;height:80px;background:var(--bg-2);border:1px solid var(--border);}
+  .badge{display:inline-block;background:var(--green);color:#000;padding:4px 8px;font-family:'Press Start 2P',monospace;font-size:10px;margin-bottom:6px;}
+  .badge.neg{background:var(--pink)}
+  .review .meta{font-size:16px;color:var(--muted);margin-bottom:6px}
+  .review blockquote{font-size:20px;color:var(--text);padding-left:10px;border-left:3px solid var(--green)}
+  .review .name{color:var(--cyan);font-family:'Press Start 2P',monospace;font-size:11px;margin-top:8px;display:block}
+
+  .sysreq{background:var(--panel);border:2px solid var(--border);padding:18px;display:grid;grid-template-columns:1fr 1fr;gap:24px}
+  @media (max-width:700px){.sysreq{grid-template-columns:1fr}}
+  .sysreq h4{font-family:'Press Start 2P',monospace;font-size:12px;color:var(--pink);margin-bottom:10px}
+  .sysreq ul{list-style:none;font-size:20px}
+  .sysreq li{padding:4px 0;border-bottom:1px dashed var(--border)}
+  .sysreq li b{color:var(--cyan)}
+
+  footer{max-width:1200px;margin:40px auto 20px;padding:20px;border-top:2px solid var(--border);color:var(--muted);font-size:18px;text-align:center}
+
+  .snake-banner{position:relative;height:32px;margin:12px 0 0;overflow:hidden;background:repeating-linear-gradient(90deg,transparent 0 16px,rgba(57,255,20,.06) 16px 17px);}
+  .snake-banner .seg{position:absolute;top:8px;width:16px;height:16px;background:var(--green);animation:slither 6s linear infinite;}
+  .snake-banner .seg.head{background:var(--yellow)}
+  .snake-banner .seg:nth-child(1){animation-delay:0s}
+  .snake-banner .seg:nth-child(2){animation-delay:.12s;background:#2fd610}
+  .snake-banner .seg:nth-child(3){animation-delay:.24s;background:#27b80d}
+  .snake-banner .seg:nth-child(4){animation-delay:.36s;background:#1f990a}
+  .snake-banner .seg:nth-child(5){animation-delay:.48s;background:#197d08}
+  .snake-banner .seg:nth-child(6){animation-delay:.6s;background:#135f06}
+  @keyframes slither{0%{left:-20px;transform:translateY(0)}25%{transform:translateY(-6px)}50%{transform:translateY(0)}75%{transform:translateY(6px)}100%{left:calc(100% + 20px);transform:translateY(0)}}
+
+  .blink{display:inline-block;width:10px;height:20px;background:var(--green);vertical-align:-3px;animation:blink 1s steps(2) infinite}
+  @keyframes blink{50%{opacity:0}}
+
+  .ribbon{display:inline-block;background:var(--yellow);color:#000;font-family:'Press Start 2P',monospace;font-size:10px;padding:6px 10px;margin-left:8px;}
+
+  /* Video filename hint card */
+  .file-hint{
+    background:#1a1f33;border:2px dashed var(--yellow);padding:14px 16px;margin-top:10px;
+    font-size:18px;color:var(--text);
+  }
+  .file-hint b{font-family:'Press Start 2P',monospace;font-size:12px;color:var(--yellow)}
+  .file-hint code{font-family:'Press Start 2P',monospace;font-size:12px;color:var(--green);background:#000;padding:3px 6px}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <div class="nav-logo">◼ PIXEL&nbsp;STORE</div>
+    <a href="#about">ABOUT</a>
+    <a href="#trailer">TRAILER</a>
+    <a href="#features">FEATURES</a>
+    <a href="#controls">CONTROLS</a>
+    <a href="#reviews">REVIEWS</a>
+    <div class="spacer"></div>
+    <a class="play-link" href="game.html">&gt; PLAY</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <h1 class="hero-title">INFINISNAKE</h1>
+  <div class="hero-sub">An endless pixel serpent. A courier route. <span class="blink"></span></div>
+  <div class="hero-tags">
+    <span class="tag">Endless Arcade</span>
+    <span class="tag">Retro Pixel Art</span>
+    <span class="tag">Single Player</span>
+    <span class="tag">Mouse + Keyboard</span>
+    <span class="tag">Touch Controls</span>
+    <span class="tag">Custom Controller</span>
+  </div>
+  <div class="snake-banner" aria-hidden="true">
+    <span class="seg head"></span><span class="seg"></span><span class="seg"></span>
+    <span class="seg"></span><span class="seg"></span><span class="seg"></span>
+  </div>
+</header>
+
+<!-- Main PLAY NOW CTA -->
+<div class="cta-play">
+  <a class="cta-btn" href="game.html">&gt; PLAY&nbsp;NOW</a>
+  <div class="cta-sub">Opens the in-browser "Unity" player · keyboard + mouse on PC · swipe + on-screen buttons on phone</div>
+</div>
+
+<!-- TRAILER VIDEO + SIDEBAR -->
+<section class="store" id="trailer">
+  <div class="media">
+    <div class="media-main">
+      <video controls preload="metadata" poster="trailer-poster.png">
+        <source src="trailer.mp4" type="video/mp4">
+        Your browser doesn't support embedded video.
+      </video>
+      <div class="video-missing">
+        <div class="filename">trailer.mp4</div>
+        <div class="note">If you don't see a video here yet, save your trailer recording next to this page with the filename shown above.</div>
+      </div>
+    </div>
+    <div class="file-hint">
+      <div><b>&gt; TRAILER VIDEO</b></div>
+      <div style="margin-top:6px">Save your "several people playing the game" video as <code>trailer.mp4</code> in the same folder as this HTML file. Suggested length: 60–90s. Optional poster image: <code>trailer-poster.png</code>.</div>
+    </div>
+  </div>
+
+  <aside class="side">
+    <div class="side-art">
+      <div class="boxart">
+        <h3>INFINI<br/>SNAKE</h3>
+        <div class="bottom">&gt; PRESS&nbsp;START</div>
+      </div>
+    </div>
+    <div class="side-info">
+      <p>Pilot a glitching pixel serpent through an infinite grid. Pick up colored crates. Deliver them to the matching warehouse. Don't bite yourself.</p>
+      <div class="row"><span>Genre</span><span>Endless / Arcade</span></div>
+      <div class="row"><span>Players</span><span>1 (hot-seat)</span></div>
+      <div class="row"><span>Controller</span><span>KB+Mouse / Touch</span></div>
+      <div class="row"><span>Build size</span><span>~35&nbsp;KB</span></div>
+      <div class="row"><span>Released</span><span>SOON<span class="ribbon">WIP</span></span></div>
+    </div>
+    <div class="price-box">
+      <div class="discount">-100%</div>
+      <div>
+        <div class="price-old">$9.99</div>
+        <div class="price-new">FREE</div>
+      </div>
+    </div>
+    <a class="addcart" href="game.html">&gt; PLAY&nbsp;NOW</a>
+  </aside>
+</section>
+
+<!-- ABOUT / STORY -->
+<section class="section" id="about">
+  <h2>&gt; ABOUT THIS GAME</h2>
+  <p><strong>INFINISNAKE</strong> is a retro-flavored endless arcade game about a pixel serpent with a day job. You are a courier. The grid is your route. Three warehouses scream for colored cargo, and the only truck available is you — a long, growing, faintly glitching snake whose body IS the cargo hold. Pick up crates, deliver them to the matching warehouse, and chain combos before your tail catches up to you.</p>
+
+  <div class="story">
+    <h3>&gt; BACKGROUND STORY</h3>
+    <p>In the back room of a failing pizzeria in 1987, an arcade cabinet was abandoned with its coin door open. When the power finally cut, something inside kept running on leftover voltage — and a tiny, glitch-born logistics company quietly booted up in its memory.</p>
+    <p>Three warehouses sprouted: <em>Crimson Storage</em>, <em>Azure Depot</em>, <em>Solar Bay</em>. Each one demands colored cargo that nobody ordered. The only carrier that ever shows up for work is <em>the serpent</em> — a pixel worm whose body is literally the cargo hold. It swallows a red crate; it grows a red segment. It passes through Crimson Storage; its red segments are unloaded, and it shrinks by exactly that many tiles.</p>
+    <p>You are the dispatcher. You are the driver. You are the one deciding whether to keep stacking cargo for a big combo, or cash out now before your tail runs into your own spine. How long can you keep the route alive?</p>
+  </div>
+</section>
+
+<!-- SCREENSHOTS -->
+<section class="section">
+  <h2>&gt; SCREENSHOTS</h2>
+  <div class="shots">
+    <div class="shot s1">
+      <div class="snake" style="top:40%;left:20%"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="food" style="top:60%;left:75%"></div>
+      <div class="shot-caption">PICKING UP A RED CRATE</div>
+    </div>
+    <div class="shot s2">
+      <div class="snake" style="top:30%;left:10%"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="food" style="top:70%;left:50%"></div>
+      <div class="shot-caption">FULL CARGO HOLD</div>
+    </div>
+    <div class="shot s3">
+      <div class="snake" style="top:50%;left:5%"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="food" style="top:20%;left:80%;background:var(--cyan);box-shadow:0 0 6px var(--cyan)"></div>
+      <div class="shot-caption">APPROACHING AZURE DEPOT</div>
+    </div>
+  </div>
+  <p style="margin-top:12px;color:var(--muted);font-size:18px">Replace these CSS mockups with real screen captures once you have good runs recorded.</p>
+</section>
+
+<!-- GOALS + FEATURES -->
+<section class="section" id="features">
+  <h2>&gt; GOALS &amp; FEATURES</h2>
+  <div class="features">
+    <div class="feat">
+      <h4>SERPENT COURIER</h4><p>You are not just a snake. You are a delivery driver. Pick up colored crates and haul them to the warehouse that wants them.</p>
+    </div>
+    <div class="feat">
+      <h4>THREE WAREHOUSES</h4><p>Red, Blue, and Yellow warehouses dot the grid, each demanding its matching cargo. Route smart, deliver fast.</p>
+    </div>
+    <div class="feat">
+      <h4>COMBO DELIVERIES</h4><p>Drop 3+ matching crates at once for x2, 5+ for x3. Stack a long cargo train and cash it all in one pass.</p>
+    </div>
+    <div class="feat">
+      <h4>GROW &amp; SHRINK</h4><p>Every crate adds a segment. Every successful delivery shrinks you back. Stay long enough to matter, short enough to survive.</p>
+    </div>
+    <div class="feat">
+      <h4>GLITCH FRAGMENTS</h4><p>Rare gold shards multiply your score x2 for 8 seconds. Time your deliveries to overlap for absurd payouts.</p>
+    </div>
+    <div class="feat">
+      <h4>MOBILE + DESKTOP</h4><p>Plays on your laptop (keyboard + mouse) and on your phone (swipe + on-screen D-pad). Custom controllers just need to emit WASD / arrows / SPACE.</p>
+    </div>
+  </div>
+</section>
+
+<!-- MECHANICS + CONTROLS -->
+<section class="section" id="controls">
+  <h2>&gt; MECHANICS &amp; CONTROLS</h2>
+  <div class="controls">
+    <div>
+      <p><strong>The Loop.</strong> Find a colored crate. Eat it — it becomes a segment of matching color on your body. Find the matching warehouse. Drive through it. All matching segments get unloaded at once and you shrink by that many tiles.</p>
+      <p><strong>Combos.</strong> Carry 3+ of one color and deliver in a single pass for x2. 5+ for x3. Chain with the gold Glitch Fragment's x2 score window for monster payouts.</p>
+      <p><strong>Hybrid input.</strong> Keyboard steers. Clicking or tapping the canvas aims the head at your cursor/finger (closest cardinal direction). On mobile, you can also swipe, or use the on-screen D-pad and DASH button.</p>
+      <p><strong>Warehouse cycle.</strong> Every warehouse accepts 3 deliveries, then relocates somewhere new (and usually changes its demanded color). Off-screen warehouses show up as glowing arrows on the viewport edge.</p>
+      <p><strong>Custom controller hook.</strong> The game listens on standard keyboard/mouse/touch events, so any DIY controller that emits WASD / arrows / SPACE / taps works out of the box — bicycle handlebars, foam mats, soup ladles, whatever your class project dreams up.</p>
+    </div>
+    <div class="keymap">
+      <div class="key-row"><span>Steer</span><span class="keys-inline"><span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span></span></div>
+      <div class="key-row"><span>Steer (alt)</span><span class="keys-inline"><span class="key">↑</span><span class="key">←</span><span class="key">↓</span><span class="key">→</span></span></div>
+      <div class="key-row"><span>Aim</span><span class="keys-inline"><span class="key">🖱 CLICK</span> <span class="key">TAP</span></span></div>
+      <div class="key-row"><span>Mobile steer</span><span class="keys-inline"><span class="key">SWIPE</span> <span class="key">D-PAD</span></span></div>
+      <div class="key-row"><span>Dash</span><span class="keys-inline"><span class="key">␣ SPACE</span></span></div>
+      <div class="key-row"><span>Pause</span><span class="keys-inline"><span class="key">ESC</span></span></div>
+      <div class="key-row"><span>Toggle CRT</span><span class="keys-inline"><span class="key">P</span></span></div>
+      <div class="key-row"><span>Restart</span><span class="keys-inline"><span class="key">R</span></span></div>
+    </div>
+  </div>
+</section>
+
+<!-- HIGHLIGHTS VIDEO -->
+<section class="section">
+  <h2>&gt; KEY PLAYTHROUGH MOMENTS</h2>
+  <div class="media" style="padding:8px">
+    <div class="media-main">
+      <video controls preload="metadata" poster="highlights-poster.png">
+        <source src="highlights.mp4" type="video/mp4">
+        Your browser doesn't support embedded video.
+      </video>
+      <div class="video-missing">
+        <div class="filename">highlights.mp4</div>
+        <div class="note">If you don't see a video here yet, save your key-moments cut next to this page with the filename shown above.</div>
+      </div>
+    </div>
+  </div>
+  <div class="file-hint">
+    <div><b>&gt; HIGHLIGHTS VIDEO</b></div>
+    <div style="margin-top:6px">Save your "key playthrough moments" cut as <code>highlights.mp4</code> in the same folder as this HTML file. Suggested length: 30–60s. Optional poster image: <code>highlights-poster.png</code>.</div>
+  </div>
+</section>
+
+<!-- PLAYTESTER REVIEWS -->
+<section class="section" id="reviews">
+  <h2>&gt; WHAT PLAYTESTERS SAID</h2>
+  <div class="reviews">
+    <div class="review">
+      <div class="avatar" style="background:linear-gradient(135deg,#1f994f,#0a0e1a)"></div>
+      <div>
+        <span class="badge">RECOMMENDED</span>
+        <div class="meta">42.7 hrs on record — posted during a "one more run"</div>
+        <blockquote>"I sat down for five minutes and lost three hours. I remember zero of them. Ten out of ten, would forget again."</blockquote>
+        <span class="name">— Alex, 22</span>
+      </div>
+    </div>
+    <div class="review">
+      <div class="avatar" style="background:linear-gradient(135deg,#ff2a6d,#22061a)"></div>
+      <div>
+        <span class="badge">RECOMMENDED</span>
+        <div class="meta">8.1 hrs on record</div>
+        <blockquote>"I finally understand what it means to be a truck. The red depot loves me. The yellow one avoids eye contact."</blockquote>
+        <span class="name">— Mia, 14</span>
+      </div>
+    </div>
+    <div class="review">
+      <div class="avatar" style="background:linear-gradient(135deg,#05d9e8,#0a0e1a)"></div>
+      <div>
+        <span class="badge">RECOMMENDED</span>
+        <div class="meta">2.3 hrs on record — first session with grandma</div>
+        <blockquote>"My grandma played this and called it 'digital spaghetti.' She asked for another turn. She beat my score."</blockquote>
+        <span class="name">— Ravi, 31</span>
+      </div>
+    </div>
+    <div class="review">
+      <div class="avatar" style="background:linear-gradient(135deg,#ffd400,#2a1c00)"></div>
+      <div>
+        <span class="badge neg">MIXED</span>
+        <div class="meta">17.0 hrs on record — despite the rating</div>
+        <blockquote>"I said I'd stop after one run. I am writing this from inside run nineteen. Please send water."</blockquote>
+        <span class="name">— Sam, every night</span>
+      </div>
+    </div>
+    <div class="review">
+      <div class="avatar" style="background:linear-gradient(135deg,#39ff14,#0a0e1a)"></div>
+      <div>
+        <span class="badge">RECOMMENDED</span>
+        <div class="meta">0.4 hrs on record — phone session on the subway</div>
+        <blockquote>"Swiped through a 15-combo blue delivery and missed my stop. Would miss again."</blockquote>
+        <span class="name">— Jun, classmate</span>
+      </div>
+    </div>
+    <div class="review">
+      <div class="avatar" style="background:linear-gradient(135deg,#ff6b6b,#1a0606)"></div>
+      <div>
+        <span class="badge">RECOMMENDED</span>
+        <div class="meta">3.6 hrs on record — first-time snake player</div>
+        <blockquote>"I thought I hated arcade games. I was wrong. The dash button fixed my whole brain."</blockquote>
+        <span class="name">— Priya, 19</span>
+      </div>
+    </div>
+  </div>
+  <p style="margin-top:12px;color:var(--muted);font-size:18px">Replace these quotes with verbatim comments from your own playtesters as you collect them.</p>
+</section>
+
+<!-- SYSTEM REQUIREMENTS -->
+<section class="section">
+  <h2>&gt; SYSTEM REQUIREMENTS</h2>
+  <div class="sysreq">
+    <div>
+      <h4>MINIMUM</h4>
+      <ul>
+        <li><b>OS:</b> Any modern browser (Chrome, Firefox, Safari)</li>
+        <li><b>CPU:</b> Anything made this century</li>
+        <li><b>RAM:</b> 256 MB</li>
+        <li><b>Graphics:</b> A screen</li>
+        <li><b>Input:</b> Keyboard + Mouse OR touchscreen OR custom controller</li>
+        <li><b>Storage:</b> ~35 KB</li>
+      </ul>
+    </div>
+    <div>
+      <h4>RECOMMENDED</h4>
+      <ul>
+        <li><b>OS:</b> Any modern browser, fullscreen</li>
+        <li><b>CPU:</b> Quad-core, for the CRT shader</li>
+        <li><b>RAM:</b> 512 MB</li>
+        <li><b>Graphics:</b> A screen you love</li>
+        <li><b>Input:</b> A custom controller you built with your own hands</li>
+        <li><b>Storage:</b> ~35 KB and a snack</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div>◼ INFINISNAKE — a student project about games, controllers, and the joy of not stopping.</div>
+  <div style="margin-top:6px">Built with love, pixels, and regret. <span class="blink"></span></div>
+</footer>
+
+<script>
+// Hide the "video missing" overlay as soon as the <video> element reports it has loaded metadata.
+document.querySelectorAll('.media-main').forEach(wrap => {
+  const video = wrap.querySelector('video');
+  const miss = wrap.querySelector('.video-missing');
+  if (!video || !miss) return;
+  const hide = () => miss.style.display = 'none';
+  video.addEventListener('loadedmetadata', hide);
+  video.addEventListener('canplay', hide);
+  // Also hide if the source URL is reachable (head check is cross-browser tricky; rely on events)
+});
+</script>
+
+</body>
+</html>
