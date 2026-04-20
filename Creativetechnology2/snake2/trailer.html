@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>INFINISNAKE — Trailer Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0e1a; --bg-2:#111725; --panel:#161c2e; --border:#2a3558;
+    --green:#39ff14; --pink:#ff2a6d; --cyan:#05d9e8; --yellow:#ffd400;
+    --muted:#8a93ad; --text:#e8ecf5;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:#05070f;color:var(--text);font-family:'VT323',monospace;font-size:20px}
+  body{
+    background:
+      radial-gradient(ellipse at top,rgba(5,217,232,.08),transparent 60%),
+      radial-gradient(ellipse at bottom,rgba(255,42,109,.08),transparent 60%),
+      #05070f;
+    min-height:100vh;padding:20px 0;
+  }
+  body::before{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:9999;
+    background:repeating-linear-gradient(to bottom, rgba(0,0,0,0) 0 2px, rgba(0,0,0,0.14) 2px 3px);
+    mix-blend-mode:multiply;
+  }
+  h1,h2,h3,h4{font-family:'Press Start 2P',monospace;letter-spacing:1px}
+  a{color:var(--cyan);text-decoration:none}
+  a:hover{color:var(--green)}
+
+  .page{max-width:1100px;margin:0 auto;padding:0 20px}
+  .page-title{text-align:center;margin-bottom:20px}
+  .page-title h1{font-size:22px;color:var(--green);text-shadow:3px 3px 0 var(--pink)}
+  .page-title p{font-size:18px;color:var(--muted);margin-top:8px}
+
+  .studio{
+    background:#0d1121;border:2px solid var(--border);
+    box-shadow:0 0 40px rgba(5,217,232,.15);
+  }
+  .studio-bar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:10px 14px;background:#1a1f33;border-bottom:2px solid var(--border);
+    font-family:'Press Start 2P',monospace;font-size:11px;flex-wrap:wrap;gap:10px;
+  }
+  .studio-title{color:var(--green);display:flex;align-items:center;gap:10px}
+  .studio-title .rec-dot{
+    width:12px;height:12px;border-radius:50%;background:var(--pink);
+    box-shadow:0 0 10px var(--pink);animation:pulse 1s infinite;display:none;
+  }
+  .studio-title.recording .rec-dot{display:inline-block}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+  .studio-actions{display:flex;gap:8px;flex-wrap:wrap}
+  .studio-actions button, .studio-actions a{
+    font-family:'Press Start 2P',monospace;font-size:10px;
+    background:#262c44;color:var(--cyan);border:1px solid var(--border);
+    padding:8px 12px;cursor:pointer;text-decoration:none;
+  }
+  .studio-actions button:hover, .studio-actions a:hover{background:var(--green);color:#000;border-color:var(--green)}
+  .studio-actions button.primary{background:var(--green);color:#000;border-color:var(--green)}
+  .studio-actions button.record{background:var(--pink);color:#000;border-color:var(--pink)}
+  .studio-actions button:disabled{opacity:.4;cursor:not-allowed}
+
+  .canvas-wrap{position:relative;background:#000;aspect-ratio:16/9;width:100%;overflow:hidden}
+  #trailer{display:block;width:100%;height:100%;image-rendering:pixelated}
+  .timeline{
+    position:absolute;left:0;right:0;bottom:0;height:4px;
+    background:rgba(57,255,20,.2);
+  }
+  .timeline .bar{height:100%;background:var(--green);box-shadow:0 0 8px var(--green);width:0}
+
+  .studio-footer{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:10px 14px;background:#14182a;border-top:2px solid var(--border);
+    font-family:'Press Start 2P',monospace;font-size:10px;color:var(--muted);flex-wrap:wrap;gap:10px;
+  }
+  .status{color:var(--cyan)}
+  .timecode{color:var(--yellow)}
+
+  /* Info blocks */
+  .info{max-width:1100px;margin:24px auto;padding:0 20px;display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media (max-width:800px){.info{grid-template-columns:1fr}}
+  .card{background:var(--panel);border:2px solid var(--border);padding:18px}
+  .card h3{font-size:13px;color:var(--yellow);margin-bottom:10px}
+  .card p,.card li{font-size:18px;color:var(--text);margin-bottom:8px}
+  .card code{font-family:'Press Start 2P',monospace;font-size:11px;background:#000;color:var(--green);padding:2px 6px}
+  .card ul,.card ol{padding-left:20px}
+  .card li{margin-bottom:6px}
+
+  /* Filming guide */
+  .guide{max-width:1100px;margin:24px auto 60px;padding:0 20px}
+  .guide h2{font-size:18px;color:var(--green);border-bottom:2px solid var(--border);padding-bottom:10px;margin-bottom:16px}
+  .shots{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+  @media (max-width:800px){.shots{grid-template-columns:1fr}}
+  .shot-card{background:var(--panel);border:2px solid var(--border);padding:16px;position:relative}
+  .shot-num{
+    position:absolute;top:-10px;left:-10px;
+    background:var(--pink);color:#000;font-family:'Press Start 2P',monospace;font-size:12px;
+    padding:6px 10px;box-shadow:3px 3px 0 var(--border);
+  }
+  .shot-card h4{font-size:12px;color:var(--cyan);margin-bottom:8px;margin-top:4px}
+  .shot-card .duration{font-family:'Press Start 2P',monospace;font-size:10px;color:var(--yellow);margin-bottom:10px}
+  .shot-card p{font-size:18px;margin-bottom:6px}
+  .shot-card .line{font-style:italic;color:var(--muted);font-size:16px;border-left:3px solid var(--pink);padding-left:10px;margin-top:6px}
+</style>
+</head>
+<body>
+
+<div class="page">
+  <div class="page-title">
+    <h1>&gt; INFINISNAKE TRAILER STUDIO</h1>
+    <p>Play the animated trailer · Record it to a video file · Use the filming guide below for the real-people shoot.</p>
+  </div>
+
+  <div class="studio">
+    <div class="studio-bar">
+      <div class="studio-title" id="studioTitle">
+        <span class="rec-dot"></span>
+        INFINISNAKE — TRAILER v1.0 · 30s
+      </div>
+      <div class="studio-actions">
+        <button class="primary" id="btnPlay">&#9654; PLAY</button>
+        <button class="record" id="btnRecord">&#9679; RECORD &amp; DOWNLOAD</button>
+        <a href="infinisnake.html">&#8592; PROJECT</a>
+        <a href="game.html">PLAY GAME</a>
+      </div>
+    </div>
+    <div class="canvas-wrap">
+      <canvas id="trailer" width="960" height="540"></canvas>
+      <div class="timeline"><div class="bar" id="timeBar"></div></div>
+    </div>
+    <div class="studio-footer">
+      <div>STATUS: <span class="status" id="status">READY</span></div>
+      <div>TC: <span class="timecode" id="timecode">00:00 / 00:30</span></div>
+    </div>
+  </div>
+
+  <div class="info">
+    <div class="card">
+      <h3>&gt; HOW TO USE THE RECORD BUTTON</h3>
+      <ol>
+        <li>Click <code>RECORD &amp; DOWNLOAD</code>.</li>
+        <li>The trailer plays once while being captured (30 seconds — please don't switch tabs).</li>
+        <li>Your browser downloads the finished video automatically.</li>
+        <li>Rename the file to <code>trailer.mp4</code> (or <code>highlights.mp4</code>) and drop it next to <code>infinisnake.html</code>.</li>
+      </ol>
+      <p style="margin-top:10px;color:var(--muted);font-size:16px">Most browsers export <code>.webm</code>. If your assignment specifically needs <code>.mp4</code>, convert with ffmpeg: <code>ffmpeg -i trailer.webm trailer.mp4</code></p>
+    </div>
+    <div class="card">
+      <h3>&gt; SCREEN-RECORD BACKUP</h3>
+      <p>If the download button misbehaves in your browser, you can also screen-record the preview:</p>
+      <ul>
+        <li><b style="color:var(--cyan)">macOS:</b> <code>Shift+Cmd+5</code> → record selected portion</li>
+        <li><b style="color:var(--cyan)">Windows:</b> <code>Win+G</code> (Game Bar) → record</li>
+        <li><b style="color:var(--cyan)">Any OS:</b> OBS Studio (free) · QuickTime · ShareX</li>
+      </ul>
+      <p style="margin-top:10px;color:var(--muted);font-size:16px">Record at 1080p+ if possible. Click PLAY on the trailer, start your screen recorder a beat before, and stop it a beat after.</p>
+    </div>
+  </div>
+
+  <div class="guide">
+    <h2>&gt; FILMING GUIDE — "SEVERAL PEOPLE PLAYING" VIDEO</h2>
+    <p style="font-size:18px;color:var(--muted);margin-bottom:18px">The assignment wants a separate video of real humans playing with your custom controller. Here is a 6-shot plan that reads well in under 60 seconds. Shoot each shot 2–3 times so you have options in the edit.</p>
+
+    <div class="shots">
+      <div class="shot-card">
+        <div class="shot-num">01</div>
+        <h4>ESTABLISHING / HANDS ON CONTROLLER</h4>
+        <div class="duration">~4s · close-up · no audio needed</div>
+        <p>Low angle, shallow focus if possible. Camera on the controller. Hands enter frame, grip it, one finger presses a key.</p>
+        <div class="line">Why: gives the audience a sense of the physical thing before they see the screen.</div>
+      </div>
+
+      <div class="shot-card">
+        <div class="shot-num">02</div>
+        <h4>PLAYER #1 — REACTION ON FIRST DEATH</h4>
+        <div class="duration">~5s · medium shot · keep their face in frame</div>
+        <p>Shoot from beside the monitor so you see both their face and the screen in profile. Wait for the "aaaah" moment when their snake eats itself.</p>
+        <div class="line">Why: one honest reaction sells the whole game better than a trailer ever will.</div>
+      </div>
+
+      <div class="shot-card">
+        <div class="shot-num">03</div>
+        <h4>OVER-THE-SHOULDER GAMEPLAY</h4>
+        <div class="duration">~6s · shooter behind the player</div>
+        <p>Frame the monitor over the player's shoulder. Shoot during an active delivery run — crates being eaten, warehouse approach, combo popping.</p>
+        <div class="line">Why: shows the game in context without becoming a screen capture.</div>
+      </div>
+
+      <div class="shot-card">
+        <div class="shot-num">04</div>
+        <h4>TWO-PLAYER HOT-SEAT PASS</h4>
+        <div class="duration">~6s · wide shot</div>
+        <p>Two friends on the couch. Player A dies dramatically, hands the controller to Player B without breaking eye contact with the screen.</p>
+        <div class="line">Why: implies replayability and "one more try" culture.</div>
+      </div>
+
+      <div class="shot-card">
+        <div class="shot-num">05</div>
+        <h4>TALKING-HEAD QUOTE</h4>
+        <div class="duration">~4s · medium close-up · sync audio</div>
+        <p>One playtester looks at the camera and says one short line. Use one of these prompts or pick your own: <em>"I don't know what I just played." · "Why am I emotionally invested in a rectangle?" · "I have to try that again."</em></p>
+        <div class="line">Why: free review quote that doubles as a comedy beat.</div>
+      </div>
+
+      <div class="shot-card">
+        <div class="shot-num">06</div>
+        <h4>CLOSING GROUP SHOT</h4>
+        <div class="duration">~3s · ends the video</div>
+        <p>All your playtesters crowded around one screen, laughing. Freeze frame. Overlay the game title "INFINISNAKE" in your edit.</p>
+        <div class="line">Why: humans always make the best end card.</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:20px">
+      <h3>&gt; EDIT ORDER (RECOMMENDED)</h3>
+      <ol>
+        <li><b>01</b> Hands on controller (4s)</li>
+        <li><b>03</b> Over-shoulder gameplay (6s)</li>
+        <li><b>02</b> First-death reaction (5s)</li>
+        <li><b>04</b> Hot-seat pass (6s)</li>
+        <li><b>05</b> Talking head quote (4s)</li>
+        <li><b>06</b> Group shot + title card (3s)</li>
+      </ol>
+      <p style="margin-top:10px">Total: ~28–32 seconds. Cross-cut with 1–2 seconds of footage from the <b>animated trailer above</b> (between shots 03 and 04, or as B-roll) to connect the two videos stylistically.</p>
+      <p style="margin-top:6px;color:var(--muted);font-size:16px">Save final edit as <code>trailer.mp4</code> in the same folder as <code>infinisnake.html</code>.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const canvas = document.getElementById('trailer');
+  const ctx = canvas.getContext('2d');
+  const btnPlay = document.getElementById('btnPlay');
+  const btnRecord = document.getElementById('btnRecord');
+  const statusEl = document.getElementById('status');
+  const tcEl = document.getElementById('timecode');
+  const barEl = document.getElementById('timeBar');
+  const titleEl = document.getElementById('studioTitle');
+
+  const W = canvas.width, H = canvas.height, TILE = 24;
+  const COLORS = { red:'#ff2a6d', blue:'#05d9e8', yellow:'#ffd400' };
+  const COLOR_KEYS = ['red','blue','yellow'];
+
+  // ---------------- Game state ----------------
+  let snake, dir, nextDir, pendingGrowth, score, multiplier, multiplierEnd;
+  let food, warehouses, floatTexts, particles;
+  let camera, shake, totalDeliveries, difficultyBoost;
+  let stepAccumulator, lastStepTime;
+  const baseSpeed = 8, dashSpeed = 16;
+
+  function initGame() {
+    snake = [];
+    for (let i = 0; i < 4; i++) snake.push({ x: -i, y: 0, cargo: null });
+    dir = { x: 1, y: 0 };
+    nextDir = { x: 1, y: 0 };
+    pendingGrowth = 0;
+    score = 0;
+    multiplier = 1;
+    multiplierEnd = 0;
+    food = [];
+    warehouses = [
+      { x: 10,  y: -5, w: 3, h: 3, color: 'red',    deliveries: 0, pulse: 0 },
+      { x: -10, y: 3,  w: 3, h: 3, color: 'blue',   deliveries: 0, pulse: 0 },
+      { x: 6,   y: 9,  w: 3, h: 3, color: 'yellow', deliveries: 0, pulse: 0 }
+    ];
+    floatTexts = [];
+    particles = [];
+    camera = { x: -W / 2, y: -H / 2 };
+    shake = 0;
+    totalDeliveries = 0;
+    difficultyBoost = 0.5;
+    stepAccumulator = 0;
+    spawnFoodAround();
+  }
+
+  function isInWarehouse(x, y, w) {
+    return x >= w.x && x < w.x + w.w && y >= w.y && y < w.y + w.h;
+  }
+  function isInAnyWarehouse(x, y) {
+    for (const w of warehouses) if (isInWarehouse(x, y, w)) return true;
+    return false;
+  }
+  function relocateWarehouse(w) {
+    const head = snake[0];
+    for (let attempts = 0; attempts < 80; attempts++) {
+      const ang = Math.random() * Math.PI * 2;
+      const d = 14 + Math.random() * 12;
+      const nx = Math.round(head.x + Math.cos(ang) * d);
+      const ny = Math.round(head.y + Math.sin(ang) * d);
+      let bad = false;
+      for (const o of warehouses) if (o !== w && Math.abs(o.x - nx) < 7 && Math.abs(o.y - ny) < 7) { bad = true; break; }
+      if (bad) continue;
+      w.x = nx; w.y = ny;
+      if (Math.random() < 0.7) w.color = COLOR_KEYS[(COLOR_KEYS.indexOf(w.color) + 1 + Math.floor(Math.random()*2)) % 3];
+      w.deliveries = 0; return;
+    }
+  }
+  function spawnFoodAround() {
+    const head = snake[0];
+    food = food.filter(f => Math.abs(f.x - head.x) < 40 && Math.abs(f.y - head.y) < 28);
+    let tries = 0;
+    while (food.length < 20 && tries < 300) {
+      tries++;
+      const fx = head.x + Math.floor((Math.random() - 0.5) * 50);
+      const fy = head.y + Math.floor((Math.random() - 0.5) * 34);
+      let bad = false;
+      for (const s of snake) if (s.x === fx && s.y === fy) { bad = true; break; }
+      if (bad) continue;
+      for (const f of food) if (f.x === fx && f.y === fy) { bad = true; break; }
+      if (bad) continue;
+      if (isInAnyWarehouse(fx, fy)) continue;
+      const r = Math.random();
+      if (r < 0.65) {
+        const color = COLOR_KEYS[Math.floor(Math.random() * 3)];
+        food.push({ x: fx, y: fy, type: 'crate', color, born: performance.now() });
+      } else if (r < 0.70) {
+        food.push({ x: fx, y: fy, type: 'glitch', born: performance.now() });
+      } else {
+        food.push({ x: fx, y: fy, type: 'pellet', born: performance.now() });
+      }
+    }
+  }
+  function burst(gx, gy, color, n) {
+    const cx = gx * TILE + TILE / 2, cy = gy * TILE + TILE / 2;
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const s = 1 + Math.random() * 3;
+      particles.push({
+        x: cx, y: cy, vx: Math.cos(a) * s, vy: Math.sin(a) * s,
+        life: 600 + Math.random() * 400, born: performance.now(), color
+      });
+    }
+  }
+
+  // ---------------- Smart AI ----------------
+  function aiChooseDir() {
+    const head = snake[0];
+    const cargoCount = { red: 0, blue: 0, yellow: 0 };
+    for (let i = 1; i < snake.length; i++) if (snake[i].cargo) cargoCount[snake[i].cargo]++;
+
+    // target: warehouse if carrying 2+, else nearest interesting food
+    let target = null;
+    let prioritizedColor = null;
+    let bestCount = 1;
+    for (const w of warehouses) {
+      if (cargoCount[w.color] > bestCount) { bestCount = cargoCount[w.color]; prioritizedColor = w.color; }
+    }
+    if (prioritizedColor) {
+      const w = warehouses.find(w => w.color === prioritizedColor);
+      target = { x: w.x + 1, y: w.y + 1 };
+    } else {
+      let best = null, bestDist = Infinity;
+      // prefer glitch fragments if close
+      for (const f of food) {
+        if (f.type !== 'glitch') continue;
+        const d = Math.abs(f.x - head.x) + Math.abs(f.y - head.y);
+        if (d < 14 && d < bestDist) { bestDist = d; best = f; }
+      }
+      if (!best) {
+        for (const f of food) {
+          if (f.type === 'pellet') continue;
+          const d = Math.abs(f.x - head.x) + Math.abs(f.y - head.y);
+          if (d < bestDist) { bestDist = d; best = f; }
+        }
+      }
+      if (best) target = { x: best.x, y: best.y };
+    }
+
+    const cands = [{x:1,y:0},{x:-1,y:0},{x:0,y:1},{x:0,y:-1}];
+    let bestDir = dir, bestScore = -Infinity;
+    for (const o of cands) {
+      if (snake.length > 1 && o.x + dir.x === 0 && o.y + dir.y === 0) continue;
+      const nx = head.x + o.x, ny = head.y + o.y;
+      let safe = true;
+      for (let i = 0; i < snake.length - 1; i++) {
+        if (snake[i].x === nx && snake[i].y === ny) { safe = false; break; }
+      }
+      if (!safe) continue;
+      // look-ahead: does this direction lead into a dead-end?
+      let openSpaces = 0;
+      for (const o2 of cands) {
+        const nx2 = nx + o2.x, ny2 = ny + o2.y;
+        let safe2 = true;
+        for (let i = 0; i < snake.length - 1; i++) {
+          if (snake[i].x === nx2 && snake[i].y === ny2) { safe2 = false; break; }
+        }
+        if (safe2) openSpaces++;
+      }
+      let score = 0;
+      if (target) {
+        const dNow  = Math.abs(head.x - target.x) + Math.abs(head.y - target.y);
+        const dNext = Math.abs(nx - target.x)    + Math.abs(ny - target.y);
+        score += (dNow - dNext) * 10;
+      }
+      if (o.x === dir.x && o.y === dir.y) score += 2;
+      score += openSpaces * 1.5;
+      score += Math.random() * 0.7;
+      if (score > bestScore) { bestScore = score; bestDir = o; }
+    }
+    return bestDir;
+  }
+
+  // ---------------- Step ----------------
+  function step() {
+    dir = nextDir;
+    const head = snake[0];
+    const newHead = { x: head.x + dir.x, y: head.y + dir.y, cargo: null };
+    for (let i = 1; i < snake.length; i++) {
+      if (snake[i].x === newHead.x && snake[i].y === newHead.y) {
+        // the AI failed — just reset instead of ending the trailer
+        initGame();
+        return;
+      }
+    }
+    snake.unshift(newHead);
+    let justAte = null;
+    for (let i = food.length - 1; i >= 0; i--) {
+      if (food[i].x === newHead.x && food[i].y === newHead.y) {
+        const f = food[i];
+        if (f.type === 'pellet') { score += 10; pendingGrowth += 1; burst(f.x, f.y, '#aaa', 8); }
+        else if (f.type === 'glitch') { score += 100; pendingGrowth += 2; multiplier = 2; multiplierEnd = performance.now() + 6000; burst(f.x, f.y, '#ffd400', 24); shake = 6; floatTexts.push({text:'x2!',wx:f.x,wy:f.y,born:performance.now(),color:'#ffd400'}); }
+        else if (f.type === 'crate') { score += 5; pendingGrowth += 1; justAte = f.color; burst(f.x, f.y, COLORS[f.color], 14); }
+        food.splice(i, 1);
+        break;
+      }
+    }
+    for (const w of warehouses) {
+      if (isInWarehouse(newHead.x, newHead.y, w)) {
+        const kept = []; let removed = 0;
+        for (let i = 0; i < snake.length; i++) {
+          const s = snake[i];
+          if (i !== 0 && s.cargo === w.color) { removed++; burst(s.x, s.y, COLORS[w.color], 6); }
+          else kept.push(s);
+        }
+        if (removed > 0) {
+          snake = kept;
+          const combo = removed >= 5 ? 3 : (removed >= 3 ? 2 : 1);
+          const earned = removed * 50 * combo * multiplier;
+          score += earned;
+          w.deliveries++; totalDeliveries++; w.pulse = 1;
+          shake = Math.min(14, 2 + removed * 1.2);
+          floatTexts.push({ text: '+' + earned, wx: newHead.x, wy: newHead.y - 1, born: performance.now(), color: COLORS[w.color] });
+          if (combo > 1) floatTexts.push({ text: 'x' + combo + ' COMBO!', wx: newHead.x, wy: newHead.y - 2.2, born: performance.now() + 60, color: '#ffd400' });
+          if (w.deliveries >= 3) relocateWarehouse(w);
+        }
+      }
+    }
+    if (pendingGrowth > 0) { pendingGrowth -= 1; if (justAte) snake[0].cargo = justAte; }
+    else snake.pop();
+    if (performance.now() > multiplierEnd) multiplier = 1;
+    spawnFoodAround();
+  }
+
+  // ---------------- Draw ----------------
+  function drawGame(now) {
+    const sx = (Math.random() - 0.5) * shake;
+    const sy = (Math.random() - 0.5) * shake;
+    ctx.fillStyle = '#0a0e1a'; ctx.fillRect(0, 0, W, H);
+    ctx.save(); ctx.translate(sx, sy);
+    ctx.strokeStyle = 'rgba(57,255,20,0.07)'; ctx.lineWidth = 1;
+    const offX = -((camera.x % TILE + TILE) % TILE);
+    const offY = -((camera.y % TILE + TILE) % TILE);
+    ctx.beginPath();
+    for (let x = offX; x <= W; x += TILE) { ctx.moveTo(x + 0.5, 0); ctx.lineTo(x + 0.5, H); }
+    for (let y = offY; y <= H; y += TILE) { ctx.moveTo(0, y + 0.5); ctx.lineTo(W, y + 0.5); }
+    ctx.stroke();
+
+    // warehouses
+    for (const w of warehouses) {
+      const wx = w.x * TILE - camera.x, wy = w.y * TILE - camera.y;
+      const ww = w.w * TILE, wh = w.h * TILE;
+      if (wx + ww < -TILE || wx > W + TILE || wy + wh < -TILE || wy > H + TILE) continue;
+      const col = COLORS[w.color];
+      const pulse = 0.5 + 0.5 * Math.sin(now / 350) + w.pulse * 0.6;
+      ctx.fillStyle = '#0d1326'; ctx.fillRect(wx, wy, ww, wh);
+      ctx.strokeStyle = col; ctx.lineWidth = 2 + 2 * Math.min(1, pulse);
+      ctx.shadowColor = col; ctx.shadowBlur = 14 * Math.min(1.2, pulse);
+      ctx.strokeRect(wx + 1, wy + 1, ww - 2, wh - 2);
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = col; ctx.font = "bold 11px 'Press Start 2P', monospace";
+      ctx.textAlign = 'center';
+      ctx.fillText(w.color.toUpperCase(), wx + ww / 2, wy + wh / 2 - 4);
+      ctx.fillStyle = '#8a93ad'; ctx.font = "9px 'Press Start 2P', monospace";
+      ctx.fillText('DEPOT', wx + ww / 2, wy + wh / 2 + 12);
+      ctx.textAlign = 'left';
+    }
+
+    // food
+    for (const f of food) {
+      const fx = f.x * TILE - camera.x, fy = f.y * TILE - camera.y;
+      if (fx < -TILE * 2 || fx > W + TILE || fy < -TILE * 2 || fy > H + TILE) continue;
+      const p = 0.65 + 0.35 * Math.sin(now / 180 + f.x * 0.3 + f.y * 0.3);
+      if (f.type === 'crate') {
+        const col = COLORS[f.color];
+        ctx.shadowColor = col; ctx.shadowBlur = 10 * p;
+        ctx.fillStyle = col; ctx.fillRect(fx + 3, fy + 3, TILE - 6, TILE - 6);
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = 'rgba(0,0,0,0.45)';
+        ctx.fillRect(fx + 3, fy + TILE / 2 - 1, TILE - 6, 2);
+        ctx.fillRect(fx + TILE / 2 - 1, fy + 3, 2, TILE - 6);
+        ctx.fillStyle = 'rgba(255,255,255,0.35)';
+        ctx.fillRect(fx + 4, fy + 4, 3, 3);
+      } else if (f.type === 'glitch') {
+        ctx.shadowColor = '#ffd400'; ctx.shadowBlur = 18 * p;
+        ctx.fillStyle = '#ffd400';
+        ctx.beginPath();
+        const cx = fx + TILE / 2, cy = fy + TILE / 2, r = TILE / 2 - 4;
+        ctx.moveTo(cx, cy - r); ctx.lineTo(cx + r, cy);
+        ctx.lineTo(cx, cy + r); ctx.lineTo(cx - r, cy);
+        ctx.closePath(); ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#fff'; ctx.fillRect(cx - 2, cy - 2, 4, 4);
+      } else {
+        ctx.shadowColor = '#aaa'; ctx.shadowBlur = 6 * p;
+        ctx.fillStyle = '#aaa'; ctx.fillRect(fx + TILE / 2 - 3, fy + TILE / 2 - 3, 6, 6);
+      }
+    }
+    ctx.shadowBlur = 0;
+
+    // snake
+    for (let i = snake.length - 1; i >= 0; i--) {
+      const s = snake[i];
+      const x = s.x * TILE - camera.x, y = s.y * TILE - camera.y;
+      if (x < -TILE || x > W || y < -TILE || y > H) continue;
+      if (i === 0) {
+        const hc = s.cargo ? COLORS[s.cargo] : '#ffd400';
+        ctx.shadowColor = hc; ctx.shadowBlur = 14;
+        ctx.fillStyle = '#ffd400'; ctx.fillRect(x + 1, y + 1, TILE - 2, TILE - 2);
+        if (s.cargo) { ctx.shadowBlur = 0; ctx.fillStyle = COLORS[s.cargo]; ctx.fillRect(x + 6, y + 6, TILE - 12, TILE - 12); }
+        ctx.shadowBlur = 0; ctx.fillStyle = '#0a0e1a';
+        const cx = x + TILE/2, cy = y + TILE/2, eo = 5, es = 4;
+        ctx.fillRect(cx + dir.y * eo - es/2, cy + dir.x * eo - es/2, es, es);
+        ctx.fillRect(cx - dir.y * eo - es/2, cy - dir.x * eo - es/2, es, es);
+      } else if (s.cargo) {
+        ctx.shadowColor = COLORS[s.cargo]; ctx.shadowBlur = 10;
+        ctx.fillStyle = '#1b7a10'; ctx.fillRect(x + 2, y + 2, TILE - 4, TILE - 4);
+        ctx.fillStyle = COLORS[s.cargo]; ctx.fillRect(x + 4, y + 4, TILE - 8, TILE - 8);
+        ctx.fillStyle = 'rgba(0,0,0,0.45)';
+        ctx.fillRect(x + 4, y + TILE / 2 - 1, TILE - 8, 2);
+        ctx.fillRect(x + TILE / 2 - 1, y + 4, 2, TILE - 8);
+      } else {
+        const t = i / Math.max(1, snake.length);
+        const g = Math.floor(255 - t * 140);
+        ctx.shadowColor = '#39ff14'; ctx.shadowBlur = 5;
+        ctx.fillStyle = `rgb(${Math.floor(30 + t*10)}, ${g}, 20)`;
+        ctx.fillRect(x + 2, y + 2, TILE - 4, TILE - 4);
+      }
+    }
+    ctx.shadowBlur = 0;
+
+    for (const t of floatTexts) {
+      const age = (now - t.born) / 1300;
+      if (age < 0 || age > 1) continue;
+      const tx = t.wx * TILE - camera.x + TILE / 2;
+      const ty = t.wy * TILE - camera.y - age * 40;
+      ctx.globalAlpha = 1 - age;
+      ctx.fillStyle = t.color;
+      ctx.font = "bold 14px 'Press Start 2P', monospace";
+      ctx.textAlign = 'center';
+      ctx.fillText(t.text, tx, ty);
+      ctx.textAlign = 'left';
+      ctx.globalAlpha = 1;
+    }
+    for (const p of particles) {
+      const age = (now - p.born) / p.life;
+      ctx.globalAlpha = Math.max(0, 1 - age);
+      ctx.fillStyle = p.color;
+      ctx.fillRect(p.x - camera.x - 2, p.y - camera.y - 2, 4, 4);
+    }
+    ctx.globalAlpha = 1;
+    ctx.restore();
+
+    // CRT
+    ctx.fillStyle = 'rgba(0,0,0,0.14)';
+    for (let y = 0; y < H; y += 3) ctx.fillRect(0, y, W, 1);
+    const g = ctx.createRadialGradient(W/2, H/2, Math.min(W,H)*0.35, W/2, H/2, Math.max(W,H)*0.7);
+    g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,0.55)');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  }
+
+  function updateSim(now, dt) {
+    const speed = baseSpeed + difficultyBoost;
+    const interval = 1000 / speed;
+    stepAccumulator += dt;
+    if (stepAccumulator > 500) stepAccumulator = 500;
+    while (stepAccumulator >= interval) {
+      stepAccumulator -= interval;
+      nextDir = aiChooseDir();
+      step();
+    }
+    const head = snake[0];
+    const tx = head.x * TILE - W/2 + TILE/2, ty = head.y * TILE - H/2 + TILE/2;
+    camera.x += (tx - camera.x) * 0.15;
+    camera.y += (ty - camera.y) * 0.15;
+    for (const p of particles) { p.x += p.vx; p.y += p.vy; p.vx *= 0.96; p.vy *= 0.96; }
+    particles = particles.filter(p => now - p.born < p.life);
+    for (const w of warehouses) w.pulse = Math.max(0, w.pulse - 0.04);
+    floatTexts = floatTexts.filter(t => now - t.born < 1300);
+    if (shake > 0) shake *= 0.88;
+  }
+
+  // ---------------- Trailer scenes / overlay ----------------
+  // Total length: 30 seconds
+  // [0.0 - 2.5]  CRT on + INFINISNAKE title reveal
+  // [2.5 - 4.0]  Tagline "ENDLESS COURIER"
+  // [4.0 - 11.0] Gameplay: warm-up + first crate pickup
+  // [11.0 - 13.0] Overlay: "YOU ARE THE COURIER"
+  // [13.0 - 20.0] Gameplay: combo delivery
+  // [20.0 - 22.0] Overlay: "CHAIN COMBOS"
+  // [22.0 - 27.0] Gameplay: glitch fragment + big combo
+  // [27.0 - 30.0] End card: "INFINISNAKE — PRESS START"
+  const TRAILER_DURATION = 30; // seconds
+
+  function drawOverlay(t) {
+    // t in seconds since trailer start
+    // Intro fade-in / CRT boot
+    if (t < 2.5) {
+      // darken
+      const a = t < 0.5 ? 1 : Math.max(0, 1 - (t - 0.5) * 1.2);
+      ctx.fillStyle = `rgba(0,0,0,${a})`;
+      ctx.fillRect(0, 0, W, H);
+      // title reveal from t=0.8 onward
+      if (t > 0.8) {
+        const p = Math.min(1, (t - 0.8) / 1.4);
+        drawBigTitle('INFINISNAKE', p, false);
+      }
+    } else if (t < 4.0) {
+      // title persists briefly, tagline appears
+      const p = 1;
+      const fade = t > 3.6 ? 1 - (t - 3.6) / 0.4 : 1;
+      drawBigTitle('INFINISNAKE', p, false, fade);
+      if (t > 2.7) {
+        const tp = Math.min(1, (t - 2.7) / 0.5);
+        ctx.globalAlpha = tp * fade;
+        ctx.fillStyle = '#05d9e8';
+        ctx.font = "bold 18px 'Press Start 2P', monospace";
+        ctx.textAlign = 'center';
+        ctx.fillText('ENDLESS COURIER', W/2, H/2 + 48);
+        ctx.textAlign = 'left';
+        ctx.globalAlpha = 1;
+      }
+    } else if (t >= 11.0 && t < 13.0) {
+      drawBanner('YOU ARE THE COURIER', (t - 11.0) / 2.0);
+    } else if (t >= 20.0 && t < 22.0) {
+      drawBanner('CHAIN COMBOS', (t - 20.0) / 2.0);
+    } else if (t >= 27.0) {
+      // End card
+      const p = Math.min(1, (t - 27.0) / 1.5);
+      ctx.fillStyle = `rgba(10,14,26,${p * 0.85})`;
+      ctx.fillRect(0, 0, W, H);
+      drawBigTitle('INFINISNAKE', p, true);
+      if (t > 28.0) {
+        const blink = Math.sin((t - 28.0) * 6) > 0 ? 1 : 0.2;
+        ctx.globalAlpha = blink * Math.min(1, (t - 28.0) / 0.3);
+        ctx.fillStyle = '#39ff14';
+        ctx.font = "bold 18px 'Press Start 2P', monospace";
+        ctx.textAlign = 'center';
+        ctx.fillText('PRESS START', W/2, H/2 + 70);
+        ctx.textAlign = 'left';
+        ctx.globalAlpha = 1;
+      }
+    }
+
+    // Permanent letterbox bars for cinematic feel
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, W, 26);
+    ctx.fillRect(0, H - 26, W, 26);
+  }
+
+  function drawBigTitle(text, progress, final, fade = 1) {
+    ctx.save();
+    const cx = W / 2, cy = H / 2;
+    ctx.textAlign = 'center';
+    ctx.font = "bold 64px 'Press Start 2P', monospace";
+    ctx.globalAlpha = progress * fade;
+    // shadow layers
+    ctx.fillStyle = '#ff2a6d';
+    ctx.fillText(text, cx + 6, cy + 6);
+    ctx.fillStyle = '#05d9e8';
+    ctx.fillText(text, cx + 10, cy + 10);
+    ctx.fillStyle = '#39ff14';
+    ctx.shadowColor = '#39ff14'; ctx.shadowBlur = final ? 22 : 14;
+    ctx.fillText(text, cx, cy);
+    ctx.shadowBlur = 0;
+    ctx.textAlign = 'left';
+    ctx.globalAlpha = 1;
+    ctx.restore();
+  }
+
+  function drawBanner(text, phase) {
+    // phase 0..1: slide in, hold, slide out
+    let x;
+    if (phase < 0.2) {
+      const p = phase / 0.2;
+      x = -W / 2 + W * p;
+    } else if (phase > 0.8) {
+      const p = (phase - 0.8) / 0.2;
+      x = W / 2 - W * p;
+    } else {
+      x = W / 2;
+    }
+    ctx.save();
+    ctx.translate(x, H / 2);
+    ctx.fillStyle = 'rgba(255,42,109,0.9)';
+    ctx.fillRect(-W, -40, W * 2, 80);
+    ctx.fillStyle = '#0a0e1a';
+    ctx.font = "bold 32px 'Press Start 2P', monospace";
+    ctx.textAlign = 'center';
+    ctx.fillText(text, 0, 12);
+    ctx.textAlign = 'left';
+    ctx.restore();
+  }
+
+  // ---------------- Trailer control ----------------
+  let trailerStart = 0;
+  let running = false;
+  let rafId = 0;
+  let lastFrameTime = 0;
+
+  function startTrailer() {
+    initGame();
+    trailerStart = performance.now();
+    lastFrameTime = trailerStart;
+    running = true;
+    statusEl.textContent = 'PLAYING';
+    loop();
+  }
+
+  function stopTrailer() {
+    running = false;
+    cancelAnimationFrame(rafId);
+    statusEl.textContent = 'READY';
+  }
+
+  function loop() {
+    const now = performance.now();
+    const dt = now - lastFrameTime;
+    lastFrameTime = now;
+    const t = (now - trailerStart) / 1000;
+
+    // Only simulate after the intro so early snake movement doesn't show under the title
+    if (t > 1.5) updateSim(now, dt);
+
+    drawGame(now);
+    drawOverlay(t);
+
+    // Progress bar
+    const prog = Math.max(0, Math.min(1, t / TRAILER_DURATION));
+    barEl.style.width = (prog * 100) + '%';
+    const minutes = Math.floor(t / 60), seconds = Math.floor(t % 60);
+    tcEl.textContent =
+      String(minutes).padStart(2,'0') + ':' + String(seconds).padStart(2,'0') +
+      ' / 00:' + String(TRAILER_DURATION).padStart(2,'0');
+
+    if (t >= TRAILER_DURATION + 0.3) {
+      running = false;
+      statusEl.textContent = 'DONE';
+      return;
+    }
+    if (running) rafId = requestAnimationFrame(loop);
+  }
+
+  // Initial idle frame so canvas isn't blank
+  initGame();
+  drawGame(performance.now());
+  drawBigTitle('INFINISNAKE', 1, false);
+
+  btnPlay.addEventListener('click', () => {
+    stopTrailer();
+    startTrailer();
+  });
+
+  // ---------------- Recording ----------------
+  btnRecord.addEventListener('click', async () => {
+    if (!window.MediaRecorder) {
+      alert('Your browser does not support MediaRecorder. Use the screen-recording fallback instead.');
+      return;
+    }
+    btnRecord.disabled = true;
+    btnPlay.disabled = true;
+    titleEl.classList.add('recording');
+    statusEl.textContent = 'RECORDING...';
+
+    const stream = canvas.captureStream(30);
+    // pick the best supported codec, preferring mp4 if available
+    const candidates = [
+      'video/mp4;codecs=avc1',
+      'video/mp4',
+      'video/webm;codecs=vp9',
+      'video/webm;codecs=vp8',
+      'video/webm'
+    ];
+    let mimeType = '';
+    for (const c of candidates) {
+      if (MediaRecorder.isTypeSupported(c)) { mimeType = c; break; }
+    }
+    const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
+    const recorder = new MediaRecorder(stream, mimeType ? { mimeType, videoBitsPerSecond: 5_000_000 } : undefined);
+    const chunks = [];
+    recorder.ondataavailable = (e) => { if (e.data && e.data.size > 0) chunks.push(e.data); };
+
+    const stopped = new Promise(res => recorder.onstop = res);
+    recorder.start();
+    stopTrailer();
+    startTrailer();
+
+    // wait until the trailer finishes playing
+    await new Promise(res => {
+      const check = () => {
+        if (!running) res();
+        else setTimeout(check, 100);
+      };
+      setTimeout(check, 500);
+    });
+    // small pause to capture final frame
+    await new Promise(r => setTimeout(r, 300));
+    recorder.stop();
+    await stopped;
+
+    const blob = new Blob(chunks, { type: mimeType || 'video/webm' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'trailer.' + ext;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+
+    titleEl.classList.remove('recording');
+    statusEl.textContent = 'DOWNLOADED trailer.' + ext;
+    btnRecord.disabled = false;
+    btnPlay.disabled = false;
+  });
+
+})();
+</script>
+
+</body>
+</html>
