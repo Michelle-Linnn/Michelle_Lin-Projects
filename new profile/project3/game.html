@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>INFINISNAKE — WebGL Player</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0e1a;
+    --bg-2:#111725;
+    --panel:#161c2e;
+    --border:#2a3558;
+    --green:#39ff14;
+    --pink:#ff2a6d;
+    --cyan:#05d9e8;
+    --yellow:#ffd400;
+    --muted:#8a93ad;
+    --text:#e8ecf5;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{
+    height:100%;background:#05070f;color:var(--text);
+    font-family:'VT323',monospace;font-size:18px;
+    display:flex;align-items:center;justify-content:center;
+    overflow:hidden;
+  }
+  body{
+    background:
+      radial-gradient(ellipse at top,rgba(5,217,232,.08),transparent 60%),
+      radial-gradient(ellipse at bottom,rgba(255,42,109,.08),transparent 60%),
+      #05070f;
+  }
+  /* subtle CRT-ish scanlines on the whole page */
+  body::before{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:9999;
+    background:repeating-linear-gradient(to bottom, rgba(0,0,0,0) 0 2px, rgba(0,0,0,0.14) 2px 3px);
+    mix-blend-mode:multiply;
+  }
+
+  .unity-chrome{
+    width:min(1200px, 96vw);
+    background:#0d1121;
+    border:2px solid var(--border);
+    box-shadow:0 0 40px rgba(5,217,232,.15), 0 0 80px rgba(255,42,109,.08);
+    display:flex;flex-direction:column;
+  }
+
+  /* Unity-style top bar */
+  .unity-top-bar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:10px 14px;background:#1a1f33;border-bottom:2px solid var(--border);
+    font-family:'Press Start 2P',monospace;font-size:11px;
+  }
+  .unity-title{color:var(--green);letter-spacing:1px;display:flex;align-items:center;gap:10px}
+  .unity-title .dot{width:10px;height:10px;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 1.6s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+  .unity-actions{display:flex;gap:8px}
+  .unity-actions button, .unity-actions a{
+    font-family:'Press Start 2P',monospace;font-size:10px;
+    background:#262c44;color:var(--cyan);border:1px solid var(--border);
+    padding:6px 10px;cursor:pointer;text-decoration:none;
+  }
+  .unity-actions button:hover, .unity-actions a:hover{background:var(--green);color:#000;border-color:var(--green)}
+
+  /* Game body */
+  .unity-body{
+    background:#000;position:relative;
+    display:flex;align-items:center;justify-content:center;
+    padding:0;
+  }
+  .game-wrap{
+    position:relative;width:100%;aspect-ratio:16/9;
+    background:#000;overflow:hidden;
+  }
+  #game{
+    display:block;width:100%;height:100%;
+    image-rendering:pixelated;cursor:crosshair;
+    touch-action:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;
+  }
+
+  .game-overlay{
+    position:absolute;inset:0;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:14px;text-align:center;padding:20px;
+    background:rgba(10,14,26,.92);z-index:5;
+  }
+  .game-overlay.hidden{display:none}
+  .game-overlay h3{font-family:'Press Start 2P',monospace;font-size:34px;color:var(--green);text-shadow:3px 3px 0 var(--pink), 6px 6px 0 rgba(5,217,232,.4)}
+  .game-overlay p{font-size:22px;color:var(--text);max-width:560px}
+  .game-overlay .hint{font-family:'Press Start 2P',monospace;font-size:12px;color:var(--cyan);margin-top:8px}
+  .start-btn{
+    font-family:'Press Start 2P',monospace;font-size:14px;
+    background:var(--green);color:#000;border:none;padding:14px 24px;cursor:pointer;
+    box-shadow:4px 4px 0 var(--pink);
+  }
+  .start-btn:hover{transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--pink)}
+
+  /* Unity bottom status bar */
+  .unity-bottom-bar{
+    display:flex;align-items:center;justify-content:space-between;gap:14px;
+    padding:10px 14px;background:#14182a;border-top:2px solid var(--border);
+    font-family:'Press Start 2P',monospace;font-size:10px;color:var(--muted);
+    flex-wrap:wrap;
+  }
+  .unity-bottom-bar a{color:var(--cyan);text-decoration:none}
+  .unity-bottom-bar a:hover{color:var(--green)}
+  .k{
+    font-family:'Press Start 2P',monospace;font-size:9px;background:#1c2138;
+    border:1px solid var(--border);padding:3px 6px;color:var(--green);
+    margin:0 2px;
+  }
+
+  /* Fullscreen mode: make canvas fill viewport */
+  .unity-chrome:fullscreen{
+    width:100vw;max-width:100vw;border:none;
+  }
+  .unity-chrome:fullscreen .unity-body{flex:1}
+  .unity-chrome:fullscreen .game-wrap{aspect-ratio:auto;height:calc(100vh - 80px)}
+
+  /* Mobile / touch on-screen controls */
+  .touch-pad{
+    display:none;
+    padding:14px;background:#0f1425;border-top:2px solid var(--border);
+    user-select:none;-webkit-user-select:none;touch-action:manipulation;
+  }
+  .touch-row{display:flex;align-items:center;justify-content:space-between;gap:14px}
+  .dpad{
+    position:relative;width:180px;height:180px;flex:none;
+  }
+  .dpad button{
+    position:absolute;width:60px;height:60px;
+    background:#1c2138;color:var(--green);border:2px solid var(--border);
+    font-family:'Press Start 2P',monospace;font-size:18px;cursor:pointer;
+    box-shadow:2px 2px 0 #000;
+  }
+  .dpad button:active{background:var(--green);color:#000;transform:translate(2px,2px);box-shadow:none}
+  .dpad .up    {top:0;   left:60px}
+  .dpad .down  {top:120px;left:60px}
+  .dpad .left  {top:60px;left:0}
+  .dpad .right {top:60px;left:120px}
+  .action-cluster{
+    display:flex;flex-direction:column;gap:10px;align-items:flex-end;flex:1;max-width:260px;
+  }
+  .action-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+  .action-btn{
+    font-family:'Press Start 2P',monospace;font-size:11px;
+    background:#1c2138;color:var(--cyan);border:2px solid var(--border);
+    padding:14px 18px;cursor:pointer;box-shadow:3px 3px 0 #000;
+  }
+  .action-btn.dash{background:#2a1c00;color:var(--yellow);font-size:16px;padding:20px 28px}
+  .action-btn:active{transform:translate(3px,3px);box-shadow:none}
+  .action-btn.small{font-size:9px;padding:8px 10px}
+
+  /* Show touch controls only on touch devices */
+  @media (hover: none) and (pointer: coarse){
+    .touch-pad{display:block}
+  }
+  /* Also make unity-chrome a bit tighter on mobile */
+  @media (max-width:700px){
+    body{align-items:flex-start;overflow-y:auto}
+    .unity-chrome{width:100vw;border:none;min-height:100vh}
+    .unity-top-bar{font-size:9px;padding:8px 10px}
+    .unity-bottom-bar{font-size:8px;padding:8px 10px}
+    .unity-bottom-bar > div:first-child{display:none} /* hide keyboard hint */
+    .game-overlay h3{font-size:24px}
+    .game-overlay p{font-size:16px}
+  }
+</style>
+</head>
+<body>
+
+<div class="unity-chrome" id="chrome">
+  <div class="unity-top-bar">
+    <div class="unity-title">
+      <span class="dot"></span>
+      INFINISNAKE — v0.4 · WebGL Build
+    </div>
+    <div class="unity-actions">
+      <a href="infinisnake.html">&#8592; PROJECT PAGE</a>
+      <button id="soundBtn">&#9834; SOUND: ON</button>
+      <button id="fsBtn">&#9974; FULLSCREEN</button>
+    </div>
+  </div>
+
+  <div class="unity-body">
+    <div class="game-wrap">
+      <canvas id="game" width="960" height="540"></canvas>
+      <div class="game-overlay" id="startOverlay">
+        <h3>INFINISNAKE</h3>
+        <p>The serpent is a courier. Deliver colored crates to matching warehouses. Don't bite yourself.</p>
+        <button class="start-btn" id="startBtn">&gt; PRESS START</button>
+        <div class="hint">CLICK THE GAME AREA TO CAPTURE INPUT</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Touch / mobile controls -->
+  <div class="touch-pad" id="touchPad">
+    <div class="touch-row">
+      <div class="dpad">
+        <button class="up"    data-dir="up">&#9650;</button>
+        <button class="left"  data-dir="left">&#9664;</button>
+        <button class="right" data-dir="right">&#9654;</button>
+        <button class="down"  data-dir="down">&#9660;</button>
+      </div>
+      <div class="action-cluster">
+        <button class="action-btn dash" id="btnDash">DASH</button>
+        <div class="action-row">
+          <button class="action-btn small" id="btnPause">PAUSE</button>
+          <button class="action-btn small" id="btnCrt">CRT</button>
+          <button class="action-btn small" id="btnRestart">RESTART</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="unity-bottom-bar">
+    <div>
+      <span class="k">W</span><span class="k">A</span><span class="k">S</span><span class="k">D</span>/<span class="k">&#8593;&#8592;&#8595;&#8594;</span> STEER
+      &nbsp;·&nbsp; <span class="k">CLICK/TAP</span> AIM
+      &nbsp;·&nbsp; <span class="k">SPACE</span> DASH
+      &nbsp;·&nbsp; <span class="k">ESC</span> PAUSE
+      &nbsp;·&nbsp; <span class="k">P</span> CRT
+      &nbsp;·&nbsp; <span class="k">R</span> RESTART
+    </div>
+    <div>FPS: <span id="fps" style="color:var(--green)">60</span></div>
+  </div>
+</div>
+
+<script>
+// Fullscreen toggle
+const fsBtn = document.getElementById('fsBtn');
+const chrome = document.getElementById('chrome');
+fsBtn.addEventListener('click', () => {
+  if (!document.fullscreenElement) {
+    chrome.requestFullscreen?.();
+  } else {
+    document.exitFullscreen?.();
+  }
+});
+
+// FPS meter
+let fpsEl = document.getElementById('fps');
+let fpsFrames = 0, fpsLast = performance.now();
+function fpsTick(){
+  fpsFrames++;
+  const now = performance.now();
+  if (now - fpsLast > 500){
+    fpsEl.textContent = Math.round(fpsFrames * 1000 / (now - fpsLast));
+    fpsFrames = 0; fpsLast = now;
+  }
+  requestAnimationFrame(fpsTick);
+}
+requestAnimationFrame(fpsTick);
+</script>
+
+<script>
+(() => {
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  const overlay = document.getElementById('startOverlay');
+  const startBtn = document.getElementById('startBtn');
+
+  // ---------------- Music (Web Audio, procedural chiptune, LOOPING) ----------------
+  const music = (() => {
+    let ac = null, masterGain = null, bus = null;
+    let muted = false, running = false;
+    let nextBlockStart = 0, scheduleTimer = null;
+    const MASTER_VOL = 0.26; // slightly softer than trailer since it loops forever
+
+    const NOTE_IX = {C:0,'C#':1,Db:1,D:2,'D#':3,Eb:3,E:4,F:5,'F#':6,Gb:6,G:7,'G#':8,Ab:8,A:9,'A#':10,Bb:10,B:11};
+    function noteFreq(name) {
+      const m = name.match(/^([A-G](?:#|b)?)(-?\d)$/);
+      if (!m) return 440;
+      const semi = NOTE_IX[m[1]] + parseInt(m[2]) * 12;
+      return 440 * Math.pow(2, (semi - (9 + 4 * 12)) / 12);
+    }
+
+    function ensureAudio() {
+      if (!ac) {
+        ac = new (window.AudioContext || window.webkitAudioContext)();
+        masterGain = ac.createGain();
+        masterGain.gain.value = muted ? 0 : MASTER_VOL;
+        masterGain.connect(ac.destination);
+      }
+      if (ac.state === 'suspended') ac.resume();
+    }
+
+    function playNote(dest, startAt, name, dur, type, vol) {
+      if (!name) return;
+      const osc = ac.createOscillator();
+      osc.type = type;
+      osc.frequency.setValueAtTime(noteFreq(name), startAt);
+      const g = ac.createGain();
+      g.gain.setValueAtTime(0, startAt);
+      g.gain.linearRampToValueAtTime(vol, startAt + 0.006);
+      g.gain.exponentialRampToValueAtTime(0.0002, startAt + dur);
+      osc.connect(g); g.connect(dest);
+      osc.start(startAt);
+      osc.stop(startAt + dur + 0.03);
+    }
+    function playKick(dest, startAt) {
+      const osc = ac.createOscillator();
+      const g = ac.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(160, startAt);
+      osc.frequency.exponentialRampToValueAtTime(42, startAt + 0.11);
+      g.gain.setValueAtTime(0.45, startAt);
+      g.gain.exponentialRampToValueAtTime(0.001, startAt + 0.14);
+      osc.connect(g); g.connect(dest);
+      osc.start(startAt); osc.stop(startAt + 0.18);
+    }
+    function playHat(dest, startAt, vol) {
+      const buf = ac.createBuffer(1, Math.floor(ac.sampleRate * 0.04), ac.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+      const src = ac.createBufferSource(); src.buffer = buf;
+      const hp = ac.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 7000;
+      const g = ac.createGain();
+      g.gain.setValueAtTime(vol, startAt);
+      g.gain.exponentialRampToValueAtTime(0.001, startAt + 0.035);
+      src.connect(hp); hp.connect(g); g.connect(dest);
+      src.start(startAt);
+    }
+    function playSnare(dest, startAt) {
+      const buf = ac.createBuffer(1, Math.floor(ac.sampleRate * 0.15), ac.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+      const src = ac.createBufferSource(); src.buffer = buf;
+      const hp = ac.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 1500;
+      const g = ac.createGain();
+      g.gain.setValueAtTime(0.2, startAt);
+      g.gain.exponentialRampToValueAtTime(0.001, startAt + 0.12);
+      src.connect(hp); hp.connect(g); g.connect(dest);
+      src.start(startAt);
+    }
+
+    // One "block" = 8-bar progression at 128 BPM = 15 seconds.
+    // We keep scheduling blocks back-to-back to loop forever.
+    const BPM = 128;
+    const BEAT = 60 / BPM;
+    const BAR = BEAT * 4;
+    const BLOCK_BARS = 8;
+    const BLOCK_DURATION = BAR * BLOCK_BARS; // ~15s
+
+    const progression = ['Em','Am','C','D','G','Em','Am','B'];
+    const bassRoot = {Em:'E2',Am:'A2',C:'C3',D:'D3',G:'G2',B:'B2'};
+    const arp = {
+      Em: ['E4','G4','B4','G4'],
+      Am: ['A4','C5','E4','C5'],
+      C:  ['C4','E4','G4','E4'],
+      D:  ['D4','F#4','A4','F#4'],
+      G:  ['G4','B4','D5','B4'],
+      B:  ['B3','D#4','F#4','D#4'],
+    };
+    const lead = {
+      Em: ['E5',null,'G5','B5','E5',null,'G5','B5'],
+      Am: ['A5',null,'E5','C6','A5','G5','E5','C5'],
+      C:  ['G5','E5','G5','C6','G5','E5','G5',null],
+      D:  ['A5','F#5','A5','D6','A5','F#5','A5',null],
+      G:  ['D6',null,'B5','G5','D6','B5','G5','D6'],
+      B:  ['F#5','D#5','F#5','B5','F#5','D#5','F#5','B5'],
+    };
+
+    function scheduleBlock(startAt, withLead) {
+      const dest = bus;
+      if (!dest) return;
+      const eighth = BEAT / 2;
+      for (let bIdx = 0; bIdx < progression.length; bIdx++) {
+        const chord = progression[bIdx];
+        const barStart = startAt + bIdx * BAR;
+        // Bass
+        playNote(dest, barStart, bassRoot[chord], BEAT * 1.8, 'triangle', 0.2);
+        playNote(dest, barStart + BEAT * 2, bassRoot[chord], BEAT * 1.8, 'triangle', 0.2);
+        // Arpeggio
+        for (let e = 0; e < 8; e++) {
+          playNote(dest, barStart + e * eighth, arp[chord][e % 4], eighth * 0.9, 'square', 0.05);
+        }
+        // Lead (starts from bar 2 on the very first block, always on after)
+        if (withLead || bIdx >= 1) {
+          for (let e = 0; e < 8; e++) {
+            playNote(dest, barStart + e * eighth, lead[chord][e], eighth * 1.1, 'square', 0.1);
+          }
+        }
+        // Drums (skip bar 1 of the very first block to ease in)
+        if (withLead || bIdx >= 1) {
+          playKick(dest, barStart);
+          playKick(dest, barStart + BEAT * 2);
+          playSnare(dest, barStart + BEAT);
+          playSnare(dest, barStart + BEAT * 3);
+          for (let e = 0; e < 8; e++) {
+            playHat(dest, barStart + e * eighth, (e % 2 === 0) ? 0.035 : 0.02);
+          }
+        }
+      }
+    }
+
+    function tick() {
+      if (!running || !ac) return;
+      // Keep ~3 seconds of music scheduled ahead
+      while (nextBlockStart < ac.currentTime + 3) {
+        scheduleBlock(nextBlockStart, true);
+        nextBlockStart += BLOCK_DURATION;
+      }
+    }
+
+    function start() {
+      ensureAudio();
+      if (running) return;
+      stop(true); // quick fade of any lingering bus
+      bus = ac.createGain();
+      bus.gain.value = 1;
+      bus.connect(masterGain);
+      const startAt = ac.currentTime + 0.05;
+      nextBlockStart = startAt;
+      // first block: gentle intro (no lead/drums in bar 1)
+      scheduleBlock(nextBlockStart, false);
+      nextBlockStart += BLOCK_DURATION;
+      running = true;
+      scheduleTimer = setInterval(tick, 500);
+    }
+
+    function stop(silent) {
+      running = false;
+      if (scheduleTimer) { clearInterval(scheduleTimer); scheduleTimer = null; }
+      if (bus && ac) {
+        const old = bus; bus = null;
+        try {
+          old.gain.cancelScheduledValues(ac.currentTime);
+          old.gain.setValueAtTime(old.gain.value, ac.currentTime);
+          old.gain.linearRampToValueAtTime(0, ac.currentTime + (silent ? 0.04 : 0.25));
+        } catch (e) {}
+        setTimeout(() => { try { old.disconnect(); } catch(e){} }, 400);
+      }
+    }
+
+    function toggleMute() {
+      muted = !muted;
+      ensureAudio();
+      masterGain.gain.linearRampToValueAtTime(muted ? 0 : MASTER_VOL, ac.currentTime + 0.05);
+      return muted;
+    }
+
+    return { start, stop, toggleMute, isMuted: () => muted, isRunning: () => running, ensureAudio };
+  })();
+
+  const W = canvas.width;   // 960
+  const H = canvas.height;  // 540
+  const TILE = 24;
+
+  const COLORS = {
+    red:    '#ff2a6d',
+    blue:   '#05d9e8',
+    yellow: '#ffd400'
+  };
+  const COLOR_KEYS = ['red', 'blue', 'yellow'];
+
+  let snake, dir, nextDir, pendingGrowth, score, hiScore = 0, multiplier, multiplierEnd;
+  let food, warehouses, cargoQueue, floatTexts;
+  let camera, gameState, dashUntil, dashCooldownUntil, lastStep, stepAccumulator;
+  let crt = true;
+  let baseSpeed = 7;
+  let dashSpeed = 16;
+  let difficultyBoost = 0;
+  let particles = [];
+  let shake = 0;
+  let totalDeliveries = 0;
+
+  function init() {
+    snake = [];
+    for (let i = 0; i < 6; i++) snake.push({ x: -i, y: 0, cargo: null });
+    dir = { x: 1, y: 0 };
+    nextDir = { x: 1, y: 0 };
+    pendingGrowth = 0;
+    score = 0;
+    multiplier = 1;
+    multiplierEnd = 0;
+    food = [];
+    cargoQueue = [];
+    floatTexts = [];
+    warehouses = [
+      { x: 14,  y: -7, w: 3, h: 3, color: 'red',    deliveries: 0, pulse: 0 },
+      { x: -16, y: 5,  w: 3, h: 3, color: 'blue',   deliveries: 0, pulse: 0 },
+      { x: 10,  y: 11, w: 3, h: 3, color: 'yellow', deliveries: 0, pulse: 0 }
+    ];
+    camera = { x: -W / 2, y: -H / 2 };
+    gameState = 'playing';
+    dashUntil = 0;
+    dashCooldownUntil = 0;
+    stepAccumulator = 0;
+    lastStep = performance.now();
+    difficultyBoost = 0;
+    particles = [];
+    shake = 0;
+    totalDeliveries = 0;
+    spawnFoodAround();
+  }
+
+  function isInWarehouse(x, y, w) {
+    return x >= w.x && x < w.x + w.w && y >= w.y && y < w.y + w.h;
+  }
+
+  function isInAnyWarehouse(x, y) {
+    for (const w of warehouses) if (isInWarehouse(x, y, w)) return true;
+    return false;
+  }
+
+  function relocateWarehouse(w) {
+    const head = snake[0];
+    const minDist = 14, maxDist = 28;
+    for (let attempts = 0; attempts < 80; attempts++) {
+      const angle = Math.random() * Math.PI * 2;
+      const dist = minDist + Math.random() * (maxDist - minDist);
+      const nx = Math.round(head.x + Math.cos(angle) * dist);
+      const ny = Math.round(head.y + Math.sin(angle) * dist);
+      let bad = false;
+      for (const other of warehouses) {
+        if (other === w) continue;
+        if (Math.abs(other.x - nx) < 7 && Math.abs(other.y - ny) < 7) { bad = true; break; }
+      }
+      if (bad) continue;
+      for (const s of snake) {
+        if (s.x >= nx && s.x < nx + w.w && s.y >= ny && s.y < ny + w.h) { bad = true; break; }
+      }
+      if (bad) continue;
+      w.x = nx; w.y = ny;
+      if (Math.random() < 0.6) {
+        const others = COLOR_KEYS.filter(c => c !== w.color);
+        w.color = others[Math.floor(Math.random() * others.length)];
+      }
+      w.deliveries = 0;
+      return;
+    }
+  }
+
+  function spawnFoodAround() {
+    const head = snake[0];
+    food = food.filter(f => Math.abs(f.x - head.x) < 55 && Math.abs(f.y - head.y) < 38);
+    let tries = 0;
+    while (food.length < 26 && tries < 400) {
+      tries++;
+      const fx = head.x + Math.floor((Math.random() - 0.5) * 70);
+      const fy = head.y + Math.floor((Math.random() - 0.5) * 48);
+      let bad = false;
+      for (const s of snake) if (s.x === fx && s.y === fy) { bad = true; break; }
+      if (bad) continue;
+      for (const f of food) if (f.x === fx && f.y === fy) { bad = true; break; }
+      if (bad) continue;
+      if (isInAnyWarehouse(fx, fy)) continue;
+      const r = Math.random();
+      if (r < 0.55) {
+        const color = COLOR_KEYS[Math.floor(Math.random() * COLOR_KEYS.length)];
+        food.push({ x: fx, y: fy, type: 'crate', color, born: performance.now() });
+      } else if (r < 0.60) {
+        food.push({ x: fx, y: fy, type: 'glitch', born: performance.now() });
+      } else {
+        food.push({ x: fx, y: fy, type: 'pellet', born: performance.now() });
+      }
+    }
+  }
+
+  function burst(gx, gy, color, n) {
+    const cx = gx * TILE + TILE / 2;
+    const cy = gy * TILE + TILE / 2;
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const s = 1 + Math.random() * 3;
+      particles.push({
+        x: cx, y: cy,
+        vx: Math.cos(a) * s, vy: Math.sin(a) * s,
+        life: 600 + Math.random() * 400, born: performance.now(),
+        color
+      });
+    }
+  }
+
+  function step() {
+    dir = nextDir;
+    const head = snake[0];
+    const newHead = { x: head.x + dir.x, y: head.y + dir.y, cargo: null };
+
+    for (let i = 1; i < snake.length; i++) {
+      if (snake[i].x === newHead.x && snake[i].y === newHead.y) {
+        gameState = 'gameover';
+        if (score > hiScore) hiScore = score;
+        shake = 18;
+        burst(newHead.x, newHead.y, '#ff2a6d', 40);
+        return;
+      }
+    }
+
+    snake.unshift(newHead);
+    let justAteCrateColor = null;
+
+    for (let i = food.length - 1; i >= 0; i--) {
+      if (food[i].x === newHead.x && food[i].y === newHead.y) {
+        const f = food[i];
+        if (f.type === 'pellet') {
+          score += 10 * multiplier;
+          pendingGrowth += 1;
+          burst(f.x, f.y, '#aaaaaa', 8);
+        } else if (f.type === 'glitch') {
+          score += 100 * multiplier;
+          pendingGrowth += 2;
+          multiplier = 2;
+          multiplierEnd = performance.now() + 8000;
+          burst(f.x, f.y, '#ffd400', 24);
+          shake = 6;
+          floatTexts.push({ text: 'x2!', wx: f.x, wy: f.y, born: performance.now(), color: '#ffd400' });
+        } else if (f.type === 'crate') {
+          score += 5 * multiplier;
+          pendingGrowth += 1;
+          justAteCrateColor = f.color;
+          burst(f.x, f.y, COLORS[f.color], 14);
+        }
+        food.splice(i, 1);
+        difficultyBoost = Math.min(3.5, difficultyBoost + 0.03);
+        break;
+      }
+    }
+
+    for (const w of warehouses) {
+      if (isInWarehouse(newHead.x, newHead.y, w)) {
+        const kept = [];
+        let removed = 0;
+        for (let i = 0; i < snake.length; i++) {
+          const s = snake[i];
+          if (i !== 0 && s.cargo === w.color) {
+            removed++;
+            burst(s.x, s.y, COLORS[w.color], 6);
+          } else {
+            kept.push(s);
+          }
+        }
+        if (removed > 0) {
+          snake = kept;
+          const combo = removed >= 5 ? 3 : (removed >= 3 ? 2 : 1);
+          const earned = removed * 50 * combo * multiplier;
+          score += earned;
+          w.deliveries++;
+          totalDeliveries++;
+          w.pulse = 1.0;
+          shake = Math.min(14, 2 + removed * 1.2);
+          floatTexts.push({ text: '+' + earned, wx: newHead.x, wy: newHead.y - 1, born: performance.now(), color: COLORS[w.color] });
+          if (combo > 1) {
+            floatTexts.push({ text: 'x' + combo + ' COMBO!', wx: newHead.x, wy: newHead.y - 2.2, born: performance.now() + 60, color: '#ffd400' });
+          }
+          if (w.deliveries >= 3) relocateWarehouse(w);
+        }
+      }
+    }
+
+    if (pendingGrowth > 0) {
+      pendingGrowth -= 1;
+      if (justAteCrateColor) snake[0].cargo = justAteCrateColor;
+    } else {
+      snake.pop();
+    }
+
+    if (performance.now() > multiplierEnd) multiplier = 1;
+
+    spawnFoodAround();
+  }
+
+  function update(now) {
+    if (gameState !== 'playing') return;
+    const dashing = now < dashUntil;
+    const speed = (dashing ? dashSpeed : baseSpeed) + difficultyBoost;
+    const stepInterval = 1000 / speed;
+    stepAccumulator += now - lastStep;
+    lastStep = now;
+    if (stepAccumulator > 500) stepAccumulator = 500;
+    while (stepAccumulator >= stepInterval) {
+      stepAccumulator -= stepInterval;
+      step();
+      if (gameState !== 'playing') break;
+    }
+
+    const head = snake[0];
+    const targetX = head.x * TILE - W / 2 + TILE / 2;
+    const targetY = head.y * TILE - H / 2 + TILE / 2;
+    camera.x += (targetX - camera.x) * 0.15;
+    camera.y += (targetY - camera.y) * 0.15;
+
+    for (const p of particles) { p.x += p.vx; p.y += p.vy; p.vx *= 0.96; p.vy *= 0.96; }
+    particles = particles.filter(p => now - p.born < p.life);
+    for (const w of warehouses) w.pulse = Math.max(0, w.pulse - 0.04);
+    floatTexts = floatTexts.filter(t => now - t.born < 1300);
+    if (shake > 0) shake *= 0.88;
+  }
+
+  function draw() {
+    const sx = (Math.random() - 0.5) * shake;
+    const sy = (Math.random() - 0.5) * shake;
+    const now = performance.now();
+
+    ctx.fillStyle = '#0a0e1a';
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.save();
+    ctx.translate(sx, sy);
+
+    ctx.strokeStyle = 'rgba(57,255,20,0.07)';
+    ctx.lineWidth = 1;
+    const offX = -((camera.x % TILE + TILE) % TILE);
+    const offY = -((camera.y % TILE + TILE) % TILE);
+    ctx.beginPath();
+    for (let x = offX; x <= W; x += TILE) { ctx.moveTo(x + 0.5, 0); ctx.lineTo(x + 0.5, H); }
+    for (let y = offY; y <= H; y += TILE) { ctx.moveTo(0, y + 0.5); ctx.lineTo(W, y + 0.5); }
+    ctx.stroke();
+
+    ctx.fillStyle = 'rgba(5,217,232,0.18)';
+    const step2 = TILE * 4;
+    const dOffX = -(((camera.x * 0.5) % step2 + step2) % step2);
+    const dOffY = -(((camera.y * 0.5) % step2 + step2) % step2);
+    for (let x = dOffX; x <= W; x += step2) {
+      for (let y = dOffY; y <= H; y += step2) ctx.fillRect(x, y, 2, 2);
+    }
+
+    // warehouses
+    for (const w of warehouses) {
+      const wx = w.x * TILE - camera.x;
+      const wy = w.y * TILE - camera.y;
+      const ww = w.w * TILE, wh = w.h * TILE;
+      if (wx + ww < -TILE || wx > W + TILE || wy + wh < -TILE || wy > H + TILE) continue;
+      const col = COLORS[w.color];
+      const pulse = 0.5 + 0.5 * Math.sin(now / 350) + w.pulse * 0.6;
+      ctx.fillStyle = '#0d1326';
+      ctx.fillRect(wx, wy, ww, wh);
+      ctx.strokeStyle = col;
+      ctx.lineWidth = 2 + 2 * Math.min(1, pulse);
+      ctx.shadowColor = col; ctx.shadowBlur = 14 * Math.min(1.2, pulse);
+      ctx.strokeRect(wx + 1, wy + 1, ww - 2, wh - 2);
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = col;
+      const b = 6;
+      [[wx, wy],[wx+ww-b, wy],[wx, wy+wh-b],[wx+ww-b, wy+wh-b]].forEach(([cx,cy])=>{
+        ctx.fillRect(cx, cy, b, 2); ctx.fillRect(cx, cy, 2, b);
+      });
+      ctx.fillStyle = col;
+      ctx.font = "bold 11px 'Press Start 2P', monospace";
+      ctx.textAlign = 'center';
+      ctx.fillText(w.color.toUpperCase(), wx + ww / 2, wy + wh / 2 - 4);
+      ctx.fillStyle = '#8a93ad';
+      ctx.font = "9px 'Press Start 2P', monospace";
+      ctx.fillText('DEPOT', wx + ww / 2, wy + wh / 2 + 12);
+      ctx.textAlign = 'left';
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(wx + 4, wy + 4, ww - 8, wh - 8);
+      ctx.clip();
+      ctx.strokeStyle = col + '22';
+      ctx.lineWidth = 1;
+      for (let i = -wh; i < ww; i += 8) {
+        ctx.beginPath();
+        ctx.moveTo(wx + i, wy);
+        ctx.lineTo(wx + i + wh, wy + wh);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    // food
+    for (const f of food) {
+      const fx = f.x * TILE - camera.x;
+      const fy = f.y * TILE - camera.y;
+      if (fx < -TILE * 2 || fx > W + TILE || fy < -TILE * 2 || fy > H + TILE) continue;
+      const pulse = 0.65 + 0.35 * Math.sin(now / 180 + f.x * 0.3 + f.y * 0.3);
+      if (f.type === 'crate') {
+        const col = COLORS[f.color];
+        ctx.shadowColor = col; ctx.shadowBlur = 10 * pulse;
+        ctx.fillStyle = col;
+        ctx.fillRect(fx + 3, fy + 3, TILE - 6, TILE - 6);
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = 'rgba(0,0,0,0.45)';
+        ctx.fillRect(fx + 3, fy + TILE / 2 - 1, TILE - 6, 2);
+        ctx.fillRect(fx + TILE / 2 - 1, fy + 3, 2, TILE - 6);
+        ctx.fillStyle = 'rgba(255,255,255,0.35)';
+        ctx.fillRect(fx + 4, fy + 4, 3, 3);
+      } else if (f.type === 'glitch') {
+        ctx.shadowColor = '#ffd400'; ctx.shadowBlur = 18 * pulse;
+        ctx.fillStyle = '#ffd400';
+        ctx.beginPath();
+        const cx = fx + TILE / 2, cy = fy + TILE / 2, r = TILE / 2 - 4;
+        ctx.moveTo(cx, cy - r); ctx.lineTo(cx + r, cy);
+        ctx.lineTo(cx, cy + r); ctx.lineTo(cx - r, cy);
+        ctx.closePath();
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(cx - 2, cy - 2, 4, 4);
+      } else {
+        ctx.shadowColor = '#aaaaaa'; ctx.shadowBlur = 6 * pulse;
+        ctx.fillStyle = '#aaaaaa';
+        ctx.fillRect(fx + TILE / 2 - 3, fy + TILE / 2 - 3, 6, 6);
+      }
+    }
+    ctx.shadowBlur = 0;
+
+    // snake
+    for (let i = snake.length - 1; i >= 0; i--) {
+      const s = snake[i];
+      const x = s.x * TILE - camera.x;
+      const y = s.y * TILE - camera.y;
+      if (x < -TILE || x > W || y < -TILE || y > H) continue;
+      const isHead = i === 0;
+      if (isHead) {
+        const headCol = s.cargo ? COLORS[s.cargo] : '#ffd400';
+        ctx.shadowColor = headCol; ctx.shadowBlur = 14;
+        ctx.fillStyle = '#ffd400';
+        ctx.fillRect(x + 1, y + 1, TILE - 2, TILE - 2);
+        if (s.cargo) {
+          ctx.shadowBlur = 0;
+          ctx.fillStyle = COLORS[s.cargo];
+          ctx.fillRect(x + 6, y + 6, TILE - 12, TILE - 12);
+        }
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#0a0e1a';
+        const ex = dir.x, ey = dir.y;
+        const cx = x + TILE / 2, cy = y + TILE / 2;
+        const eo = 5, es = 4;
+        ctx.fillRect(cx + ey * eo - es / 2, cy + ex * eo - es / 2, es, es);
+        ctx.fillRect(cx - ey * eo - es / 2, cy - ex * eo - es / 2, es, es);
+      } else if (s.cargo) {
+        ctx.shadowColor = COLORS[s.cargo]; ctx.shadowBlur = 10;
+        ctx.fillStyle = '#1b7a10';
+        ctx.fillRect(x + 2, y + 2, TILE - 4, TILE - 4);
+        ctx.fillStyle = COLORS[s.cargo];
+        ctx.fillRect(x + 4, y + 4, TILE - 8, TILE - 8);
+        ctx.fillStyle = 'rgba(0,0,0,0.45)';
+        ctx.fillRect(x + 4, y + TILE / 2 - 1, TILE - 8, 2);
+        ctx.fillRect(x + TILE / 2 - 1, y + 4, 2, TILE - 8);
+      } else {
+        const t = i / Math.max(1, snake.length);
+        const g = Math.floor(255 - t * 140);
+        ctx.shadowColor = '#39ff14'; ctx.shadowBlur = 5;
+        ctx.fillStyle = `rgb(${Math.floor(30 + t * 10)}, ${g}, 20)`;
+        ctx.fillRect(x + 2, y + 2, TILE - 4, TILE - 4);
+      }
+    }
+    ctx.shadowBlur = 0;
+
+    for (const t of floatTexts) {
+      const age = (now - t.born) / 1300;
+      if (age < 0 || age > 1) continue;
+      const tx = t.wx * TILE - camera.x + TILE / 2;
+      const ty = t.wy * TILE - camera.y - age * 40;
+      ctx.globalAlpha = 1 - age;
+      ctx.fillStyle = t.color;
+      ctx.font = "bold 14px 'Press Start 2P', monospace";
+      ctx.textAlign = 'center';
+      ctx.fillText(t.text, tx, ty);
+      ctx.textAlign = 'left';
+      ctx.globalAlpha = 1;
+    }
+
+    for (const p of particles) {
+      const age = (now - p.born) / p.life;
+      const a = 1 - age;
+      ctx.fillStyle = p.color;
+      ctx.globalAlpha = Math.max(0, a);
+      ctx.fillRect(p.x - camera.x - 2, p.y - camera.y - 2, 4, 4);
+    }
+    ctx.globalAlpha = 1;
+
+    ctx.restore();
+
+    // off-screen warehouse arrows
+    for (const w of warehouses) {
+      const cxw = (w.x + w.w / 2) * TILE - camera.x;
+      const cyw = (w.y + w.h / 2) * TILE - camera.y;
+      const margin = 18;
+      if (cxw >= margin && cxw <= W - margin && cyw >= margin && cyw <= H - margin) continue;
+      const tx = Math.max(margin, Math.min(W - margin, cxw));
+      const ty = Math.max(margin, Math.min(H - margin, cyw));
+      const col = COLORS[w.color];
+      ctx.fillStyle = col;
+      ctx.shadowColor = col; ctx.shadowBlur = 10;
+      const ang = Math.atan2(cyw - ty, cxw - tx);
+      ctx.save();
+      ctx.translate(tx, ty);
+      ctx.rotate(ang);
+      ctx.beginPath();
+      ctx.moveTo(10, 0); ctx.lineTo(-6, 6); ctx.lineTo(-6, -6);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+      ctx.shadowBlur = 0;
+    }
+
+    // HUD
+    ctx.fillStyle = '#39ff14';
+    ctx.font = "bold 18px 'Press Start 2P', monospace";
+    ctx.textAlign = 'left';
+    ctx.fillText('SCORE ' + String(score).padStart(6, '0'), 14, 28);
+    ctx.fillStyle = '#05d9e8';
+    ctx.font = "11px 'Press Start 2P', monospace";
+    ctx.fillText('LEN ' + snake.length, 14, 48);
+    ctx.fillText('HI ' + String(hiScore).padStart(6, '0'), 14, 64);
+    ctx.fillText('DELIVERED ' + totalDeliveries, 14, 80);
+    if (multiplier > 1) {
+      const blink = Math.sin(now / 100) > 0 ? '#ffd400' : '#ff2a6d';
+      ctx.fillStyle = blink;
+      ctx.font = "12px 'Press Start 2P', monospace";
+      ctx.fillText('x2 GLITCH BONUS', 14, 98);
+    }
+
+    // cargo manifest
+    const counts = { red: 0, blue: 0, yellow: 0 };
+    for (const s of snake) if (s.cargo) counts[s.cargo]++;
+    const manX = 14, manY = H - 56;
+    ctx.fillStyle = '#8a93ad';
+    ctx.font = "10px 'Press Start 2P', monospace";
+    ctx.fillText('CARGO', manX, manY - 6);
+    let boxX = manX;
+    for (const c of COLOR_KEYS) {
+      ctx.fillStyle = COLORS[c];
+      ctx.fillRect(boxX, manY, 18, 18);
+      ctx.fillStyle = 'rgba(0,0,0,0.5)';
+      ctx.fillRect(boxX, manY + 8, 18, 2);
+      ctx.fillRect(boxX + 8, manY, 2, 18);
+      ctx.fillStyle = '#fff';
+      ctx.font = "bold 12px 'Press Start 2P', monospace";
+      ctx.textAlign = 'center';
+      ctx.fillText(String(counts[c]), boxX + 9, manY + 34);
+      ctx.textAlign = 'left';
+      boxX += 28;
+    }
+
+    // dash bar
+    const dashX = W - 200, dashY = 18;
+    ctx.strokeStyle = '#39ff14'; ctx.lineWidth = 2;
+    ctx.strokeRect(dashX, dashY, 180, 14);
+    let dashFrac, dashCol;
+    if (now < dashUntil) { dashFrac = (dashUntil - now) / 500; dashCol = '#ffd400'; }
+    else if (now < dashCooldownUntil) { dashFrac = 1 - (dashCooldownUntil - now) / 1400; dashCol = '#ff2a6d'; }
+    else { dashFrac = 1; dashCol = '#39ff14'; }
+    ctx.fillStyle = dashCol;
+    ctx.fillRect(dashX + 2, dashY + 2, (180 - 4) * dashFrac, 10);
+    ctx.fillStyle = '#39ff14';
+    ctx.font = "10px 'Press Start 2P', monospace";
+    ctx.fillText('DASH [SPACE]', dashX, dashY + 28);
+
+    if (crt) {
+      ctx.fillStyle = 'rgba(0,0,0,0.14)';
+      for (let y = 0; y < H; y += 3) ctx.fillRect(0, y, W, 1);
+      const g = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.35, W / 2, H / 2, Math.max(W, H) * 0.7);
+      g.addColorStop(0, 'rgba(0,0,0,0)');
+      g.addColorStop(1, 'rgba(0,0,0,0.55)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, W, H);
+    }
+
+    if (gameState === 'gameover') {
+      ctx.fillStyle = 'rgba(10,14,26,0.82)';
+      ctx.fillRect(0, 0, W, H);
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#ff2a6d';
+      ctx.font = "36px 'Press Start 2P', monospace";
+      ctx.fillText('GAME OVER', W / 2, H / 2 - 40);
+      ctx.fillStyle = '#39ff14';
+      ctx.font = "18px 'Press Start 2P', monospace";
+      ctx.fillText('FINAL SCORE ' + score, W / 2, H / 2);
+      ctx.fillStyle = '#ffd400';
+      ctx.font = "12px 'Press Start 2P', monospace";
+      ctx.fillText('HI ' + hiScore + '   LEN ' + snake.length + '   DELIVERED ' + totalDeliveries, W / 2, H / 2 + 26);
+      ctx.fillStyle = '#05d9e8';
+      ctx.fillText('PRESS R TO RESTART', W / 2, H / 2 + 60);
+      ctx.textAlign = 'left';
+    }
+    if (gameState === 'paused') {
+      ctx.fillStyle = 'rgba(10,14,26,0.7)';
+      ctx.fillRect(0, 0, W, H);
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#ffd400';
+      ctx.font = "36px 'Press Start 2P', monospace";
+      ctx.fillText('PAUSED', W / 2, H / 2);
+      ctx.fillStyle = '#05d9e8';
+      ctx.font = "12px 'Press Start 2P', monospace";
+      ctx.fillText('PRESS ESC TO RESUME', W / 2, H / 2 + 34);
+      ctx.textAlign = 'left';
+    }
+  }
+
+  function loop(now) {
+    update(now);
+    draw();
+    requestAnimationFrame(loop);
+  }
+
+  function setDir(x, y) {
+    if (snake.length > 1 && dir.x + x === 0 && dir.y + y === 0) return;
+    nextDir = { x, y };
+  }
+
+  window.addEventListener('keydown', (e) => {
+    const k = e.key;
+    if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(k)) e.preventDefault();
+    const lk = k.toLowerCase();
+    if (gameState === 'playing') {
+      if (lk === 'w' || k === 'ArrowUp') setDir(0, -1);
+      else if (lk === 's' || k === 'ArrowDown') setDir(0, 1);
+      else if (lk === 'a' || k === 'ArrowLeft') setDir(-1, 0);
+      else if (lk === 'd' || k === 'ArrowRight') setDir(1, 0);
+      else if (k === ' ') {
+        const now = performance.now();
+        if (now > dashCooldownUntil) {
+          dashUntil = now + 500;
+          dashCooldownUntil = now + 500 + 1400;
+        }
+      }
+    }
+    if (lk === 'r') { init(); overlay.classList.add('hidden'); }
+    if (k === 'Escape') {
+      if (gameState === 'playing') gameState = 'paused';
+      else if (gameState === 'paused') { gameState = 'playing'; lastStep = performance.now(); stepAccumulator = 0; }
+    }
+    if (lk === 'p') crt = !crt;
+  }, { passive: false });
+
+  function aimAt(clientX, clientY) {
+    if (gameState !== 'playing' || !snake || !snake[0]) return;
+    const r = canvas.getBoundingClientRect();
+    const mx = (clientX - r.left) * (W / r.width);
+    const my = (clientY - r.top) * (H / r.height);
+    const head = snake[0];
+    const hx = head.x * TILE - camera.x + TILE / 2;
+    const hy = head.y * TILE - camera.y + TILE / 2;
+    const dx = mx - hx, dy = my - hy;
+    if (Math.abs(dx) > Math.abs(dy)) setDir(dx > 0 ? 1 : -1, 0);
+    else setDir(0, dy > 0 ? 1 : -1);
+  }
+  canvas.addEventListener('mousedown', (e) => aimAt(e.clientX, e.clientY));
+
+  // ---- Touch / mobile support ----
+  let touchStart = null;
+  const SWIPE_THRESH = 20; // px for a swipe to register
+  canvas.addEventListener('touchstart', (e) => {
+    if (!overlay.classList.contains('hidden')) { start(); e.preventDefault(); return; }
+    if (e.touches.length > 0) {
+      const t = e.touches[0];
+      touchStart = { x: t.clientX, y: t.clientY, time: performance.now(), used: false };
+    }
+    e.preventDefault();
+  }, { passive: false });
+  canvas.addEventListener('touchmove', (e) => {
+    if (!touchStart || touchStart.used || e.touches.length === 0) return;
+    const t = e.touches[0];
+    const dx = t.clientX - touchStart.x;
+    const dy = t.clientY - touchStart.y;
+    if (Math.abs(dx) > SWIPE_THRESH || Math.abs(dy) > SWIPE_THRESH) {
+      if (Math.abs(dx) > Math.abs(dy)) setDir(dx > 0 ? 1 : -1, 0);
+      else setDir(0, dy > 0 ? 1 : -1);
+      touchStart.used = true;
+    }
+    e.preventDefault();
+  }, { passive: false });
+  canvas.addEventListener('touchend', (e) => {
+    if (!touchStart) return;
+    const dt = performance.now() - touchStart.time;
+    if (!touchStart.used && dt < 300) {
+      // treat as a tap — aim toward tap point
+      aimAt(touchStart.x, touchStart.y);
+    }
+    touchStart = null;
+    e.preventDefault();
+  }, { passive: false });
+
+  // ---- On-screen buttons ----
+  function pressDir(d) {
+    if (gameState !== 'playing') return;
+    if (d === 'up')    setDir(0, -1);
+    if (d === 'down')  setDir(0, 1);
+    if (d === 'left')  setDir(-1, 0);
+    if (d === 'right') setDir(1, 0);
+  }
+  document.querySelectorAll('.dpad button').forEach(btn => {
+    const d = btn.getAttribute('data-dir');
+    // respond on both touchstart and mousedown for responsiveness
+    const handler = (e) => { e.preventDefault(); pressDir(d); };
+    btn.addEventListener('touchstart', handler, { passive: false });
+    btn.addEventListener('mousedown', handler);
+  });
+  const btnDash = document.getElementById('btnDash');
+  if (btnDash) {
+    const dashHandler = (e) => {
+      e.preventDefault();
+      const now = performance.now();
+      if (gameState === 'playing' && now > dashCooldownUntil) {
+        dashUntil = now + 500;
+        dashCooldownUntil = now + 500 + 1400;
+      }
+    };
+    btnDash.addEventListener('touchstart', dashHandler, { passive: false });
+    btnDash.addEventListener('mousedown', dashHandler);
+  }
+  const btnPause = document.getElementById('btnPause');
+  if (btnPause) btnPause.addEventListener('click', () => {
+    if (gameState === 'playing') gameState = 'paused';
+    else if (gameState === 'paused') { gameState = 'playing'; lastStep = performance.now(); stepAccumulator = 0; }
+  });
+  const btnCrt = document.getElementById('btnCrt');
+  if (btnCrt) btnCrt.addEventListener('click', () => { crt = !crt; });
+  const btnRestart = document.getElementById('btnRestart');
+  if (btnRestart) btnRestart.addEventListener('click', () => { init(); overlay.classList.add('hidden'); });
+
+  function start() {
+    overlay.classList.add('hidden');
+    init();
+    gameState = 'playing';
+    lastStep = performance.now();
+    stepAccumulator = 0;
+    canvas.focus();
+    // kick off looping music on first real user gesture
+    try { if (!music.isRunning()) music.start(); } catch (e) { console.warn('music start failed:', e); }
+  }
+  startBtn.addEventListener('click', start);
+  canvas.addEventListener('click', () => { if (!overlay.classList.contains('hidden')) start(); });
+
+  // Sound mute toggle
+  const soundBtn = document.getElementById('soundBtn');
+  if (soundBtn) soundBtn.addEventListener('click', () => {
+    const m = music.toggleMute();
+    soundBtn.innerHTML = m ? '&#128263; SOUND: OFF' : '&#9834; SOUND: ON';
+  });
+  // Stop music cleanly if the tab is hidden for a long time to save CPU, resume on return
+  document.addEventListener('visibilitychange', () => {
+    try {
+      if (document.hidden) {
+        // soft pause: just mute without stopping scheduling
+        if (music.isRunning() && !music.isMuted()) {
+          music._wasAutoMuted = true;
+          music.toggleMute();
+          if (soundBtn) soundBtn.innerHTML = '&#128263; SOUND: OFF';
+        }
+      } else {
+        if (music._wasAutoMuted) {
+          music._wasAutoMuted = false;
+          music.toggleMute();
+          if (soundBtn) soundBtn.innerHTML = '&#9834; SOUND: ON';
+        }
+      }
+    } catch (e) {}
+  });
+
+  // initial paused state so canvas isn't blank
+  init();
+  gameState = 'paused';
+  requestAnimationFrame(loop);
+})();
+</script>
+
+</body>
+</html>

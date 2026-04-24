@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mood Biscuit — Michelle Lin</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --black: #080808; --white: #f0ede8; --silver: #c0bcb4;
+    --mid: #5e5c58; --accent: #1a68f0;
+    --font-display: 'Bebas Neue', sans-serif;
+    --font-body: 'DM Sans', sans-serif;
+    --font-mono: 'DM Mono', monospace;
+  }
+  html { scroll-behavior: smooth; }
+  body { background: var(--black); color: var(--white); font-family: var(--font-body); overflow-x: hidden; }
+
+  /* BG tile */
+  .bg-tile {
+    position: fixed; inset: 0; z-index: 0;
+    background-image: url('../project1/background.png');
+    background-size: 480px;
+    filter: brightness(0.25) contrast(1.1);
+    pointer-events: none;
+  }
+  .bg-overlay { position: fixed; inset: 0; z-index: 1; background: rgba(8,8,8,0.6); pointer-events: none; }
+
+  /* NAV */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 22px 52px;
+    background: rgba(8,8,8,0.8); backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .back { display: flex; align-items: center; gap: 10px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--mid); text-decoration: none; transition: color 0.2s; }
+  .back:hover { color: var(--white); }
+  .nav-tag { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.1em; color: var(--accent); }
+
+  /* HERO */
+  .hero {
+    position: relative; z-index: 10;
+    min-height: 100vh; overflow: hidden;
+    display: flex; flex-direction: column; justify-content: flex-end;
+    padding: 0 52px 80px;
+  }
+  .hero-img {
+    position: absolute; inset: 0; z-index: -1;
+    background: url('../project1/mood biscuit1.png') center/cover no-repeat;
+  }
+  .hero-img::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(to bottom, rgba(8,8,8,0) 30%, rgba(8,8,8,0.7) 70%, var(--black) 100%);
+  }
+  .hero-meta { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent); margin-bottom: 16px; }
+  .hero-title { font-family: var(--font-display); font-size: clamp(72px, 12vw, 140px); line-height: 0.9; letter-spacing: 0.01em; color: var(--white); margin-bottom: 28px; }
+  .hero-sub { font-size: 18px; color: var(--silver); font-weight: 300; max-width: 600px; line-height: 1.7; margin-bottom: 40px; }
+  .hero-credits { display: flex; gap: 60px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 24px; }
+  .credit-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--mid); margin-bottom: 6px; }
+  .credit-val { font-size: 13px; color: var(--silver); letter-spacing: 0.04em; text-transform: uppercase; }
+
+  /* CONTENT */
+  .content { position: relative; z-index: 10; }
+  .content-block { max-width: 1200px; margin: 0 auto; padding: 100px 52px; }
+  .block-sep { border-top: 1px solid rgba(255,255,255,0.05); }
+
+  /* Text + image grid */
+  .twoCol { display: grid; grid-template-columns: 5fr 7fr; gap: 80px; align-items: center; }
+  .twoCol.flip { grid-template-columns: 7fr 5fr; }
+  .twoCol.flip .col-text { order: 2; }
+  .twoCol.flip .col-img { order: 1; }
+
+  .step-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--accent); margin-bottom: 12px; display: block; }
+  .step-title { font-family: var(--font-display); font-size: 40px; letter-spacing: 0.04em; color: var(--white); margin-bottom: 20px; }
+  .step-body { font-size: 15px; color: var(--mid); line-height: 1.85; }
+
+  .img-wrap { overflow: hidden; border: 1px solid rgba(255,255,255,0.06); }
+  .img-wrap img { width: 100%; display: block; transition: transform 0.8s cubic-bezier(0.2,1,0.3,1); }
+  .img-wrap:hover img { transform: scale(1.03); }
+
+  .full-img { width: 100%; overflow: hidden; border: 1px solid rgba(255,255,255,0.05); }
+  .full-img img { width: 100%; display: block; }
+
+  .summary-panel {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.07);
+    padding: 60px;
+    display: grid; grid-template-columns: 1fr 2fr; gap: 60px; align-items: start;
+  }
+  .summary-title { font-family: var(--font-display); font-size: 36px; letter-spacing: 0.04em; color: var(--white); line-height: 1.1; }
+  .summary-body { font-size: 16px; color: var(--mid); line-height: 1.85; }
+
+  /* REVEAL */
+  .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.9s cubic-bezier(0.2,1,0.3,1), transform 0.9s cubic-bezier(0.2,1,0.3,1); }
+  .reveal.visible { opacity: 1; transform: none; }
+
+  /* FOOTER NAV */
+  .proj-nav { position: relative; z-index: 10; border-top: 1px solid rgba(255,255,255,0.05); padding: 80px 52px; display: flex; justify-content: space-between; align-items: center; }
+  .proj-nav a { font-family: var(--font-display); font-size: 32px; letter-spacing: 0.04em; color: var(--mid); text-decoration: none; transition: color 0.2s; }
+  .proj-nav a:hover { color: var(--white); }
+
+  ::-webkit-scrollbar { width: 3px; }
+  ::-webkit-scrollbar-track { background: var(--black); }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); }
+</style>
+</head>
+<body>
+
+<div class="bg-tile"></div>
+<div class="bg-overlay"></div>
+
+<nav>
+  <a href="../index.html" class="back">← Back to Works</a>
+  <span class="nav-tag">Project 01</span>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-img"></div>
+  <div class="hero-meta">UX + 3D Product Design · 2024</div>
+  <h1 class="hero-title">MOOD<br>BISCUIT</h1>
+  <p class="hero-sub">A service experience concept exploring personal aura — the invisible quality of human presence. Users receive a custom-shaped biscuit representing their unique aura type, generated by an interactive machine.</p>
+  <div class="hero-credits">
+    <div><div class="credit-label">My Role</div><div class="credit-val">UX Researcher · 3D Modeler · Interaction Designer</div></div>
+    <div><div class="credit-label">Tools</div><div class="credit-val">Rhino · Keyshot · Figma · Arduino · p5.js</div></div>
+    <div><div class="credit-label">Type</div><div class="credit-val">Service Experience Design</div></div>
+  </div>
+</div>
+
+<div class="content">
+
+  <!-- SUMMARY -->
+  <div class="content-block block-sep reveal">
+    <div class="summary-panel">
+      <div><span class="step-label">Project Summary</span><div class="summary-title">AURA COOKIE<br>MACHINE</div></div>
+      <div class="summary-body">This project explores how individuals understand and enhance their personal aura — the quality of presence, confidence, and influence they project. Starting from the insight that aura has both inner and outer dimensions, the project culminates in an interactive machine that analyzes and personalizes a biscuit shaped to represent your unique aura profile. By eating it, you receive a quiet nudge of recognition and confidence.</div>
+    </div>
+  </div>
+
+  <!-- STEP 01: Research -->
+  <div class="content-block block-sep">
+    <div class="twoCol reveal">
+      <div class="col-text">
+        <span class="step-label">Step 01 — Research</span>
+        <div class="step-title">PRELIMINARY<br>RESEARCH</div>
+        <p class="step-body">At the initial stage, we deconstructed the abstract concept of "aura" from multiple dimensions. Observing people from different professional backgrounds, we built connections between visual feedback, body language, and psychological suggestion — establishing a base for the design system.</p>
+      </div>
+      <div class="col-img">
+        <div class="img-wrap"><img src="../project1/preliminary research.png" alt="Preliminary Research"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 02: Influencing Factors (full width) -->
+  <div class="content-block block-sep reveal">
+    <span class="step-label">Step 02 — Influencing Factors</span>
+    <div class="step-title" style="margin-bottom:32px;">DIMENSIONS OF AURA</div>
+    <div class="full-img">
+      <img src="../project1/Research on influencing factors of aura.png" alt="Research on Aura Factors">
+    </div>
+    <p class="step-body" style="margin-top:28px; max-width:700px;">Core elements affecting personal aura: attire, body language, eye contact, and professional habits. We further divided aura into inner (personality — harder to change) and outer (clothing, posture, expression — adjustable).</p>
+  </div>
+
+  <!-- STEP 03: Space Theory -->
+  <div class="content-block block-sep">
+    <div class="twoCol flip reveal">
+      <div class="col-text">
+        <span class="step-label">Step 03 — Spatial Theory</span>
+        <div class="step-title">SPACE &amp;<br>PERCEPTION</div>
+        <p class="step-body">How does the physical placement of an interaction machine affect users' emotional perception? This spatial study explored the relationship between environmental context and how people experience self-reflection, guiding the final installation design.</p>
+      </div>
+      <div class="col-img">
+        <div class="img-wrap"><img src="../project1/Space Theory.png" alt="Space Theory"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- IDEATION -->
+  <div class="content-block block-sep reveal">
+    <span class="step-label">04 — Ideation</span>
+    <div class="step-title" style="margin-bottom:32px;">AURA CATEGORIZATION</div>
+    <div class="full-img">
+      <img src="../project1/IDEATION.png" alt="Ideation">
+    </div>
+  </div>
+
+  <!-- CONCEPT -->
+  <div class="content-block block-sep reveal">
+    <span class="step-label">05 — Concept</span>
+    <div class="step-title" style="margin-bottom:16px;">BISCUIT MACHINE FLOW</div>
+    <p class="step-body" style="margin-bottom:32px; max-width:700px;">By eating biscuits shaped to represent each person's unique aura, users receive a subtle nudge of encouragement and recognition. The behavior inspires self-acceptance, and at the same time communicates respect for others' differences.</p>
+    <div class="full-img">
+      <img src="../project1/concept.png" alt="Concept">
+    </div>
+  </div>
+
+  <!-- SKETCH -->
+  <div class="content-block block-sep reveal">
+    <span class="step-label">06 — Form Exploration</span>
+    <div class="step-title" style="margin-bottom:32px;">SKETCH STUDIES</div>
+    <div class="full-img">
+      <img src="../project1/sketch.png" alt="Sketch">
+    </div>
+  </div>
+
+  <!-- RENDERING -->
+  <div class="content-block block-sep reveal">
+    <span class="step-label">07 — 3D Modeling</span>
+    <div class="step-title" style="margin-bottom:32px;">PRODUCT RENDERING</div>
+    <div class="full-img">
+      <img src="../project1/Rendering (structure of the product).png" alt="Rendering">
+    </div>
+  </div>
+
+  <!-- FINAL -->
+  <div class="content-block block-sep reveal">
+    <span class="step-label">08 — Final Output</span>
+    <div class="step-title" style="margin-bottom:32px; font-size:56px;">HIGH FIDELITY MOCKUP</div>
+    <div class="full-img">
+      <img src="../project1/High fidelity mockup.png" alt="High Fidelity Mockup">
+    </div>
+  </div>
+
+</div>
+
+<!-- PROJ NAV -->
+<div class="proj-nav">
+  <a href="../index.html">← All Work</a>
+  <a href="../project2/melting-pulse.html">Next: Melting Pulse →</a>
+</div>
+
+<script>
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.07 });
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>

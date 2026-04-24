@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Melting Pulse — Michelle Lin</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --black: #060c10; --white: #edf5f8; --silver: #a8c4cc;
+    --mid: #4e6a72; --accent: #5dd4e8; --accent2: #1a68f0;
+    --font-display: 'Bebas Neue', sans-serif;
+    --font-body: 'DM Sans', sans-serif;
+    --font-mono: 'DM Mono', monospace;
+  }
+  html { scroll-behavior: smooth; }
+  body { background: var(--black); color: var(--white); font-family: var(--font-body); overflow-x: hidden; }
+
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 22px 52px;
+    background: rgba(6,12,16,0.85); backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(93,212,232,0.08);
+  }
+  .back { display: flex; align-items: center; gap: 10px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--mid); text-decoration: none; transition: color 0.2s; }
+  .back:hover { color: var(--white); }
+  .nav-tag { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.1em; color: var(--accent); }
+
+  /* HERO */
+  .hero {
+    position: relative; min-height: 100vh; overflow: hidden;
+    display: flex; flex-direction: column; justify-content: flex-end;
+    padding: 0 52px 80px;
+  }
+  .hero-img {
+    position: absolute; inset: 0; z-index: 0;
+    background: url('../pront2.JPG') center/cover no-repeat;
+  }
+  .hero-img::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(to bottom, rgba(6,12,16,0.2) 20%, rgba(6,12,16,0.65) 60%, var(--black) 100%);
+  }
+  .hero-content { position: relative; z-index: 2; }
+  .hero-meta { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent); margin-bottom: 16px; }
+  .hero-title { font-family: var(--font-display); font-size: clamp(72px, 12vw, 140px); line-height: 0.9; letter-spacing: 0.01em; color: var(--white); margin-bottom: 28px; }
+  .hero-sub { font-size: 18px; color: var(--silver); font-weight: 300; max-width: 580px; line-height: 1.7; margin-bottom: 40px; }
+  .hero-credits { display: flex; gap: 60px; border-top: 1px solid rgba(93,212,232,0.12); padding-top: 24px; flex-wrap: wrap; }
+  .credit-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--mid); margin-bottom: 6px; }
+  .credit-val { font-size: 13px; color: var(--silver); letter-spacing: 0.04em; text-transform: uppercase; }
+
+  /* CONTENT */
+  .content { position: relative; z-index: 10; }
+  .content-block { max-width: 1200px; margin: 0 auto; padding: 100px 52px; }
+  .block-sep { border-top: 1px solid rgba(93,212,232,0.07); }
+
+  .twoCol { display: grid; grid-template-columns: 5fr 7fr; gap: 80px; align-items: center; }
+  .twoCol.flip { grid-template-columns: 7fr 5fr; }
+  .twoCol.flip .col-text { order: 2; }
+  .twoCol.flip .col-img { order: 1; }
+
+  .step-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--accent); margin-bottom: 12px; display: block; }
+  .step-title { font-family: var(--font-display); font-size: 40px; letter-spacing: 0.04em; color: var(--white); margin-bottom: 20px; }
+  .step-body { font-size: 15px; color: var(--mid); line-height: 1.85; }
+  .step-body strong { color: var(--silver); font-weight: 400; }
+
+  .img-wrap { overflow: hidden; border: 1px solid rgba(93,212,232,0.1); }
+  .img-wrap img { width: 100%; display: block; transition: transform 0.8s cubic-bezier(0.2,1,0.3,1); }
+  .img-wrap:hover img { transform: scale(1.03); }
+
+  .full-img { width: 100%; overflow: hidden; border: 1px solid rgba(93,212,232,0.08); }
+  .full-img img { width: 100%; display: block; }
+
+  .summary-panel {
+    background: rgba(93,212,232,0.03);
+    border: 1px solid rgba(93,212,232,0.1);
+    padding: 60px;
+    display: grid; grid-template-columns: 1fr 2fr; gap: 60px;
+  }
+  .summary-title { font-family: var(--font-display); font-size: 36px; letter-spacing: 0.04em; color: var(--white); line-height: 1.1; }
+  .summary-body { font-size: 16px; color: var(--mid); line-height: 1.85; }
+
+  /* DATA PIPELINE VISUAL */
+  .pipeline { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: rgba(93,212,232,0.08); margin: 40px 0; }
+  .pipe-step { background: var(--black); padding: 28px 24px; }
+  .pipe-num { font-family: var(--font-mono); font-size: 10px; color: var(--accent); letter-spacing: 0.12em; margin-bottom: 10px; }
+  .pipe-name { font-family: var(--font-display); font-size: 22px; letter-spacing: 0.04em; color: var(--white); margin-bottom: 8px; }
+  .pipe-desc { font-size: 12px; color: var(--mid); line-height: 1.6; }
+
+  /* PROCESS STEPS */
+  .process-list { display: grid; gap: 1px; background: rgba(93,212,232,0.07); }
+  .process-item { background: var(--black); padding: 28px 32px; display: grid; grid-template-columns: 120px 1fr; gap: 32px; align-items: start; }
+  .process-key { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); padding-top: 3px; }
+  .process-val { font-size: 14px; color: var(--silver); line-height: 1.7; }
+
+  .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.9s cubic-bezier(0.2,1,0.3,1), transform 0.9s cubic-bezier(0.2,1,0.3,1); }
+  .reveal.visible { opacity: 1; transform: none; }
+
+  .proj-nav { position: relative; z-index: 10; border-top: 1px solid rgba(93,212,232,0.07); padding: 80px 52px; display: flex; justify-content: space-between; align-items: center; }
+  .proj-nav a { font-family: var(--font-display); font-size: 32px; letter-spacing: 0.04em; color: var(--mid); text-decoration: none; transition: color 0.2s; }
+  .proj-nav a:hover { color: var(--white); }
+
+  ::-webkit-scrollbar { width: 3px; }
+  ::-webkit-scrollbar-track { background: var(--black); }
+  ::-webkit-scrollbar-thumb { background: rgba(93,212,232,0.2); }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="../index.html" class="back">← Back to Works</a>
+  <span class="nav-tag">Project 02</span>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-img"></div>
+  <div class="hero-content">
+    <div class="hero-meta">Data Visualization + Material Installation · 2026</div>
+    <h1 class="hero-title">MELTING<br>PULSE</h1>
+    <p class="hero-sub">A data-driven installation on glacier melt and climate change. Real environmental data, processed through Python pipelines, becomes a physical and visual experience — making the invisible crisis tangible.</p>
+    <div class="hero-credits">
+      <div><div class="credit-label">My Role</div><div class="credit-val">Designer · Data Engineer · Fabricator</div></div>
+      <div><div class="credit-label">Tools</div><div class="credit-val">Python · Arduino · p5.js · Physical Materials</div></div>
+      <div><div class="credit-label">Theme</div><div class="credit-val">Climate Data · Sustainability</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="content">
+
+  <!-- SUMMARY -->
+  <div class="content-block block-sep reveal">
+    <div class="summary-panel">
+      <div>
+        <span class="step-label">Project Summary</span>
+        <div class="summary-title">DATA BECOMES<br>MATTER</div>
+      </div>
+      <div class="summary-body">Melting Pulse translates real-world glacier melt data into a sensory installation. Using Python for data acquisition and cleaning, the project maps decades of climate records onto physical outputs — light, sound, and material change — creating an emotional confrontation with environmental data that charts and numbers alone cannot achieve.</div>
+    </div>
+  </div>
+
+  <!-- DATA PIPELINE -->
+  <div class="content-block block-sep reveal">
+    <span class="step-label">01 — Technical Process</span>
+    <div class="step-title" style="margin-bottom:32px;">DATA PIPELINE</div>
+    <div class="pipeline">
+      <div class="pipe-step">
+        <div class="pipe-num">01 / COLLECT</div>
+        <div class="pipe-name">RAW DATA</div>
+        <div class="pipe-desc">Climate datasets — glacier area measurements, temperature records, sea level indices spanning 1980–2024.</div>
+      </div>
+      <div class="pipe-step">
+        <div class="pipe-num">02 / CLEAN</div>
+        <div class="pipe-name">PYTHON</div>
+        <div class="pipe-desc">Pandas scripts to normalize, interpolate missing values, and standardize time series across multiple sources.</div>
+      </div>
+      <div class="pipe-step">
+        <div class="pipe-num">03 / VISUALIZE</div>
+        <div class="pipe-name">MAP + RENDER</div>
+        <div class="pipe-desc">Data mapped to physical parameters: temperature rise → light intensity, melt rate → drip speed, volume loss → material decay.</div>
+      </div>
+      <div class="pipe-step">
+        <div class="pipe-num">04 / OUTPUT</div>
+        <div class="pipe-name">INSTALLATION</div>
+        <div class="pipe-desc">Arduino-driven physical elements respond in real time, turning data into a lived, sensory experience for the audience.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HERO GLACIER IMG -->
+  <div class="content-block block-sep reveal">
+    <span class="step-label">02 — Source Material</span>
+    <div class="step-title" style="margin-bottom:32px;">GLACIER DOCUMENTATION</div>
+    <div class="full-img">
+      <img src="../project2/glacier-hero.jpg" alt="Glacier">
+    </div>
+    <p class="step-body" style="margin-top:24px; max-width:700px;">Primary visual reference and emotional anchor for the installation. The documentation of glacier surfaces — their texture, scale, and erosion — directly informed the material and color language of the work.</p>
+  </div>
+
+  <!-- PROCESS -->
+  <div class="content-block block-sep reveal">
+    <span class="step-label">03 — Design Process</span>
+    <div class="step-title" style="margin-bottom:32px;">MATERIAL STUDIES</div>
+    <div class="full-img">
+      <img src="../project2/eco-attempt-1.JPG" alt="Material Study">
+    </div>
+  </div>
+
+  <!-- PROCESS BREAKDOWN -->
+  <div class="content-block block-sep reveal">
+    <span class="step-label">04 — Approach</span>
+    <div class="step-title" style="margin-bottom:32px;">HOW IT WORKS</div>
+    <div class="process-list">
+      <div class="process-item">
+        <span class="process-key">Research</span>
+        <span class="process-val">Sourced NSIDC glacier area datasets and NOAA temperature anomaly records. Identified patterns showing accelerating melt rates correlated to temperature rise post-1990.</span>
+      </div>
+      <div class="process-item">
+        <span class="process-key">Data Work</span>
+        <span class="process-val">Wrote Python scripts using Pandas and NumPy to clean, align, and normalize the datasets. Built a mapping layer translating numerical values into physical parameter ranges (brightness, drip interval, saturation).</span>
+      </div>
+      <div class="process-item">
+        <span class="process-key">Fabrication</span>
+        <span class="process-val">Arduino microcontrollers drive LED arrays and a controlled drip mechanism. Physical materials — ice-like resins and organic fabrics — change state over the duration of the exhibition.</span>
+      </div>
+      <div class="process-item">
+        <span class="process-key">Experience</span>
+        <span class="process-val">Visitors observe the installation's state changing in real time, sonified by low-frequency audio. The experience is designed to trigger a felt sense of loss and urgency — not just intellectual understanding.</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="proj-nav">
+  <a href="./mood-biscuit.html">← Mood Biscuit</a>
+  <a href="../project3/infinisnake.html">Next: Infinisnake →</a>
+</div>
+
+<script>
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.07 });
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>

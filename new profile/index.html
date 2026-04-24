@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wenjie Lin (Michelle) — Portfolio</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --black: #080808;
+    --white: #f0ede8;
+    --silver: #c0bcb4;
+    --mid: #5e5c58;
+    --dim: #2a2926;
+    --accent: #1a68f0;
+    --font-display: 'Bebas Neue', sans-serif;
+    --font-body: 'DM Sans', sans-serif;
+    --font-mono: 'DM Mono', monospace;
+  }
+  html { scroll-behavior: smooth; }
+  body { background: var(--black); color: var(--white); font-family: var(--font-body); overflow-x: hidden; }
+  canvas { position: fixed; top: 0; left: 0; z-index: 0; pointer-events: none; }
+
+  /* NAV */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 22px 52px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    background: rgba(8,8,8,0.85);
+    backdrop-filter: blur(24px);
+  }
+  .nav-name { font-family: var(--font-display); font-size: 18px; letter-spacing: 0.1em; color: var(--white); text-decoration: none; }
+  .nav-links { display: flex; gap: 36px; list-style: none; }
+  .nav-links a { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--mid); text-decoration: none; transition: color 0.2s; }
+  .nav-links a:hover { color: var(--white); }
+
+  /* HERO */
+  .hero {
+    position: relative; z-index: 10;
+    min-height: 100vh;
+    display: flex; flex-direction: column; justify-content: flex-end;
+    padding: 0 52px 80px;
+  }
+  .hero-eyebrow {
+    font-family: var(--font-mono); font-size: 11px;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 16px;
+    opacity: 0; animation: fadeUp 1s 0.4s ease forwards;
+  }
+  .hero-name {
+    font-family: var(--font-display);
+    font-size: clamp(80px, 12vw, 160px);
+    line-height: 0.9; letter-spacing: 0.01em;
+    color: var(--white); margin-bottom: 32px;
+    opacity: 0; animation: fadeUp 1s 0.55s ease forwards;
+  }
+  .hero-name em { color: var(--mid); font-style: normal; }
+  .hero-bottom {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    border-top: 1px solid rgba(255,255,255,0.07); padding-top: 28px;
+    opacity: 0; animation: fadeUp 1s 0.7s ease forwards;
+  }
+  .hero-desc { font-size: 15px; color: var(--mid); line-height: 1.7; max-width: 440px; }
+  .hero-desc strong { color: var(--silver); font-weight: 400; }
+  .hero-cta { display: flex; gap: 20px; align-items: center; }
+  .btn-primary {
+    display: inline-flex; align-items: center;
+    background: var(--white); color: var(--black);
+    padding: 13px 30px; font-size: 12px; letter-spacing: 0.08em;
+    text-decoration: none; font-weight: 500;
+    transition: background 0.2s;
+  }
+  .btn-primary:hover { background: #ddd8d0; }
+  .scroll-hint {
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--dim); writing-mode: vertical-rl;
+    position: absolute; right: 52px; bottom: 120px;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:0.3} 50%{opacity:0.7} }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
+
+  /* SECTION BASE */
+  .section { position: relative; z-index: 10; padding: 120px 52px; border-top: 1px solid rgba(255,255,255,0.05); }
+  .section-label {
+    display: flex; align-items: baseline; gap: 16px; margin-bottom: 64px;
+  }
+  .label-num { font-family: var(--font-mono); font-size: 11px; color: var(--accent); letter-spacing: 0.1em; }
+  .label-title { font-family: var(--font-display); font-size: 56px; letter-spacing: 0.03em; color: var(--white); }
+
+  /* PROJECTS */
+  .projects { display: flex; flex-direction: column; gap: 1px; background: rgba(255,255,255,0.05); }
+  .project-row {
+    display: grid; grid-template-columns: 1fr 1fr;
+    background: var(--black);
+    transition: background 0.3s;
+    text-decoration: none; color: inherit;
+    overflow: hidden;
+  }
+  .project-row:hover { background: #0f0f0e; }
+  .project-row:hover .proj-img img { transform: scale(1.04); }
+  .project-row:hover .proj-arrow { opacity: 1; transform: translate(0,0); }
+  .proj-info { padding: 56px 52px; display: flex; flex-direction: column; justify-content: space-between; min-height: 360px; }
+  .proj-meta { display: flex; gap: 20px; align-items: center; margin-bottom: 24px; }
+  .proj-num { font-family: var(--font-mono); font-size: 11px; color: var(--mid); letter-spacing: 0.1em; }
+  .proj-cat { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); }
+  .proj-title { font-family: var(--font-display); font-size: 52px; letter-spacing: 0.03em; color: var(--white); line-height: 1; margin-bottom: 16px; }
+  .proj-desc { font-size: 14px; color: var(--mid); line-height: 1.75; max-width: 380px; margin-bottom: 32px; flex: 1; }
+  .proj-tags { display: flex; gap: 8px; flex-wrap: wrap; }
+  .proj-tag { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; padding: 5px 11px; border: 1px solid rgba(255,255,255,0.1); color: var(--silver); }
+  .proj-arrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--silver); margin-top: 28px;
+    opacity: 0; transform: translate(-10px, 0);
+    transition: all 0.25s ease;
+  }
+  .proj-img {
+    overflow: hidden;
+    background: #111;
+  }
+  .proj-img img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.7s cubic-bezier(0.2,1,0.3,1); }
+
+  /* reverse layout for even rows */
+  .project-row.reverse { direction: rtl; }
+  .project-row.reverse > * { direction: ltr; }
+
+  /* SKILLS */
+  .skills-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: rgba(255,255,255,0.05); }
+  .skill-col { background: var(--black); padding: 40px 36px; }
+  .skill-col-title { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--accent); margin-bottom: 28px; }
+  .skill-items { list-style: none; }
+  .skill-items li { font-size: 14px; color: var(--silver); padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.04); display: flex; justify-content: space-between; align-items: center; transition: color 0.2s; }
+  .skill-items li:last-child { border: none; }
+  .skill-items li:hover { color: var(--white); }
+  .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+  .dot.off { background: rgba(255,255,255,0.1); }
+
+  /* ABOUT */
+  .about-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: start; }
+  .about-copy { font-size: 17px; color: var(--mid); line-height: 1.9; }
+  .about-copy strong { color: var(--white); font-weight: 400; }
+  .about-copy a { color: var(--accent); text-decoration: none; }
+  .facts { display: grid; gap: 1px; background: rgba(255,255,255,0.05); }
+  .fact { display: flex; justify-content: space-between; align-items: center; background: var(--black); padding: 16px 20px; }
+  .fact-k { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--mid); }
+  .fact-v { font-size: 13px; color: var(--white); }
+
+  /* CONTACT */
+  .contact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; }
+  .contact-hed { font-family: var(--font-display); font-size: 80px; line-height: 0.92; letter-spacing: 0.02em; color: var(--white); }
+  .contact-links { display: grid; gap: 1px; background: rgba(255,255,255,0.05); }
+  .cl { display: flex; justify-content: space-between; align-items: center; background: var(--black); padding: 22px 24px; text-decoration: none; transition: background 0.2s; }
+  .cl:hover { background: #111; }
+  .cl-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--mid); }
+  .cl-val { font-size: 14px; color: var(--silver); }
+  .cl-arr { font-size: 14px; color: var(--mid); transition: color 0.2s; }
+  .cl:hover .cl-arr { color: var(--white); }
+
+  /* FOOTER */
+  footer {
+    position: relative; z-index: 10;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    padding: 28px 52px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .footer-copy { font-family: var(--font-mono); font-size: 11px; color: var(--mid); letter-spacing: 0.08em; }
+  .footer-badge { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--mid); border: 1px solid rgba(255,255,255,0.08); padding: 5px 12px; }
+
+  /* REVEAL ANIMATION */
+  .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.9s cubic-bezier(0.2,1,0.3,1), transform 0.9s cubic-bezier(0.2,1,0.3,1); }
+  .reveal.visible { opacity: 1; transform: none; }
+
+  ::-webkit-scrollbar { width: 3px; }
+  ::-webkit-scrollbar-track { background: var(--black); }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="#" class="nav-name">MICHELLE LIN</a>
+  <ul class="nav-links">
+    <li><a href="#work">Work</a></li>
+    <li><a href="#skills">Skills</a></li>
+    <li><a href="#about">About</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-eyebrow">// BMW Group Design Internship — Application 2025</div>
+  <h1 class="hero-name">WENJIE<br><em>LIN</em></h1>
+  <div class="hero-bottom">
+    <p class="hero-desc">
+      <strong>Multidisciplinary designer</strong> — MFA candidate at ArtCenter College of Design, Pasadena.<br>
+      Interaction design · Creative coding · Material installation.
+    </p>
+    <div class="hero-cta">
+      <a href="#work" class="btn-primary">View Work ↓</a>
+    </div>
+  </div>
+  <div class="scroll-hint">Scroll ↓</div>
+</section>
+
+<!-- WORK -->
+<section class="section" id="work">
+  <div class="section-label reveal">
+    <span class="label-num">01 —</span>
+    <h2 class="label-title">SELECTED WORK</h2>
+  </div>
+
+  <div class="projects">
+
+    <!-- PROJECT 1: Mood Biscuit -->
+    <a href="project1/mood-biscuit.html" class="project-row reveal">
+      <div class="proj-info">
+        <div>
+          <div class="proj-meta">
+            <span class="proj-num">001</span>
+            <span class="proj-cat">UX + 3D Product Design</span>
+          </div>
+          <div class="proj-title">MOOD<br>BISCUIT</div>
+          <p class="proj-desc">
+            A service experience design concept exploring the idea of "aura" — personal presence and confidence. Users receive a custom-shaped biscuit representing their unique aura type, generated by an interactive machine built with Rhino, Figma, Arduino, and p5.js.
+          </p>
+          <div class="proj-tags">
+            <span class="proj-tag">Rhino 3D</span>
+            <span class="proj-tag">Figma</span>
+            <span class="proj-tag">Arduino</span>
+            <span class="proj-tag">p5.js</span>
+            <span class="proj-tag">UX Research</span>
+          </div>
+        </div>
+        <div class="proj-arrow">View Project →</div>
+      </div>
+      <div class="proj-img">
+        <img src="front.png" alt="Mood Biscuit">
+      </div>
+    </a>
+
+    <!-- PROJECT 2: Melting Pulse -->
+    <a href="project2/melting-pulse.html" class="project-row reverse reveal">
+      <div class="proj-info">
+        <div>
+          <div class="proj-meta">
+            <span class="proj-num">002</span>
+            <span class="proj-cat">Data Viz + Material Installation</span>
+          </div>
+          <div class="proj-title">MELTING<br>PULSE</div>
+          <p class="proj-desc">
+            A data-driven installation on glacier melt and climate change. Python pipelines process real climate datasets into visual and physical outputs — translating raw environmental data into a tangible, emotional experience.
+          </p>
+          <div class="proj-tags">
+            <span class="proj-tag">Python</span>
+            <span class="proj-tag">Data Visualization</span>
+            <span class="proj-tag">Installation</span>
+            <span class="proj-tag">Arduino</span>
+            <span class="proj-tag">Sustainability</span>
+          </div>
+        </div>
+        <div class="proj-arrow">View Project →</div>
+      </div>
+      <div class="proj-img">
+        <img src="pront2.JPG" alt="Melting Pulse">
+      </div>
+    </a>
+
+    <!-- PROJECT 4: Aura OS -->
+    <a href="project4/aura-os.html" class="project-row reverse reveal">
+      <div class="proj-info">
+        <div>
+          <div class="proj-meta">
+            <span class="proj-num">004</span>
+            <span class="proj-cat">Automotive UX · HMI Design</span>
+          </div>
+          <div class="proj-title">AURA<br>OS</div>
+          <p class="proj-desc">
+            A reimagined in-vehicle HMI for BMW iX — emotion-aware interface that reads driver biometrics and adapts ambient lighting, music, climate, and navigation to emotional state in real time. Full UX process from research to high-fidelity screens.
+          </p>
+          <div class="proj-tags">
+            <span class="proj-tag">Automotive UX</span>
+            <span class="proj-tag">HMI Design</span>
+            <span class="proj-tag">Figma</span>
+            <span class="proj-tag">User Research</span>
+            <span class="proj-tag">BMW iX</span>
+          </div>
+        </div>
+        <div class="proj-arrow">View Project →</div>
+      </div>
+      <div class="proj-img" style="background: linear-gradient(135deg, #040810, #06101a); display:flex; align-items:center; justify-content:center; min-height:360px;">
+        <!-- inline SVG preview of the car screen -->
+        <svg viewBox="0 0 480 210" xmlns="http://www.w3.org/2000/svg" style="width:90%; max-width:480px; border-radius:8px; overflow:hidden;">
+          <rect width="480" height="210" fill="#040810"/>
+          <rect x="0" y="0" width="40" height="210" fill="rgba(0,0,0,0.4)"/>
+          <circle cx="20" cy="30" r="10" fill="rgba(0,102,204,0.25)" stroke="rgba(77,163,255,0.4)" stroke-width="1"/>
+          <circle cx="20" cy="60" r="10" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+          <circle cx="20" cy="85" r="10" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+          <!-- main area -->
+          <text x="56" y="22" font-family="monospace" font-size="7" fill="rgba(0,180,216,0.6)" letter-spacing="1">FOCUSED CALM</text>
+          <!-- orb -->
+          <defs>
+            <radialGradient id="orbg" cx="35%" cy="35%">
+              <stop offset="0%" stop-color="rgba(0,180,216,0.9)"/>
+              <stop offset="60%" stop-color="rgba(0,102,204,0.4)"/>
+              <stop offset="100%" stop-color="rgba(0,40,100,0.1)"/>
+            </radialGradient>
+          </defs>
+          <circle cx="160" cy="105" r="42" fill="url(#orbg)" opacity="0.9"/>
+          <circle cx="160" cy="105" r="36" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+          <!-- widgets -->
+          <rect x="56" y="150" width="80" height="36" rx="5" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.07)" stroke-width="0.5"/>
+          <text x="64" y="161" font-family="monospace" font-size="6" fill="rgba(255,255,255,0.3)">HEART RATE</text>
+          <text x="64" y="175" font-family="monospace" font-size="11" fill="rgba(255,255,255,0.8)">68 bpm</text>
+          <rect x="146" y="150" width="80" height="36" rx="5" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.07)" stroke-width="0.5"/>
+          <text x="154" y="161" font-family="monospace" font-size="6" fill="rgba(255,255,255,0.3)">AMBIENT</text>
+          <text x="154" y="175" font-family="monospace" font-size="11" fill="rgba(255,255,255,0.8)">Calm Blue</text>
+          <rect x="236" y="150" width="80" height="36" rx="5" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.07)" stroke-width="0.5"/>
+          <text x="244" y="161" font-family="monospace" font-size="6" fill="rgba(255,255,255,0.3)">CLIMATE</text>
+          <text x="244" y="175" font-family="monospace" font-size="11" fill="rgba(255,255,255,0.8)">22°C</text>
+          <!-- right panel -->
+          <rect x="340" y="0" width="140" height="210" fill="rgba(0,0,0,0.3)" stroke="rgba(0,100,200,0.1)" stroke-width="0.5"/>
+          <!-- mini map -->
+          <rect x="348" y="10" width="124" height="120" rx="6" fill="#040c14" stroke="rgba(0,100,200,0.15)" stroke-width="0.5"/>
+          <line x1="348" y1="50" x2="472" y2="50" stroke="rgba(0,100,200,0.1)" stroke-width="0.5"/>
+          <line x1="348" y1="90" x2="472" y2="90" stroke="rgba(0,180,216,0.25)" stroke-width="1"/>
+          <line x1="390" y1="10" x2="390" y2="130" stroke="rgba(0,100,200,0.1)" stroke-width="0.5"/>
+          <circle cx="400" cy="90" r="5" fill="#4da3ff" opacity="0.9"/>
+          <!-- eta -->
+          <rect x="348" y="138" width="124" height="32" rx="4" fill="rgba(0,102,204,0.12)" stroke="rgba(0,102,204,0.2)" stroke-width="0.5"/>
+          <text x="356" y="150" font-family="monospace" font-size="6" fill="rgba(0,180,216,0.5)">ETA HOME</text>
+          <text x="356" y="163" font-family="monospace" font-size="12" fill="rgba(255,255,255,0.85)">18 min</text>
+          <!-- music -->
+          <rect x="348" y="176" width="124" height="26" rx="4" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.07)" stroke-width="0.5"/>
+          <rect x="354" y="180" width="16" height="16" rx="2" fill="rgba(0,51,102,0.8)"/>
+          <text x="356" y="190" font-family="monospace" font-size="8" fill="rgba(255,255,255,0.5)">♪</text>
+          <text x="376" y="187" font-family="monospace" font-size="6" fill="rgba(255,255,255,0.5)">Weightless · Focus Mix</text>
+          <rect x="376" y="192" width="88" height="2" rx="1" fill="rgba(255,255,255,0.08)"/>
+          <rect x="376" y="192" width="37" height="2" rx="1" fill="rgba(0,102,204,0.8)"/>
+        </svg>
+      </div>
+    </a>
+
+    <!-- PROJECT 3: Infinisnake -->
+    <a href="project3/infinisnake.html" class="project-row reveal">
+      <div class="proj-info">
+        <div>
+          <div class="proj-meta">
+            <span class="proj-num">003</span>
+            <span class="proj-cat">Game Design + Creative Coding</span>
+          </div>
+          <div class="proj-title">INFINI<br>SNAKE</div>
+          <p class="proj-desc">
+            A retro-pixel endless arcade game designed and built from scratch. A courier snake navigates a grid, picking up colored cargo and delivering to matching warehouses. Full game design — mechanics, narrative, visual identity, and playable build.
+          </p>
+          <div class="proj-tags">
+            <span class="proj-tag">Game Design</span>
+            <span class="proj-tag">JavaScript</span>
+            <span class="proj-tag">Pixel Art</span>
+            <span class="proj-tag">HTML Canvas</span>
+            <span class="proj-tag">Interactive</span>
+          </div>
+        </div>
+        <div class="proj-arrow">Play Now →</div>
+      </div>
+      <div class="proj-img" style="background:#0a0e1a; display:flex; align-items:center; justify-content:center; min-height:360px;">
+        <img src="project3/trailer-poster.png" alt="Infinisnake" style="max-height:360px; width:auto; object-fit:contain;">
+      </div>
+    </a>
+
+  </div>
+</section>
+
+<!-- SKILLS -->
+<section class="section" id="skills">
+  <div class="section-label reveal">
+    <span class="label-num">02 —</span>
+    <h2 class="label-title">SKILLS &amp; TOOLS</h2>
+  </div>
+  <div class="skills-grid reveal">
+    <div class="skill-col">
+      <div class="skill-col-title">Design Tools</div>
+      <ul class="skill-items">
+        <li>Adobe Illustrator <span class="dot"></span></li>
+        <li>Adobe Photoshop <span class="dot"></span></li>
+        <li>Figma <span class="dot"></span></li>
+        <li>Rhino 3D <span class="dot"></span></li>
+        <li>Grasshopper <span class="dot"></span></li>
+        <li>Keyshot <span class="dot off"></span></li>
+      </ul>
+    </div>
+    <div class="skill-col">
+      <div class="skill-col-title">Technical</div>
+      <ul class="skill-items">
+        <li>p5.js <span class="dot"></span></li>
+        <li>Three.js <span class="dot"></span></li>
+        <li>Python (Data) <span class="dot"></span></li>
+        <li>Arduino <span class="dot"></span></li>
+        <li>HTML / CSS / JS <span class="dot"></span></li>
+        <li>MS Office Suite <span class="dot off"></span></li>
+      </ul>
+    </div>
+    <div class="skill-col">
+      <div class="skill-col-title">Capabilities</div>
+      <ul class="skill-items">
+        <li>Interaction Design <span class="dot"></span></li>
+        <li>UX Research <span class="dot"></span></li>
+        <li>Physical Prototyping <span class="dot"></span></li>
+        <li>Brand Identity <span class="dot"></span></li>
+        <li>English (Fluent) <span class="dot"></span></li>
+        <li>Chinese (Native) <span class="dot"></span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ABOUT -->
+<section class="section" id="about">
+  <div class="section-label reveal">
+    <span class="label-num">03 —</span>
+    <h2 class="label-title">ABOUT</h2>
+  </div>
+  <div class="about-grid reveal">
+    <div class="about-copy">
+      <p>I'm <strong>Wenjie Lin (Michelle)</strong>, a multidisciplinary designer based in Pasadena, CA — currently pursuing an <strong>MFA in Media Design Practices</strong> at ArtCenter College of Design.</p>
+      <br>
+      <p>My work lives at the edge of <strong>physical and digital</strong> — interaction design, creative coding, and material systems that ask people to feel something, not just use something. From biscuit machines that visualize your aura, to climate installations that make data tangible, I design experiences with precision and curiosity.</p>
+      <br>
+      <p>I also founded <strong>Sweetpaper</strong>, an independent design studio, where I design GWP packaging and brand identities for clients — including work for <strong>Gree-bo</strong>, a pet blind box brand.</p>
+      <br>
+      <p>I'm drawn to BMW Group's commitment to precision, human-centered thinking, and the future of mobility. I want to bring my cross-disciplinary perspective to that work.<br><br>
+      Website: <a href="https://michelleartwork.com" target="_blank">michelleartwork.com</a></p>
+    </div>
+    <div class="facts">
+      <div class="fact"><span class="fact-k">Based In</span><span class="fact-v">Pasadena, CA</span></div>
+      <div class="fact"><span class="fact-k">School</span><span class="fact-v">ArtCenter College of Design</span></div>
+      <div class="fact"><span class="fact-k">Degree</span><span class="fact-v">MFA — Media Design Practices</span></div>
+      <div class="fact"><span class="fact-k">Studio</span><span class="fact-v">Sweetpaper (Founder)</span></div>
+      <div class="fact"><span class="fact-k">Languages</span><span class="fact-v">English · Chinese</span></div>
+      <div class="fact"><span class="fact-k">Available</span><span class="fact-v">Summer 2025</span></div>
+      <div class="fact"><span class="fact-k">Applying For</span><span class="fact-v">BMW Group Design Internship</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section class="section" id="contact">
+  <div class="section-label reveal">
+    <span class="label-num">04 —</span>
+    <h2 class="label-title">CONTACT</h2>
+  </div>
+  <div class="contact-grid reveal">
+    <div class="contact-hed">LET'S<br>WORK<br>TOGETHER</div>
+    <div class="contact-links">
+      <a class="cl" href="mailto:sweetpaper1102@gmail.com">
+        <span class="cl-label">Email</span>
+        <span class="cl-val">sweetpaper1102@gmail.com</span>
+        <span class="cl-arr">↗</span>
+      </a>
+      <a class="cl" href="tel:6263758350">
+        <span class="cl-label">Phone</span>
+        <span class="cl-val">(626) 375-8350</span>
+        <span class="cl-arr">↗</span>
+      </a>
+      <a class="cl" href="https://michelleartwork.com" target="_blank">
+        <span class="cl-label">Website</span>
+        <span class="cl-val">Michelleartwork.com</span>
+        <span class="cl-arr">↗</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <span class="footer-copy">© 2025 Wenjie Lin (Michelle)</span>
+  <span class="footer-badge">BMW Group Application</span>
+</footer>
+
+<script>
+  // p5 particles
+  new p5(function(p) {
+    let pts = [];
+    p.setup = function() {
+      let cnv = p.createCanvas(p.windowWidth, p.windowHeight);
+      cnv.style('display','block');
+      for(let i=0;i<90;i++) pts.push({
+        x:p.random(p.width), y:p.random(p.height),
+        vx:p.random(-0.3,0.3), vy:p.random(-0.3,0.3),
+        sz:p.random(1,2.5)
+      });
+    };
+    p.draw = function() {
+      p.background(8,8,8,40);
+      pts.forEach(pt => {
+        pt.x += pt.vx; pt.y += pt.vy;
+        if(pt.x<0||pt.x>p.width) pt.vx*=-1;
+        if(pt.y<0||pt.y>p.height) pt.vy*=-1;
+        let d = p.dist(pt.x,pt.y,p.mouseX,p.mouseY);
+        if(d<160){let f=p5.Vector.sub(p.createVector(pt.x,pt.y),p.createVector(p.mouseX,p.mouseY));f.setMag(0.5);pt.x+=f.x;pt.y+=f.y;}
+        p.noStroke();
+        let alpha = p.sin(p.frameCount*0.025+pt.x)*60+100;
+        p.fill(26,104,240,alpha*0.45);
+        p.ellipse(pt.x,pt.y,pt.sz);
+        pts.forEach(other=>{
+          let dd=p.dist(pt.x,pt.y,other.x,other.y);
+          if(dd<100){p.stroke(26,104,240,p.map(dd,0,100,35,0));p.strokeWeight(0.5);p.line(pt.x,pt.y,other.x,other.y);}
+        });
+      });
+    };
+    p.windowResized = function() { p.resizeCanvas(p.windowWidth, p.windowHeight); };
+  });
+
+  // Scroll reveal
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.08 });
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>

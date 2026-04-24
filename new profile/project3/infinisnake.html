@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Infinisnake — Michelle Lin</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&family=DM+Mono:wght@300;400&family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --black: #070b0f; --white: #e8ecf2; --silver: #9aa8bb;
+    --mid: #4a5568; --green: #39ff14; --cyan: #05d9e8; --pink: #ff2a6d;
+    --font-display: 'Bebas Neue', sans-serif;
+    --font-body: 'DM Sans', sans-serif;
+    --font-mono: 'DM Mono', monospace;
+    --font-pixel: 'Press Start 2P', monospace;
+  }
+  html { scroll-behavior: smooth; }
+  body { background: var(--black); color: var(--white); font-family: var(--font-body); overflow-x: hidden; }
+
+  /* scanlines */
+  body::before {
+    content: ''; position: fixed; inset: 0; z-index: 200; pointer-events: none;
+    background: repeating-linear-gradient(to bottom, transparent 0 2px, rgba(0,0,0,0.12) 2px 3px);
+  }
+
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 22px 52px;
+    background: rgba(7,11,15,0.88); backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(57,255,20,0.08);
+  }
+  .back { display: flex; align-items: center; gap: 10px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--mid); text-decoration: none; transition: color 0.2s; }
+  .back:hover { color: var(--green); }
+  .nav-tag { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.1em; color: var(--green); }
+
+  /* HERO */
+  .hero {
+    position: relative; min-height: 100vh; overflow: hidden;
+    display: flex; flex-direction: column; justify-content: flex-end;
+    padding: 0 52px 80px;
+    background: radial-gradient(ellipse at 70% 40%, rgba(57,255,20,0.04) 0%, transparent 60%),
+                radial-gradient(ellipse at 30% 60%, rgba(5,217,232,0.04) 0%, transparent 60%),
+                var(--black);
+  }
+  .hero-grid-bg {
+    position: absolute; inset: 0; z-index: 0; opacity: 0.04;
+    background-image: linear-gradient(rgba(57,255,20,0.5) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(57,255,20,0.5) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+  .hero-content { position: relative; z-index: 2; }
+  .hero-meta { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--green); margin-bottom: 16px; }
+  .hero-title {
+    font-family: var(--font-display); font-size: clamp(72px, 12vw, 140px); line-height: 0.9; letter-spacing: 0.01em;
+    color: var(--green);
+    text-shadow: 4px 4px 0 var(--pink), 8px 8px 0 rgba(5,217,232,0.3);
+    margin-bottom: 28px;
+  }
+  .hero-sub { font-size: 18px; color: var(--silver); font-weight: 300; max-width: 580px; line-height: 1.7; margin-bottom: 40px; }
+  .hero-credits { display: flex; gap: 60px; border-top: 1px solid rgba(57,255,20,0.1); padding-top: 24px; flex-wrap: wrap; }
+  .credit-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--mid); margin-bottom: 6px; }
+  .credit-val { font-size: 13px; color: var(--silver); letter-spacing: 0.04em; text-transform: uppercase; }
+
+  .play-btn {
+    display: inline-flex; align-items: center; gap: 12px;
+    background: var(--green); color: #000;
+    font-family: var(--font-pixel); font-size: 13px;
+    padding: 16px 32px;
+    text-decoration: none; letter-spacing: 0.05em;
+    box-shadow: 4px 4px 0 var(--pink);
+    transition: all 0.15s;
+    margin-bottom: 36px;
+    display: inline-block;
+  }
+  .play-btn:hover { transform: translate(-2px,-2px); box-shadow: 6px 6px 0 var(--pink); }
+
+  /* CONTENT */
+  .content { position: relative; z-index: 10; }
+  .content-block { max-width: 1200px; margin: 0 auto; padding: 100px 52px; }
+  .block-sep { border-top: 1px solid rgba(57,255,20,0.07); }
+
+  .step-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--green); margin-bottom: 12px; display: block; }
+  .step-title { font-family: var(--font-display); font-size: 40px; letter-spacing: 0.04em; color: var(--white); margin-bottom: 20px; }
+  .step-body { font-size: 15px; color: var(--mid); line-height: 1.85; }
+  .step-body strong { color: var(--silver); font-weight: 400; }
+
+  .summary-panel {
+    background: rgba(57,255,20,0.02);
+    border: 1px solid rgba(57,255,20,0.1);
+    padding: 60px;
+    display: grid; grid-template-columns: 1fr 2fr; gap: 60px;
+  }
+  .summary-title { font-family: var(--font-display); font-size: 36px; letter-spacing: 0.04em; color: var(--white); line-height: 1.1; }
+  .summary-body { font-size: 16px; color: var(--mid); line-height: 1.85; }
+
+  /* FEATURE GRID */
+  .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: rgba(57,255,20,0.08); }
+  .feature { background: var(--black); padding: 36px 28px; }
+  .feature-icon { font-family: var(--font-pixel); font-size: 18px; color: var(--green); margin-bottom: 16px; }
+  .feature-name { font-family: var(--font-display); font-size: 24px; letter-spacing: 0.04em; color: var(--white); margin-bottom: 10px; }
+  .feature-desc { font-size: 13px; color: var(--mid); line-height: 1.7; }
+
+  /* MECHANIC TABLE */
+  .mechanics { display: grid; gap: 1px; background: rgba(57,255,20,0.07); }
+  .mechanic { background: var(--black); padding: 24px 32px; display: grid; grid-template-columns: 180px 1fr; gap: 32px; align-items: start; }
+  .mech-key { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--green); padding-top: 3px; }
+  .mech-val { font-size: 14px; color: var(--silver); line-height: 1.7; }
+
+  /* POSTER */
+  .poster-wrap { overflow: hidden; border: 2px solid rgba(57,255,20,0.15); position: relative; }
+  .poster-wrap img { width: 100%; display: block; }
+  .poster-overlay { position: absolute; inset: 0; background: linear-gradient(to bottom, transparent 60%, rgba(7,11,15,0.8) 100%); }
+
+  /* STORY PANEL */
+  .story-panel {
+    background: rgba(57,255,20,0.02); border: 1px solid rgba(57,255,20,0.08);
+    padding: 48px; position: relative; overflow: hidden;
+  }
+  .story-panel::before {
+    content: ''; position: absolute; inset: 0;
+    background: repeating-linear-gradient(to bottom, transparent 0 3px, rgba(255,255,255,0.01) 3px 4px);
+    pointer-events: none;
+  }
+  .story-title { font-family: var(--font-pixel); font-size: 11px; color: var(--pink); letter-spacing: 0.08em; margin-bottom: 20px; }
+  .story-text { font-size: 15px; color: var(--mid); line-height: 1.85; position: relative; z-index: 1; }
+  .story-text em { color: var(--cyan); font-style: normal; }
+  .story-text strong { color: var(--silver); font-weight: 400; }
+
+  .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.9s cubic-bezier(0.2,1,0.3,1), transform 0.9s cubic-bezier(0.2,1,0.3,1); }
+  .reveal.visible { opacity: 1; transform: none; }
+
+  .proj-nav { position: relative; z-index: 10; border-top: 1px solid rgba(57,255,20,0.07); padding: 80px 52px; display: flex; justify-content: space-between; align-items: center; }
+  .proj-nav a { font-family: var(--font-display); font-size: 32px; letter-spacing: 0.04em; color: var(--mid); text-decoration: none; transition: color 0.2s; }
+  .proj-nav a:hover { color: var(--white); }
+
+  ::-webkit-scrollbar { width: 3px; }
+  ::-webkit-scrollbar-track { background: var(--black); }
+  ::-webkit-scrollbar-thumb { background: rgba(57,255,20,0.2); }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="../index.html" class="back">← Back to Works</a>
+  <span class="nav-tag">Project 03</span>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-grid-bg"></div>
+  <div class="hero-content">
+    <div class="hero-meta">Game Design + Creative Coding · 2024</div>
+    <h1 class="hero-title">INFINI<br>SNAKE</h1>
+    <a href="game.html" class="play-btn">▶ PLAY NOW</a>
+    <p class="hero-sub">A retro-pixel endless arcade game designed and built from scratch. You're a courier snake navigating a grid, swallowing colored cargo and delivering to matching warehouses — before your tail catches up.</p>
+    <div class="hero-credits">
+      <div><div class="credit-label">My Role</div><div class="credit-val">Game Designer · Developer · Visual Artist</div></div>
+      <div><div class="credit-label">Tools</div><div class="credit-val">HTML Canvas · JavaScript · CSS · Pixel Art</div></div>
+      <div><div class="credit-label">Genre</div><div class="credit-val">Endless Arcade · Retro Pixel</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="content">
+
+  <!-- SUMMARY -->
+  <div class="content-block block-sep reveal">
+    <div class="summary-panel">
+      <div>
+        <span class="step-label">Project Summary</span>
+        <div class="summary-title">A PIXEL<br>SERPENT<br>WITH A<br>DAY JOB</div>
+      </div>
+      <div class="summary-body">Infinisnake is a fully designed and playable arcade game — built entirely in HTML Canvas and JavaScript. Beyond writing the code, this project required designing a coherent game mechanic, a pixel visual identity, a narrative world, and a complete user experience from title screen to game over. It's a demonstration of creative coding as a design discipline.</div>
+    </div>
+  </div>
+
+  <!-- POSTER -->
+  <div class="content-block block-sep reveal">
+    <span class="step-label">01 — Visual Identity</span>
+    <div class="step-title" style="margin-bottom:32px;">BOX ART &amp; BRANDING</div>
+    <div class="poster-wrap">
+      <img src="trailer-poster.png" alt="Infinisnake Poster">
+      <div class="poster-overlay"></div>
+    </div>
+  </div>
+
+  <!-- STORY -->
+  <div class="content-block block-sep reveal">
+    <span class="step-label">02 — Narrative Design</span>
+    <div class="step-title" style="margin-bottom:28px;">BACKGROUND STORY</div>
+    <div class="story-panel">
+      <div class="story-title">&gt; WORLD BUILDING</div>
+      <p class="story-text">
+        In the back room of a failing pizzeria in 1987, an arcade cabinet was abandoned with its coin door open. When the power finally cut, something inside kept running on leftover voltage — and a tiny, glitch-born logistics company quietly booted up in its memory.
+        <br><br>
+        Three warehouses sprouted: <em>Crimson Storage</em>, <em>Azure Depot</em>, <em>Solar Bay</em>. Each one demands colored cargo that nobody ordered. The only carrier that ever shows up for work is <em>the serpent</em> — a pixel worm whose body is literally the cargo hold. It swallows a red crate; it grows a red segment. It passes through Crimson Storage; its red segments are unloaded, and it shrinks by exactly that many tiles.
+        <br><br>
+        You are the dispatcher. You are the driver. <strong>You are the one deciding whether to keep stacking cargo for a big combo, or cash out now before your tail runs into your own spine.</strong>
+      </p>
+    </div>
+  </div>
+
+  <!-- FEATURES -->
+  <div class="content-block block-sep reveal">
+    <span class="step-label">03 — Game Design</span>
+    <div class="step-title" style="margin-bottom:32px;">CORE FEATURES</div>
+    <div class="features">
+      <div class="feature">
+        <div class="feature-icon">▓▓▓</div>
+        <div class="feature-name">CARGO SYSTEM</div>
+        <div class="feature-desc">Snake body segments ARE the cargo — swallow a red crate, grow a red segment. Deliver to the matching warehouse to shed those segments.</div>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">◈◈◈</div>
+        <div class="feature-name">COMBO CHAINS</div>
+        <div class="feature-desc">Deliver multiple same-color segments in one run for multiplied score. Risk vs. reward: stack more cargo, but your tail grows longer.</div>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">▶▶▶</div>
+        <div class="feature-name">ENDLESS MODE</div>
+        <div class="feature-desc">No win condition — only survival. Grid speed increases, warehouse positions shift, and difficulty scales dynamically with your score.</div>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">♦♦♦</div>
+        <div class="feature-name">PIXEL ART UI</div>
+        <div class="feature-desc">Full retro visual identity — scanline overlay, pixel typography, CRT vignette. Every UI element designed as part of the world.</div>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">⌨⌨⌨</div>
+        <div class="feature-name">CONTROLS</div>
+        <div class="feature-desc">Arrow keys + WASD for keyboard. Full touch controls for mobile. Responsive grid that scales to any screen size.</div>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">◉◉◉</div>
+        <div class="feature-name">SOUND DESIGN</div>
+        <div class="feature-desc">Procedurally generated 8-bit sound effects for pickups, deliveries, combos, and game over — all synthesized in the browser.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MECHANICS -->
+  <div class="content-block block-sep reveal">
+    <span class="step-label">04 — Technical Design</span>
+    <div class="step-title" style="margin-bottom:32px;">MECHANICS BREAKDOWN</div>
+    <div class="mechanics">
+      <div class="mechanic">
+        <span class="mech-key">Rendering</span>
+        <span class="mech-val">HTML5 Canvas with requestAnimationFrame game loop. Grid-based tile system with per-cell state tracking for snake body, cargo, and warehouses.</span>
+      </div>
+      <div class="mechanic">
+        <span class="mech-key">Snake Logic</span>
+        <span class="mech-val">Body segments stored as a linked list of {x, y, color} nodes. Cargo pickup appends colored nodes; warehouse delivery pops matching color nodes from the tail end.</span>
+      </div>
+      <div class="mechanic">
+        <span class="mech-key">Difficulty</span>
+        <span class="mech-val">Tick rate decreases by 2ms per 50 points scored. New cargo types and warehouse layouts introduced at score thresholds to maintain engagement.</span>
+      </div>
+      <div class="mechanic">
+        <span class="mech-key">Visual Style</span>
+        <span class="mech-val">Pixel art palette constrained to 8 colors. CRT scanline effect via CSS. Custom Press Start 2P typeface for all in-game UI elements.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <div class="content-block block-sep reveal" style="text-align:center;">
+    <div class="step-title" style="margin-bottom:24px; font-size:64px;">PLAY IT NOW</div>
+    <a href="game.html" class="play-btn" style="font-size:16px; padding:20px 48px;">▶ START GAME</a>
+  </div>
+
+</div>
+
+<div class="proj-nav">
+  <a href="../project2/melting-pulse.html">← Melting Pulse</a>
+  <a href="../index.html">All Work →</a>
+</div>
+
+<script>
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.07 });
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
