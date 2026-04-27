@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Dream Space — Process Documentation</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  :root {
+    --bg: #0c1530;
+    --bg-2: #152748;
+    --paper: #fbf7ee;
+    --ink: #1f2a44;
+    --accent: #7be3a4;
+    --accent-2: #b388eb;
+    --gold: #ffd86b;
+    --mute: #9bb0d8;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
+    color: var(--paper);
+    font-family: -apple-system, "Segoe UI", "Helvetica Neue", Arial,
+                 "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    line-height: 1.6;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 64px 32px 120px; }
+  header {
+    border-bottom: 1px solid rgba(255,248,231,0.15);
+    padding-bottom: 32px;
+    margin-bottom: 48px;
+  }
+  .eyebrow {
+    color: var(--mute); font-size: 12px; letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+  h1 {
+    font-size: 56px; line-height: 1.05; margin: 12px 0 4px;
+    font-weight: 800; letter-spacing: -0.01em;
+  }
+  h1 span { color: var(--accent); }
+  .sub { color: var(--mute); font-size: 18px; max-width: 720px; }
+  .meta {
+    display: flex; gap: 32px; flex-wrap: wrap;
+    margin-top: 24px; color: var(--mute); font-size: 13px;
+  }
+  .meta b { color: var(--paper); font-weight: 600; display: block; }
+  section { margin: 72px 0; }
+  h2 {
+    font-size: 12px; letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--gold); margin: 0 0 8px;
+  }
+  h3 {
+    font-size: 32px; margin: 0 0 16px; font-weight: 700;
+    letter-spacing: -0.005em;
+  }
+  p { font-size: 16px; max-width: 760px; color: #d8e1f3; }
+  figure { margin: 32px 0; }
+  figure img {
+    width: 100%; height: auto; border-radius: 14px;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.45);
+    border: 1px solid rgba(255,248,231,0.08);
+    background: var(--paper);
+  }
+  figcaption {
+    color: var(--mute); font-size: 13px; margin-top: 12px;
+    font-style: italic; text-align: center;
+  }
+  .grid-2 {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
+    margin-top: 32px;
+  }
+  @media (max-width: 720px) { .grid-2 { grid-template-columns: 1fr; } }
+  blockquote {
+    border-left: 3px solid var(--accent);
+    padding: 8px 0 8px 20px; margin: 24px 0;
+    color: var(--mute); font-style: italic;
+  }
+  ul.clean {
+    list-style: none; padding-left: 0;
+  }
+  ul.clean li {
+    padding: 10px 0; border-bottom: 1px dashed rgba(255,248,231,0.1);
+    color: #d8e1f3;
+  }
+  ul.clean li b { color: var(--paper); }
+  .pill {
+    display: inline-block;
+    padding: 4px 10px; border-radius: 999px;
+    background: rgba(123,227,164,0.15);
+    color: var(--accent);
+    font-size: 12px; font-weight: 600;
+    margin-right: 6px;
+  }
+  .pill.purple { background: rgba(179,136,235,0.18); color: var(--accent-2); }
+  .pill.gold   { background: rgba(255,216,107,0.18); color: var(--gold); }
+  footer {
+    border-top: 1px solid rgba(255,248,231,0.15);
+    margin-top: 96px; padding-top: 24px;
+    color: var(--mute); font-size: 13px;
+  }
+  a { color: var(--accent); }
+  .toc {
+    background: rgba(255,248,231,0.04);
+    border: 1px solid rgba(255,248,231,0.1);
+    border-radius: 14px;
+    padding: 20px 24px;
+    margin-bottom: 48px;
+  }
+  .toc ol { margin: 0; padding-left: 20px; color: var(--mute); }
+  .toc ol li { padding: 4px 0; }
+  .toc a { text-decoration: none; }
+  .toc a:hover { color: var(--gold); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">Process Documentation · Spring 2026</div>
+  <h1>Dream <span>Space</span></h1>
+  <p class="sub">A floating alien-laboratory island modelled in Blender — a place
+  half-remembered from a dream, where bioluminescent crystals hum and
+  mushroom pads bounce you between domes.</p>
+  <div class="meta">
+    <div><b>Primary tool</b>Blender 4.x — modelling, sculpt, shading, render</div>
+    <div><b>Sketching</b>Procreate · paper</div>
+    <div><b>Duration</b>4 weeks · solo</div>
+    <div><b>Author</b>Michelle Lin</div>
+  </div>
+</header>
+
+<div class="toc">
+  <div class="eyebrow" style="margin-bottom:8px;">contents</div>
+  <ol>
+    <li><a href="#concept">01 · Concept &amp; Possibilities</a></li>
+    <li><a href="#mood">02 · Mood Board &amp; References</a></li>
+    <li><a href="#sketch-top">03 · Top-down Layout Sketch</a></li>
+    <li><a href="#sketch-persp">04 · 3/4 Perspective Sketch</a></li>
+    <li><a href="#interactions">05 · Interactive Elements</a></li>
+    <li><a href="#process">06 · Process Timeline &amp; Unity Block-out</a></li>
+    <li><a href="#final">07 · Final Result</a></li>
+    <li><a href="#reflection">08 · Reflection</a></li>
+  </ol>
+</div>
+
+<!-- ============ 01 ============ -->
+<section id="concept">
+  <h2>01 — Concept</h2>
+  <h3>What is the dream?</h3>
+  <p>
+    The brief asked for a "dream space". My recurring dream lately has been
+    standing on a small island that floats in indigo void, surrounded by
+    architecture that looks half-grown, half-built — domes covered in vines,
+    pillars that glow from inside, a tiny spaceship parked on a quiet pad.
+    Nothing threatening, no goals, just the urge to wander and touch things.
+  </p>
+  <p>
+    I distilled this down to three pillars before sketching:
+  </p>
+  <ul class="clean">
+    <li><b>Quiet wonder, not adventure.</b> No combat, no quest log. The space rewards looking.</li>
+    <li><b>Touch reveals the world.</b> Every meaningful object is designed to respond to the player — physics-first when ported to Unity.</li>
+    <li><b>Ambiguous scale.</b> Player &amp; island both feel small inside a much bigger void.</li>
+  </ul>
+  <blockquote>"You wake on an island that was never really there."</blockquote>
+</section>
+
+<!-- ============ 02 ============ -->
+<section id="mood">
+  <h2>02 — Mood &amp; References</h2>
+  <h3>Mood board</h3>
+  <p>
+    Before drawing anything I pulled references from <em>Studio Ghibli</em>
+    (architecture silhouettes), <em>Subnautica</em> (bioluminescence
+    underwater), <em>Moebius</em> (alien horizons + flat colour), and
+    <em>Journey</em> (minimalism &amp; emotional pacing). I locked the
+    palette: deep voids, mint domes, bio-glow green, amethyst crystal,
+    a single warm gold accent for "lantern" beats.
+  </p>
+  <figure>
+    <img src="04_moodboard.png" alt="mood board"/>
+    <figcaption>Mood board — palette, keywords, atmosphere notes, reference thumbnails, emotional arc and type ideas.</figcaption>
+  </figure>
+  <p>
+    <span class="pill">ethereal</span>
+    <span class="pill purple">alien-lab</span>
+    <span class="pill gold">low-gravity</span>
+    <span class="pill">bioluminescent</span>
+    <span class="pill purple">crystalline</span>
+    <span class="pill gold">twilight</span>
+  </p>
+</section>
+
+<!-- ============ 03 ============ -->
+<section id="sketch-top">
+  <h2>03 — Layout Sketch</h2>
+  <h3>Top-down floor plan</h3>
+  <p>
+    I started with a paper-sketch top-down to figure out scale and player
+    flow. Spawn is on the south-west tip; the player walks past mushroom
+    pads, climbs to the crystal tower, drops into the central dome (hub),
+    then crosses bridges out to the greenhouse and landing pad. Total
+    walking time ≈ 90 s if you don't stop — but the design assumes you stop.
+  </p>
+  <figure>
+    <img src="01_sketch_topdown.png" alt="top-down layout"/>
+    <figcaption>Top-down concept · scale ≈ 30 m × 28 m · annotated for spawn, bridges, suggested player flow.</figcaption>
+  </figure>
+</section>
+
+<!-- ============ 04 ============ -->
+<section id="sketch-persp">
+  <h2>04 — Perspective Sketch</h2>
+  <h3>3/4 view block-in</h3>
+  <p>
+    Once the plan worked, I did a 3/4 perspective in Procreate to set the
+    silhouette &amp; lighting direction. The crystal tower is the only
+    vertical accent on the left so it reads as a beacon; everything else
+    sits low to keep the sky readable.
+  </p>
+  <figure>
+    <img src="02_sketch_perspective.png" alt="3/4 perspective sketch"/>
+    <figcaption>3/4 perspective concept — annotated with light direction, atmosphere notes, and player scale ref.</figcaption>
+  </figure>
+</section>
+
+<!-- ============ 05 ============ -->
+<section id="interactions">
+  <h2>05 — Interactions</h2>
+  <h3>Six core interactions — planned for Unity port</h3>
+  <p>
+    The brief asks us to "make good use of built-in physics", so even though
+    the deliverable for this milestone is a fully-textured Blender scene,
+    I storyboarded the six interactions I'd wire up when bringing the assets
+    into Unity: Rigidbody jump pads, HingeJoint bridges, proximity emissive
+    triggers, look-at FOV blends, push-doors, and a wind-driven spore VFX.
+    Each is intentionally simple — built-in components only.
+  </p>
+  <figure>
+    <img src="03_interactions.png" alt="interaction storyboard"/>
+    <figcaption>Storyboard — proximity glow, jump pads, look-at zoom, hinge bridge, push door, particle wind.</figcaption>
+  </figure>
+</section>
+
+<!-- ============ 06 ============ -->
+<section id="process">
+  <h2>06 — Process</h2>
+  <h3>Timeline + Blender block-out</h3>
+  <p>
+    Eight phases across four weeks. Week 2 was a pure block-out pass in
+    Blender — primitive cubes, cylinders and a sculpted base mesh — so the
+    silhouette and scale were locked before any detail or texturing
+    happened. The outliner on the right shows the final scene tree.
+  </p>
+  <figure>
+    <img src="05_process.png" alt="process timeline + unity block-out"/>
+    <figcaption>Process timeline + Unity block-out preview + iteration log.</figcaption>
+  </figure>
+</section>
+
+<!-- ============ 07 ============ -->
+<section id="final">
+  <h2>07 — Final result</h2>
+  <h3>Renders from the build</h3>
+  <p>
+    Cycles renders / EEVEE turntable from the final Blender scene. The
+    crystal tower glow uses an Emission shader driven by a Voronoi pattern;
+    the underside cracks are stylized texture paint over a sculpted mesh.
+  </p>
+  <div class="grid-2">
+    <figure>
+      <img src="final_render_01.jpg" alt="final render 1"/>
+      <figcaption>Three-quarter hero shot — central dome cluster &amp; crystal tower.</figcaption>
+    </figure>
+    <figure>
+      <img src="final_render_02.jpg" alt="final render 2"/>
+      <figcaption>Pulled-back angle — landing pad, bridge sag, underside roots.</figcaption>
+    </figure>
+  </div>
+  <figure>
+    <img src="final_render_03.jpg" alt="final render 3"/>
+    <figcaption>Top-leaning angle showing the full plate — domes, mushrooms, crystal shrine, spaceship.</figcaption>
+  </figure>
+</section>
+
+<!-- ============ 08 ============ -->
+<section id="reflection">
+  <h2>08 — Reflection</h2>
+  <h3>What worked, what I'd change</h3>
+  <ul class="clean">
+    <li><b>What worked:</b> Locking the silhouette in week 2 with a pure
+        block-out (no textures, no detail) — every later phase was
+        decoration on a structure I already trusted.</li>
+    <li><b>What I'd change:</b> The crystal tower's emission is a little
+        too uniform; in a Cycles re-bake I'd add slow noise to the
+        intensity so it feels alive instead of lit.</li>
+    <li><b>Next step:</b> Export the Blender scene as glTF and bring it
+        into Unity to wire up the six interactions storyboarded in §05 —
+        that's where the dream actually becomes inhabitable.</li>
+  </ul>
+</section>
+
+<footer>
+  Process documentation · Dream Space · 2026 ·
+  modelled &amp; rendered in Blender · concept, design &amp; build by Michelle Lin.
+</footer>
+
+</div>
+</body>
+</html>
