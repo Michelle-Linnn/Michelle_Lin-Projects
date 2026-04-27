@@ -1,0 +1,506 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Digital Materiality — A Library of Generated Artifacts & a Projection Mapping</title>
+<meta name="description" content="A series of digital artifacts produced in TouchDesigner and projection-mapped onto a cluttered clipping wall." />
+<style>
+  :root{
+    --bg:#0b0b0c;
+    --bg-soft:#141416;
+    --ink:#ececec;
+    --muted:#8a8a92;
+    --line:#222226;
+    --accent:#e9ff66;
+    --accent-soft:#9ab560;
+    --shadow:0 8px 40px rgba(0,0,0,.45);
+    --serif:"GT Sectra","Source Serif Pro",ui-serif,Georgia,"Times New Roman",serif;
+    --sans:"Inter","Helvetica Neue",Helvetica,Arial,system-ui,-apple-system,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+  a{color:var(--ink)}
+  img,video{display:block;max-width:100%}
+  ::selection{background:var(--accent);color:#000}
+
+  /* Layout */
+  .wrap{max-width:1240px;margin:0 auto;padding:0 28px}
+  header.top{
+    position:sticky;top:0;z-index:30;
+    background:rgba(11,11,12,.78);
+    backdrop-filter:saturate(140%) blur(10px);
+    -webkit-backdrop-filter:saturate(140%) blur(10px);
+    border-bottom:1px solid var(--line);
+  }
+  .top-inner{display:flex;align-items:center;justify-content:space-between;gap:24px;height:62px}
+  .brand{font-family:var(--serif);font-size:18px;letter-spacing:.02em}
+  .brand em{font-style:italic;color:var(--accent)}
+  nav a{margin-left:22px;font-size:13px;color:var(--muted);text-decoration:none;letter-spacing:.04em;text-transform:uppercase}
+  nav a:hover{color:var(--ink)}
+
+  /* Hero */
+  .hero{padding:110px 0 64px;border-bottom:1px solid var(--line)}
+  .hero h1{
+    font-family:var(--serif);
+    font-weight:400;
+    font-size:clamp(40px,7.4vw,104px);
+    line-height:.98;
+    letter-spacing:-0.02em;
+    margin:0 0 22px;
+  }
+  .hero h1 em{font-style:italic;color:var(--accent)}
+  .hero .lede{
+    max-width:780px;
+    color:#cfcfd3;
+    font-size:clamp(15px,1.35vw,18px);
+    line-height:1.6;
+    margin:0 0 22px;
+  }
+  .hero .meta{
+    display:flex;flex-wrap:wrap;gap:16px 28px;
+    font-family:var(--mono);font-size:12px;color:var(--muted);
+    margin-top:28px;letter-spacing:.04em
+  }
+  .hero .meta b{color:var(--ink);font-weight:500}
+
+  /* Section heading */
+  .section{padding:84px 0;border-bottom:1px solid var(--line)}
+  .eyebrow{
+    font-family:var(--mono);font-size:11px;letter-spacing:.22em;
+    text-transform:uppercase;color:var(--accent-soft);margin:0 0 18px
+  }
+  .section h2{
+    font-family:var(--serif);font-weight:400;
+    font-size:clamp(28px,4vw,56px);line-height:1.05;letter-spacing:-0.01em;
+    margin:0 0 28px
+  }
+  .section p.lead{max-width:760px;color:#cfcfd3;line-height:1.65;font-size:16px;margin:0 0 14px}
+
+  /* Concept grid */
+  .concepts{
+    display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:34px
+  }
+  .concept{
+    background:var(--bg-soft);border:1px solid var(--line);
+    border-radius:14px;padding:22px 20px 24px;
+    transition:transform .25s ease, border-color .25s ease, background .25s ease
+  }
+  .concept:hover{transform:translateY(-3px);border-color:#3a3a40;background:#17171a}
+  .concept .num{font-family:var(--mono);font-size:12px;color:var(--accent);letter-spacing:.18em}
+  .concept h3{font-family:var(--serif);font-style:italic;font-weight:400;font-size:24px;margin:8px 0 8px}
+  .concept p{margin:0;color:#bdbdc4;font-size:14px;line-height:1.55}
+
+  /* Artifact gallery */
+  .gallery-tools{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:18px}
+  .count{font-family:var(--mono);font-size:12px;color:var(--muted);letter-spacing:.08em}
+  .pill-row{display:flex;gap:8px;flex-wrap:wrap}
+  .pill{
+    border:1px solid var(--line);background:transparent;color:var(--muted);
+    font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+    padding:8px 12px;border-radius:999px;cursor:pointer;transition:all .2s
+  }
+  .pill:hover{color:var(--ink);border-color:#3a3a40}
+  .pill.active{background:var(--accent);color:#0b0b0c;border-color:var(--accent)}
+
+  .gallery{
+    column-count:3;column-gap:14px;margin-top:18px
+  }
+  @media (max-width:980px){.gallery{column-count:2}}
+  @media (max-width:560px){.gallery{column-count:1}}
+
+  .card{
+    break-inside:avoid;
+    margin:0 0 14px;
+    background:#0e0e10;
+    border:1px solid var(--line);
+    border-radius:10px;
+    overflow:hidden;
+    position:relative;
+    cursor:pointer;
+    transition:border-color .25s ease, transform .25s ease;
+  }
+  .card:hover{border-color:#3d3d45;transform:translateY(-2px)}
+  .card .frame{position:relative;background:#000}
+  .card video{width:100%;height:auto;display:block}
+  .card .cap{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:10px 12px 12px;border-top:1px solid var(--line);
+    font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.1em
+  }
+  .card .cap .name{color:var(--ink);text-transform:uppercase}
+  .card .cap .tag{color:var(--accent-soft)}
+  .card .badge{
+    position:absolute;top:10px;left:10px;
+    background:rgba(0,0,0,.55);backdrop-filter:blur(6px);
+    color:#fff;border:1px solid rgba(255,255,255,.16);
+    font-family:var(--mono);font-size:10px;letter-spacing:.18em;
+    padding:5px 8px;border-radius:6px
+  }
+
+  /* Lightbox */
+  .lightbox{
+    position:fixed;inset:0;background:rgba(0,0,0,.94);display:none;align-items:center;justify-content:center;z-index:60;padding:24px
+  }
+  .lightbox.open{display:flex}
+  .lightbox video{max-width:min(96vw,1400px);max-height:88vh;border-radius:8px;background:#000}
+  .lightbox .close{
+    position:absolute;top:16px;right:18px;background:transparent;color:#fff;border:0;font-size:28px;cursor:pointer;
+    width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center
+  }
+  .lightbox .close:hover{background:rgba(255,255,255,.1)}
+
+  /* Mapping section */
+  .mapping{display:grid;grid-template-columns:1.1fr 1fr;gap:36px;align-items:start}
+  @media (max-width:880px){.mapping{grid-template-columns:1fr}}
+  .doc-card{
+    background:#0e0e10;border:1px solid var(--line);border-radius:14px;overflow:hidden;
+    box-shadow:var(--shadow)
+  }
+  .doc-card video{width:100%;height:auto;display:block;background:#000}
+  .doc-card .meta{padding:14px 16px;border-top:1px solid var(--line)}
+  .doc-card .meta h4{margin:0 0 4px;font-family:var(--serif);font-style:italic;font-weight:400;font-size:18px}
+  .doc-card .meta p{margin:0;color:var(--muted);font-size:13px;line-height:1.55}
+
+  .process{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:34px}
+  @media (max-width:880px){.process{grid-template-columns:1fr}}
+  .step{
+    border:1px solid var(--line);background:var(--bg-soft);border-radius:14px;padding:22px 20px
+  }
+  .step .num{font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:.2em}
+  .step h4{font-family:var(--serif);font-style:italic;font-weight:400;font-size:22px;margin:8px 0 8px}
+  .step p{margin:0;color:#bdbdc4;font-size:14px;line-height:1.6}
+
+  /* Reflection */
+  .reflection{column-count:2;column-gap:36px;margin-top:18px}
+  @media (max-width:760px){.reflection{column-count:1}}
+  .reflection p{color:#cfcfd3;font-size:15.5px;line-height:1.7;margin:0 0 18px}
+
+  footer{padding:48px 0 64px;color:var(--muted);font-family:var(--mono);font-size:12px;letter-spacing:.08em}
+  footer .row{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+
+  /* Smooth fade-in */
+  .reveal{opacity:0;transform:translateY(8px);transition:opacity .6s ease,transform .6s ease}
+  .reveal.in{opacity:1;transform:none}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap top-inner">
+    <div class="brand">Digital <em>Materiality</em></div>
+    <nav>
+      <a href="#about">About</a>
+      <a href="#gallery">Library</a>
+      <a href="#mapping">Mapping</a>
+      <a href="#process">Process</a>
+    </nav>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap">
+    <p class="eyebrow">Studio Project · 2025–2026</p>
+    <h1>A library of <em>generated</em> things,<br/>projected onto a wall of <em>clippings</em>.</h1>
+    <p class="lede">
+      A series of sixteen digital artifacts authored in TouchDesigner — feedback loops, particle fields,
+      wave permutations, and image-driven compositions — installed as a projection mapping over a dense,
+      cluttered clipping wall, with white paper sheets pinned in to act as discrete screens.
+    </p>
+    <div class="meta">
+      <span><b>Tool</b> · TouchDesigner</span>
+      <span><b>Medium</b> · Pixels, projector, paper</span>
+      <span><b>Series</b> · 16 artifacts, 4 themes</span>
+      <span><b>Surface</b> · Cluttered clipping wall</span>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="about">
+  <div class="wrap">
+    <p class="eyebrow">01 · Framing</p>
+    <h2>Pixels behave like paper, but they keep<br/>misremembering the rules.</h2>
+    <p class="lead">
+      The brief asks us to take digital binary as a medium with its own grain — to notice where it bends
+      under the weight of our intent, where small initial states explode into different endings, and where
+      one parameter quietly steers another. These are the four lenses I tried to keep open while making
+      every artifact in this library.
+    </p>
+
+    <div class="concepts">
+      <div class="concept reveal">
+        <div class="num">01</div>
+        <h3>Permutation</h3>
+        <p>Each theme is a small system pushed in different directions — a single particle field re-tuned
+        in saturation, density, gravity, or feedback strength until it becomes an unrelated cousin of itself.</p>
+      </div>
+      <div class="concept reveal">
+        <div class="num">02</div>
+        <h3>Intention</h3>
+        <p>I came in wanting clean shapes. The toolset kept handing me noise, smear, and accidental beauty.
+        Most of these pieces are the conversation between what I planned and what TouchDesigner agreed to.</p>
+      </div>
+      <div class="concept reveal">
+        <div class="num">03</div>
+        <h3>Complexity</h3>
+        <p>A single seed value, a feedback amount nudged from 0.94 to 0.96, an extra noise octave —
+        the same patch produces a starfield, then a galaxy, then a static smear. Tiny edits, very loud results.</p>
+      </div>
+      <div class="concept reveal">
+        <div class="num">04</div>
+        <h3>Control</h3>
+        <p>Audio level steers brightness; brightness steers feedback; feedback steers everything. The patch
+        is less a picture and more a small graph of mutual influence — the artifact is what falls out of it.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="gallery">
+  <div class="wrap">
+    <p class="eyebrow">02 · The Library</p>
+    <h2>Sixteen artifacts, in four loose families.</h2>
+    <p class="lead">
+      All clips loop and play silently. Click any tile to enlarge it. The grid is intentionally uneven —
+      tall, square, and wide outputs sit next to each other, the way they were authored, with their native
+      aspect ratios preserved.
+    </p>
+
+    <div class="gallery-tools">
+      <div class="pill-row" id="filterRow">
+        <button class="pill active" data-filter="all">All · 16</button>
+        <button class="pill" data-filter="A">I · Concentric &amp; Eye</button>
+        <button class="pill" data-filter="B">II · Particle Fields</button>
+        <button class="pill" data-filter="C">III · Wave Permutations</button>
+        <button class="pill" data-filter="D">IV · Image &amp; Text</button>
+      </div>
+      <div class="count" id="countLabel">Showing 16 of 16</div>
+    </div>
+
+    <div class="gallery" id="gallery"><!-- cards injected --></div>
+  </div>
+</section>
+
+<section class="section" id="mapping">
+  <div class="wrap">
+    <p class="eyebrow">03 · Projection Installation</p>
+    <h2>A loud surface. Quiet white rectangles. Light, mapped.</h2>
+    <p class="lead">
+      Across from the studio there is a clipping wall — taped photographs, screenshots, printed posters,
+      magazine pages, sticky notes. We rented a projector and used the wall itself as the canvas, but
+      pinned plain white paper sheets across it so the projected artifacts had clean little screens to
+      land on, while the surrounding clutter bled through and around them.
+    </p>
+
+    <div class="mapping" style="margin-top:32px">
+      <div class="doc-card reveal">
+        <video src="videos/doc_wall_prep_v2.mp4" poster="thumbs/doc_wall_prep.jpg"
+               muted loop playsinline preload="metadata" data-autoplay></video>
+        <div class="meta">
+          <h4>Wall preparation</h4>
+          <p>Pinning white paper sheets across the clipping wall — choosing where the artifacts should
+          land, leaving the rest of the clutter exposed.</p>
+        </div>
+      </div>
+      <div class="doc-card reveal">
+        <video src="videos/doc_mapping_result_v2.mp4" poster="thumbs/doc_mapping_result.jpg"
+               muted loop playsinline preload="metadata" data-autoplay></video>
+        <div class="meta">
+          <h4>The mapping, running</h4>
+          <p>Generated artifacts mapped one by one to the white sheets — a quiet grid of moving images
+          embedded in a noisy field of paper.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="process">
+  <div class="wrap">
+    <p class="eyebrow">04 · Building Process</p>
+    <h2>Three steps, more iterations than I want to admit.</h2>
+
+    <div class="process">
+      <div class="step reveal">
+        <div class="num">STEP 01</div>
+        <h4>Author</h4>
+        <p>Each artifact starts in TouchDesigner — a small patch of TOPs and CHOPs, often a feedback loop
+        with one or two control parameters exposed. I let it run, capture screen recordings of the parameter
+        space, and only then choose which permutations to keep.</p>
+      </div>
+      <div class="step reveal">
+        <div class="num">STEP 02</div>
+        <h4>Curate</h4>
+        <p>From dozens of recordings I pulled four families: a concentric-eye theme, particle fields,
+        wave permutations, and image/text experiments. Each family is the same patch reshaped, rather
+        than four unrelated pieces.</p>
+      </div>
+      <div class="step reveal">
+        <div class="num">STEP 03</div>
+        <h4>Map</h4>
+        <p>White paper sheets were taped to the clipping wall as soft screens. The projector was aligned
+        and each sheet got its own artifact, sized to its rectangle, so the wall reads as a small grid of
+        living posters inside the surrounding paper noise.</p>
+      </div>
+    </div>
+
+    <p class="eyebrow" style="margin-top:62px">05 · Reflection</p>
+    <h2>What the digital medium kept teaching me.</h2>
+    <div class="reflection">
+      <p><b>Permutation</b> happened almost on its own. Once a patch was running, dragging a single slider
+      gave me ten variations in twenty seconds. It taught me that a digital artifact is rarely a single
+      object — it's a slice through a parameter space, and the choice of <em>which</em> slice is the actual
+      authorial decision.</p>
+
+      <p><b>Intention</b> survived only partially. I planned controlled, geometric outputs; what I got
+      was often noisier, softer, more accidental. TouchDesigner's affordances — feedback, blur, displace —
+      pull every image toward smear and fog. The artifacts you see here are the truce.</p>
+
+      <p><b>Complexity</b> was the most surprising. Two of the particle fields are the same patch with
+      a feedback amount changed from 0.94 to 0.97. The visual difference is enormous: one stays as
+      discrete dots, the other smears into a galaxy. Three percent of one parameter, an entirely
+      different artifact.</p>
+
+      <p><b>Control</b> ended up being a graph rather than a knob. Brightness drove feedback, feedback
+      drove particle lifetime, lifetime drove density. Once that little network is wired, the artifact
+      almost composes itself — my role becomes choosing where in time to take a snapshot.</p>
+
+      <p>The projection mapping, finally, returned the digital images to a physical body. On a clean
+      wall they would have been just videos. On a wall already covered in paper — printouts, photos,
+      torn pages — the artifacts had to negotiate with that clutter, and the white sheets became their
+      bodies, the way an email is the body of a thought that began as a letter.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap row">
+    <span>Digital Materiality · Studio Project · 2026</span>
+    <span>Made in TouchDesigner. Mapped onto a wall.</span>
+  </div>
+</footer>
+
+<div class="lightbox" id="lightbox" aria-hidden="true">
+  <button class="close" id="lbClose" aria-label="Close">×</button>
+  <video id="lbVideo" controls playsinline></video>
+</div>
+
+<script>
+  // Artifact data — the source of truth for the gallery.
+  // Family A: concentric / eye
+  // Family B: particle fields
+  // Family C: wave permutations
+  // Family D: image & text
+  const artifacts = [
+    {id:"01", file:"videos/artifact_01.mp4",      poster:"thumbs/artifact_01.jpg", name:"Nazar I",        family:"A", tag:"concentric", date:"2025·11·12"},
+    {id:"02", file:"videos/artifact_02_part.mp4", poster:"thumbs/artifact_02.jpg", name:"Field — Violet", family:"B", tag:"particles",  date:"2025·11·12"},
+    {id:"03", file:"videos/artifact_03.mp4",      poster:"thumbs/artifact_03.jpg", name:"Field — Spectra",family:"B", tag:"particles",  date:"2025·11·12"},
+    {id:"04", file:"videos/artifact_04.mp4",      poster:"thumbs/artifact_04.jpg", name:"Wireframe Knot", family:"A", tag:"line",       date:"2025·11·12"},
+    {id:"05", file:"videos/artifact_05.mp4",      poster:"thumbs/artifact_05.jpg", name:"Nazar II — ASCII",family:"A",tag:"concentric", date:"2025·11"},
+    {id:"06", file:"videos/artifact_06.mp4",      poster:"thumbs/artifact_06.jpg", name:"Voronoi Shell",  family:"D", tag:"3d mesh",    date:"2026·04·01"},
+    {id:"07", file:"videos/artifact_07.mp4",      poster:"thumbs/artifact_07.jpg", name:"Companion Page", family:"D", tag:"image+text", date:"2026·04·24"},
+    {id:"08", file:"videos/artifact_08.mp4",      poster:"thumbs/artifact_08.jpg", name:"Apples — Palette",family:"D",tag:"image+text", date:"2026·04·24"},
+    {id:"09", file:"videos/artifact_09_new.mp4",  poster:"thumbs/artifact_09.jpg", name:"Field — Drift",  family:"B", tag:"particles",  date:"2026·04·24"},
+    {id:"10", file:"videos/artifact_10.mp4",      poster:"thumbs/artifact_10.jpg", name:"Wave — Magenta", family:"C", tag:"wave",       date:"2026·04·24"},
+    {id:"11", file:"videos/artifact_11.mp4",      poster:"thumbs/artifact_11.jpg", name:"Wave — Cobalt",  family:"C", tag:"wave",       date:"2026·04·24"},
+    {id:"12", file:"videos/artifact_12.mp4",      poster:"thumbs/artifact_12.jpg", name:"Bloom",          family:"D", tag:"3d image",   date:"2026·04·27"},
+    {id:"13", file:"videos/artifact_13.mp4",      poster:"thumbs/artifact_13.jpg", name:"Field — Sphere", family:"B", tag:"particles",  date:"2026·04·27"},
+    {id:"14", file:"videos/artifact_14.mp4",      poster:"thumbs/artifact_14.jpg", name:"Tomato Repeat",  family:"D", tag:"image+text", date:"2026·04·27"},
+    {id:"15", file:"videos/artifact_15.mp4",      poster:"thumbs/artifact_15.jpg", name:"Field — Comet",  family:"B", tag:"particles",  date:"2026·04·27"},
+    {id:"16", file:"videos/artifact_16.mp4",      poster:"thumbs/artifact_16.jpg", name:"Pixel Drip",     family:"C", tag:"wave",       date:"2026·04·27"}
+  ];
+
+  const familyLabels = {A:"I · Concentric & Eye", B:"II · Particle Fields", C:"III · Wave Permutations", D:"IV · Image & Text"};
+
+  // Render gallery
+  const gallery = document.getElementById("gallery");
+  function renderGallery(filter){
+    gallery.innerHTML = "";
+    const list = filter === "all" ? artifacts : artifacts.filter(a => a.family === filter);
+    list.forEach(a => {
+      const card = document.createElement("div");
+      card.className = "card reveal";
+      card.dataset.family = a.family;
+      card.innerHTML = `
+        <div class="frame">
+          <span class="badge">${a.id}</span>
+          <video src="${a.file}" poster="${a.poster}" muted loop playsinline preload="metadata" data-autoplay></video>
+        </div>
+        <div class="cap">
+          <span class="name">${a.name}</span>
+          <span class="tag">${a.tag} · ${a.date}</span>
+        </div>`;
+      card.addEventListener("click", () => openLightbox(a.file));
+      gallery.appendChild(card);
+    });
+    document.getElementById("countLabel").textContent = `Showing ${list.length} of ${artifacts.length}`;
+    bindAutoplay();
+    bindReveal();
+  }
+
+  // Filter pills
+  document.getElementById("filterRow").addEventListener("click", e => {
+    if(!e.target.classList.contains("pill")) return;
+    document.querySelectorAll("#filterRow .pill").forEach(p => p.classList.remove("active"));
+    e.target.classList.add("active");
+    renderGallery(e.target.dataset.filter);
+  });
+
+  // Auto-play only when in viewport (saves CPU)
+  function bindAutoplay(){
+    const vids = document.querySelectorAll("video[data-autoplay]");
+    const io = new IntersectionObserver(entries => {
+      entries.forEach(en => {
+        const v = en.target;
+        if(en.isIntersecting){
+          const p = v.play();
+          if(p && p.catch) p.catch(()=>{});
+        } else {
+          v.pause();
+        }
+      });
+    }, {rootMargin:"100px", threshold:0.15});
+    vids.forEach(v => io.observe(v));
+  }
+
+  // Fade-in on scroll
+  function bindReveal(){
+    const els = document.querySelectorAll(".reveal:not(.in)");
+    const io = new IntersectionObserver(entries => {
+      entries.forEach(en => {
+        if(en.isIntersecting){ en.target.classList.add("in"); io.unobserve(en.target); }
+      });
+    }, {threshold:0.08});
+    els.forEach(el => io.observe(el));
+  }
+
+  // Lightbox
+  const lb = document.getElementById("lightbox");
+  const lbVideo = document.getElementById("lbVideo");
+  const lbClose = document.getElementById("lbClose");
+  function openLightbox(src){
+    lbVideo.src = src;
+    lb.classList.add("open");
+    lbVideo.play().catch(()=>{});
+    document.body.style.overflow = "hidden";
+  }
+  function closeLightbox(){
+    lb.classList.remove("open");
+    lbVideo.pause();
+    lbVideo.removeAttribute("src");
+    lbVideo.load();
+    document.body.style.overflow = "";
+  }
+  lbClose.addEventListener("click", closeLightbox);
+  lb.addEventListener("click", e => { if(e.target === lb) closeLightbox(); });
+  document.addEventListener("keydown", e => { if(e.key === "Escape") closeLightbox(); });
+
+  // Initial render
+  renderGallery("all");
+  // Reveal hero / static reveals
+  bindReveal();
+</script>
+
+</body>
+</html>
