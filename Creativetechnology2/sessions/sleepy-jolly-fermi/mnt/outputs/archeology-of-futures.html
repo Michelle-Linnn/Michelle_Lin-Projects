@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Archeology of the Futures — The Quiet Inheritance</title>
+<style>
+  :root {
+    --bone: #efe7d8;
+    --bone-dark: #d8cdb8;
+    --ink: #1d1a17;
+    --ink-soft: #3b342d;
+    --accent: #8a6a3b;
+    --accent-2: #5a7a8c;
+    --deep: #0f1418;
+    --paper: #f7f1e4;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+    line-height: 1.65;
+    font-size: 17px;
+  }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 60px 32px 120px; }
+  header.hero {
+    border-top: 2px solid var(--ink);
+    border-bottom: 1px solid var(--ink);
+    padding: 80px 0 40px;
+    margin-bottom: 60px;
+    text-align: left;
+  }
+  .kicker {
+    font-family: "Inter", "Helvetica Neue", sans-serif;
+    font-size: 12px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 24px;
+  }
+  h1 {
+    font-size: clamp(42px, 6vw, 74px);
+    line-height: 1.02;
+    font-weight: 500;
+    margin: 0 0 28px;
+    letter-spacing: -0.02em;
+    font-style: italic;
+  }
+  h1 .sub { display: block; font-size: 0.42em; font-style: normal; letter-spacing: 0.02em; color: var(--ink-soft); margin-top: 14px; font-weight: 400;}
+  h2 {
+    font-size: 28px;
+    font-weight: 500;
+    margin: 80px 0 14px;
+    letter-spacing: -0.01em;
+    border-bottom: 1px solid var(--bone-dark);
+    padding-bottom: 10px;
+  }
+  h3 {
+    font-size: 18px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-family: "Inter", sans-serif;
+    font-weight: 600;
+    margin-top: 40px;
+    color: var(--accent);
+  }
+  p { max-width: 68ch; }
+  blockquote {
+    border-left: 3px solid var(--accent);
+    padding: 8px 0 8px 22px;
+    margin: 28px 0;
+    font-style: italic;
+    color: var(--ink-soft);
+    max-width: 60ch;
+  }
+  a { color: var(--accent-2); }
+  .meta {
+    font-family: "Inter", sans-serif;
+    font-size: 13px;
+    color: var(--ink-soft);
+    display: flex;
+    gap: 28px;
+    flex-wrap: wrap;
+    margin-top: 14px;
+  }
+  .meta span b { color: var(--ink); font-weight: 600; letter-spacing: 0.05em;}
+
+  /* Diagrams */
+  .diagram {
+    background: var(--bone);
+    border: 1px solid var(--bone-dark);
+    padding: 24px;
+    border-radius: 2px;
+    margin: 24px 0;
+  }
+  .diagram figcaption {
+    font-family: "Inter", sans-serif;
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin-top: 14px;
+    letter-spacing: 0.04em;
+  }
+  svg { display: block; width: 100%; height: auto; }
+
+  /* Mood board */
+  .moodboard {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 10px;
+    margin: 24px 0 8px;
+  }
+  .tile {
+    aspect-ratio: 1 / 1;
+    border-radius: 2px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 1px 0 rgba(0,0,0,0.08);
+    background: #cfc4ac;
+  }
+  .tile img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .tile span {
+    position: absolute;
+    left: 10px; bottom: 8px;
+    color: #fff;
+    font-family: "Inter", sans-serif;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.65);
+    z-index: 2;
+  }
+  .tile.t1 { grid-column: span 2; grid-row: span 2; }
+  .tile.t7 { grid-column: span 2; }
+
+  /* Object illustration */
+  .object-card {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    align-items: center;
+    margin: 30px 0;
+    background: var(--bone);
+    border: 1px solid var(--bone-dark);
+    padding: 40px;
+  }
+  .object-card svg { max-width: 320px; margin: 0 auto; }
+  @media (max-width: 720px) {
+    .object-card { grid-template-columns: 1fr; }
+    .moodboard { grid-template-columns: repeat(3, 1fr); }
+  }
+
+  /* Process steps */
+  .steps {
+    counter-reset: step;
+    padding-left: 0;
+    list-style: none;
+    margin: 20px 0;
+  }
+  .steps li {
+    counter-increment: step;
+    padding: 14px 0 14px 56px;
+    position: relative;
+    border-top: 1px solid var(--bone-dark);
+  }
+  .steps li:last-child { border-bottom: 1px solid var(--bone-dark); }
+  .steps li::before {
+    content: counter(step, decimal-leading-zero);
+    position: absolute;
+    left: 0; top: 14px;
+    font-family: "Inter", sans-serif;
+    font-size: 12px;
+    letter-spacing: 0.15em;
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .steps li b { display: block; font-family: "Inter", sans-serif; font-size: 14px; letter-spacing: 0.02em; margin-bottom: 4px;}
+
+  code, .mono {
+    font-family: "JetBrains Mono", "SF Mono", Menlo, monospace;
+    font-size: 13px;
+    background: var(--bone);
+    padding: 2px 6px;
+    border-radius: 2px;
+  }
+
+  /* Render-frame */
+  .render-frame {
+    background: linear-gradient(180deg, #1a1410 0%, #0a0706 100%);
+    padding: 40px;
+    border-radius: 2px;
+    color: #d8cdb8;
+    margin: 24px 0;
+    position: relative;
+    overflow: hidden;
+  }
+  .render-frame::before {
+    content: "";
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 70% 50% at 50% 60%, rgba(234, 200, 130, 0.22), transparent 60%),
+      radial-gradient(circle at 20% 20%, rgba(90, 122, 140, 0.15), transparent 40%);
+    pointer-events: none;
+  }
+  .render-frame .inner { position: relative; z-index: 1; text-align: center; }
+  .render-frame svg { max-width: 360px; margin: 0 auto; filter: drop-shadow(0 30px 40px rgba(0,0,0,0.6)); }
+  .render-frame small { font-family: "Inter", sans-serif; letter-spacing: 0.2em; font-size: 11px; text-transform: uppercase; color: #c0a97a; display: block; margin-top: 18px;}
+
+  footer {
+    margin-top: 100px;
+    padding-top: 30px;
+    border-top: 1px solid var(--bone-dark);
+    font-family: "Inter", sans-serif;
+    font-size: 12px;
+    color: var(--ink-soft);
+    letter-spacing: 0.05em;
+  }
+
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+  }
+  @media (max-width: 720px) { .two-col { grid-template-columns: 1fr; } }
+
+  .pull {
+    font-style: italic;
+    font-size: 22px;
+    line-height: 1.45;
+    color: var(--ink-soft);
+    border-left: none;
+    padding: 24px 0;
+    margin: 32px 0;
+    max-width: 62ch;
+  }
+  .pull::before { content: "“"; font-size: 60px; line-height: 0; vertical-align: -30px; color: var(--accent); margin-right: 6px;}
+
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <div class="kicker">Archeology of the Futures · Speculative Object Study</div>
+  <h1>The Quiet Inheritance
+    <span class="sub">An heirloom from the year 2147, when memory stopped dying with the body.</span>
+  </h1>
+  <div class="meta">
+    <span><b>Author</b> &nbsp; Michelle Lin</span>
+    <span><b>Theme</b> &nbsp; AI &amp; Human Augmentation</span>
+    <span><b>Horizon</b> &nbsp; Far Possible · 50–150 yrs</span>
+    <span><b>Tool</b> &nbsp; Blender 4.x · Cycles</span>
+  </div>
+</header>
+
+<!-- 1. PICKING A FUTURE -->
+
+<section>
+  <h2>1. Picking a future</h2>
+  <p>
+    Instead of asking <em>will</em> we augment ourselves, I wanted to sit with <em>how</em> augmentation becomes ordinary — how the extraordinary fades into domestic life, rituals, furniture, grief. The archaeological prompt flipped the angle: not "build a gadget for 2150," but "imagine a thing that will one day be dug up, puzzled over, and labeled."
+  </p>
+
+  <h3>A 2×2 matrix of the augmented future</h3>
+  <p>
+    I placed two tensions against each other. The horizontal axis asks <em>who owns cognition</em> — is our augmented mind a centralized cloud service, or a distributed, personal substrate? The vertical axis asks <em>what role it plays in daily life</em> — is it corporate / institutional infrastructure, or is it intimate, ritual, domestic?
+  </p>
+
+  <figure class="diagram">
+    <svg viewBox="0 0 800 500" role="img" aria-label="2x2 futures matrix">
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto" markerUnits="strokeWidth">
+          <path d="M0,0 L8,4 L0,8 z" fill="#1d1a17"/>
+        </marker>
+      </defs>
+      <rect x="0" y="0" width="800" height="500" fill="#efe7d8"/>
+      <!-- axes -->
+      <line x1="400" y1="40" x2="400" y2="460" stroke="#1d1a17" stroke-width="1.4" marker-end="url(#arrow)"/>
+      <line x1="60" y1="250" x2="760" y2="250" stroke="#1d1a17" stroke-width="1.4" marker-end="url(#arrow)"/>
+      <line x1="400" y1="40" x2="400" y2="460" stroke="#1d1a17" stroke-width="1.4" marker-start="url(#arrow)"/>
+      <line x1="60" y1="250" x2="760" y2="250" stroke="#1d1a17" stroke-width="1.4" marker-start="url(#arrow)"/>
+
+      <!-- labels -->
+      <g font-family="Inter, sans-serif" font-size="12" fill="#1d1a17" letter-spacing="0.1em">
+        <text x="400" y="28" text-anchor="middle" font-weight="600">CORPORATE / INSTITUTIONAL</text>
+        <text x="400" y="485" text-anchor="middle" font-weight="600">PERSONAL / RITUAL</text>
+        <text x="32" y="254" text-anchor="start" font-weight="600">CENTRALIZED</text>
+        <text x="768" y="254" text-anchor="end" font-weight="600">DISTRIBUTED</text>
+      </g>
+
+      <!-- quadrant names -->
+      <g font-family="Iowan Old Style, Palatino, serif" font-style="italic" font-size="16" fill="#3b342d">
+        <text x="220" y="130" text-anchor="middle">"The Subscription Mind"</text>
+        <text x="580" y="130" text-anchor="middle">"Federated Selves"</text>
+        <text x="220" y="380" text-anchor="middle">"The Soul Clinic"</text>
+        <text x="580" y="380" text-anchor="middle">"The Quiet Inheritance"</text>
+      </g>
+
+      <!-- descriptions -->
+      <g font-family="Inter, sans-serif" font-size="11" fill="#3b342d">
+        <text x="220" y="155" text-anchor="middle">cognition leased by platforms</text>
+        <text x="580" y="155" text-anchor="middle">open consensus of augmented minds</text>
+        <text x="220" y="405" text-anchor="middle">state-licensed memory therapy</text>
+        <text x="580" y="405" text-anchor="middle">memory as family heirloom</text>
+      </g>
+
+      <!-- highlight chosen slice -->
+      <rect x="400" y="250" width="360" height="210" fill="#8a6a3b" opacity="0.12"/>
+      <circle cx="600" cy="380" r="8" fill="#8a6a3b"/>
+      <text x="615" y="384" font-family="Inter, sans-serif" font-size="11" fill="#8a6a3b" font-weight="600">chosen slice</text>
+    </svg>
+    <figcaption>Fig. 1 — The 2×2 matrix. I've chosen to dig inside the lower-right quadrant: <em>distributed</em> cognition that has turned <em>domestic</em> — memory handed down like jewelry or recipes.</figcaption>
+  </figure>
+
+  <h3>Possible · Plausible · Probable · Preferable</h3>
+  <p>
+    Placed on Voros's futures cone, the quadrant I chose is <strong>possible</strong> (no physics broken), weakly <strong>plausible</strong> (requires mature brain–machine interfaces, a cultural shift away from corporate stewardship of identity, and stable long-term data media), and <em>not</em> probable in this specific form — though the underlying vector, <em>externalising memory and identity</em>, already is. I'm intentionally reaching for a <strong>preferable</strong> corner: a future where cognitive tech survives its corporate infancy and becomes slow, tactile, and intergenerational.
+  </p>
+
+  <figure class="diagram">
+    <svg viewBox="0 0 800 360" role="img" aria-label="Futures cone">
+      <rect x="0" y="0" width="800" height="360" fill="#efe7d8"/>
+      <!-- cone -->
+      <polygon points="100,180 740,40 740,320" fill="none" stroke="#1d1a17" stroke-width="1.2"/>
+      <polygon points="100,180 740,100 740,260" fill="none" stroke="#1d1a17" stroke-width="1.2" stroke-dasharray="4 4"/>
+      <polygon points="100,180 740,150 740,210" fill="none" stroke="#1d1a17" stroke-width="1.2" stroke-dasharray="2 4"/>
+      <circle cx="100" cy="180" r="5" fill="#1d1a17"/>
+      <text x="90" y="172" text-anchor="end" font-family="Inter, sans-serif" font-size="11" fill="#1d1a17">NOW (2026)</text>
+      <text x="745" y="45" font-family="Inter, sans-serif" font-size="11" fill="#1d1a17">POSSIBLE</text>
+      <text x="745" y="105" font-family="Inter, sans-serif" font-size="11" fill="#1d1a17">PLAUSIBLE</text>
+      <text x="745" y="155" font-family="Inter, sans-serif" font-size="11" fill="#1d1a17">PROBABLE</text>
+
+      <!-- preferable marker -->
+      <g>
+        <circle cx="640" cy="240" r="10" fill="#8a6a3b"/>
+        <circle cx="640" cy="240" r="22" fill="none" stroke="#8a6a3b" stroke-width="1" stroke-dasharray="3 3"/>
+        <text x="640" y="280" text-anchor="middle" font-family="Iowan Old Style, Palatino, serif" font-style="italic" font-size="14" fill="#8a6a3b">Preferable slice</text>
+        <text x="640" y="296" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" fill="#3b342d">year ~2147, far-possible, soft-plausible</text>
+      </g>
+    </svg>
+    <figcaption>Fig. 2 — Futures cone. My chosen scene sits outside the probable band, inside the plausible, reaching toward the preferable.</figcaption>
+  </figure>
+</section>
+
+<!-- 2. THE SCENARIO -->
+
+<section>
+  <h2>2. The scenario — "The Quiet Inheritance"</h2>
+
+  <p>
+    By the late 2080s, neural co-processors had become as mundane as contact lenses. They began as productivity tools — corporate platforms you logged into — but three slow shifts changed them. First, a cohort of open cognitive protocols broke the cloud monopoly in the 2090s. Second, a generation that grew up with externalised memory refused to rent their inner lives from strangers. Third, grief. When the first augmented parents began to die, their children discovered that a person's habits, inflections, and fragments of thought could be kept — if you had somewhere intimate and permanent enough to put them.
+  </p>
+
+  <p>
+    The resulting practice, by 2140, is called <em>quiet inheritance</em>. It is not resurrection. It is not a chatbot of the dead. It is a curated residue — a few hundred carefully chosen memories, vocal cadences, sensory textures, sometimes a single dreaming loop — pressed into a small object and passed down. Children inherit a grandparent's knack for bread, or the smell of their childhood kitchen, or the feeling of being listened to. Most households own two or three. They live on shelves next to photographs, on bedside tables, sometimes tucked inside pockets on long trips.
+  </p>
+
+  <p>
+    Ownership is legal but informal — more like a locket than an account. The vessels are engineered to decay: their substrate loses coherence after roughly four generations, by design. A culture that once panicked about data permanence has made peace with forgetting on a human clock.
+  </p>
+
+  <blockquote>
+    I am an archaeologist two centuries after this object's making. I am looking at a palm-sized vessel on a table. It is warm. It remembers someone's mother.
+  </blockquote>
+</section>
+
+<!-- 3. MOOD BOARD -->
+
+<section>
+  <h2>3. Mood board</h2>
+  <p>
+    I assembled reference directions before I opened Blender. I wasn't searching for "sci-fi." I was hunting for objects whose <em>job is to hold something precious</em>: reliquaries, pocket watches, Japanese netsuke, sea-worn stones, Brâncuși's marble eggs, Neolithic chalk drums, the tactile controls of a Leica M3, and certain mineral growths (chalcedony, desert rose, geodes). I wanted a language of <em>weight, warmth, wear</em>.
+  </p>
+  <div class="moodboard" aria-label="Mood board">
+    <div class="tile t1"><img src="mood_01_reliquary.jpg" alt="Reliquary reference"><span>Reliquary</span></div>
+    <div class="tile t2"><img src="mood_02_bone.jpg" alt="Bone / ivory reference"><span>Bone / Ivory</span></div>
+    <div class="tile t3"><img src="mood_03_cold_steel.jpg" alt="Cold steel reference"><span>Cold steel</span></div>
+    <div class="tile t4"><img src="mood_04_aged_brass.jpg" alt="Aged brass reference"><span>Aged brass</span></div>
+    <div class="tile t5"><img src="mood_05_deep_well.jpg" alt="Deep well reference"><span>Deep well</span></div>
+    <div class="tile t6"><img src="mood_06_chalcedony.jpg" alt="Chalcedony reference"><span>Chalcedony</span></div>
+    <div class="tile t7"><img src="mood_07_soft_lamplight.jpg" alt="Soft lamplight reference"><span>Soft lamplight</span></div>
+    <div class="tile t8"><img src="mood_08_shadow.jpg" alt="Shadow reference"><span>Shadow</span></div>
+  </div>
+  <p>
+    <b>Reference touchstones</b> (for you to search and drop into your own doc): Brâncuși, <em>The Beginning of the World</em> (1920); Tanya Aguiñiga ceremonial objects; the BBC Radiophonic Workshop "Delia" dials; Noguchi paper lamps; Studio Olafur Eliasson's <em>Little Sun</em>; Gwyneth Leech's reliquary paintings; images of Roman gold-glass medallions; macro photography of polished agate; Tadao Ando interior light. For HDRi I plan to use a warm indoor environment (e.g. Poly Haven's <em>studio_small_09</em> or <em>lebombo</em>).
+  </p>
+</section>
+
+<!-- 4. OBJECT -->
+
+<section>
+  <h2>4. The object — "Echo Vessel, Mk. III"</h2>
+  <div class="object-card">
+    <svg viewBox="0 0 300 360" aria-label="Echo vessel">
+      <defs>
+        <radialGradient id="glass" cx="40%" cy="35%" r="70%">
+          <stop offset="0%" stop-color="#f1dfad"/>
+          <stop offset="40%" stop-color="#c79a5a"/>
+          <stop offset="100%" stop-color="#3a2814"/>
+        </radialGradient>
+        <linearGradient id="base" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stop-color="#8a7354"/>
+          <stop offset="100%" stop-color="#2c2217"/>
+        </linearGradient>
+        <linearGradient id="ring" x1="0" x2="1" y1="0" y2="0">
+          <stop offset="0%" stop-color="#7c6538"/>
+          <stop offset="50%" stop-color="#e6c68a"/>
+          <stop offset="100%" stop-color="#7c6538"/>
+        </linearGradient>
+      </defs>
+      <!-- base -->
+      <ellipse cx="150" cy="330" rx="90" ry="14" fill="#1d1a17" opacity="0.35"/>
+      <path d="M70,300 Q150,320 230,300 L220,260 Q150,275 80,260 Z" fill="url(#base)"/>
+      <!-- ring / collar -->
+      <ellipse cx="150" cy="258" rx="72" ry="12" fill="url(#ring)"/>
+      <ellipse cx="150" cy="253" rx="72" ry="10" fill="#3a2d1a"/>
+      <!-- vessel body -->
+      <path d="M90,250
+               C75,190 95,110 150,80
+               C205,110 225,190 210,250 Z"
+            fill="url(#glass)"/>
+      <!-- inner glow -->
+      <ellipse cx="145" cy="170" rx="26" ry="50" fill="#f7e6b9" opacity="0.4"/>
+      <ellipse cx="140" cy="155" rx="10" ry="20" fill="#fff6d8" opacity="0.7"/>
+      <!-- memory glyphs -->
+      <g stroke="#2a1a08" stroke-width="1.2" fill="none" opacity="0.55">
+        <circle cx="150" cy="220" r="22"/>
+        <path d="M135,220 L165,220 M150,205 L150,235"/>
+        <path d="M120,255 Q150,245 180,255"/>
+        <circle cx="120" cy="130" r="2.5" fill="#2a1a08"/>
+        <circle cx="180" cy="130" r="2.5" fill="#2a1a08"/>
+        <path d="M112,100 Q150,90 188,100"/>
+      </g>
+      <!-- top cap -->
+      <ellipse cx="150" cy="80" rx="22" ry="6" fill="#3a2d1a"/>
+      <rect x="142" y="66" width="16" height="16" rx="2" fill="#6e5a34"/>
+      <rect x="146" y="60" width="8" height="10" rx="1" fill="#c49d5b"/>
+      <!-- highlight -->
+      <path d="M108,150 Q115,110 145,92" stroke="#fff2cf" stroke-width="3" fill="none" opacity="0.45" stroke-linecap="round"/>
+    </svg>
+    <div>
+      <h3 style="margin-top:0">Functional anatomy</h3>
+      <p style="margin-top:0">
+        A palm-sized vessel, roughly 9 cm tall. A translucent chalcedony-like <b>substrate</b> holds the encoded memories. A brass-and-bone <b>collar</b> contains the legacy neural port and a thumbprint resonator. The <b>crown</b> is a soft-touch cap — you press it to "listen." A <b>foot</b> of darkened wood gives it weight; the underside is etched with a name, a date, and a <em>memory glyph</em> — a standardized pictogram noting what kind of residue is held (cooking, a song, a laugh, a particular silence).
+      </p>
+    </div>
+  </div>
+  <p>
+    The design brief I gave myself: <em>it must feel older than it is</em>. A person in 2147 should handle this object and feel its lineage without thinking. That pushed me toward a vocabulary of reliquary + tool + seed. Nothing flat-screen. No glowing blue.
+  </p>
+</section>
+
+<!-- 5. BLENDER PROCESS -->
+
+<section>
+  <h2>5. Modeling process in Blender</h2>
+
+  <figure class="diagram" style="padding:0; overflow:hidden;">
+    <img src="blender_draft_01.png" alt="Blender clay model of the Echo Vessel" style="width:100%; display:block;"/>
+    <figcaption style="padding:14px 20px;">Draft 01 — clay model: silhouette, proportion, and the basic body / collar / foot / crown assembly.</figcaption>
+  </figure>
+
+  <figure class="diagram" style="padding:0; overflow:hidden;">
+    <img src="blender_draft_02.png" alt="Blender textured model of the Echo Vessel" style="width:100%; display:block;"/>
+    <figcaption style="padding:14px 20px;">Draft 02 — first pass of materials: warm bronze body, brass collar, and soft highlight tests in texture paint mode.</figcaption>
+  </figure>
+</section>
+
+<!-- 6. MATERIALS -->
+
+<section>
+  <h2>6. Materials &amp; shading</h2>
+  <div class="two-col">
+    <div>
+      <h3>The body — chalcedony-glass</h3>
+      <p>
+        A <em>Principled BSDF</em> with Transmission 1.0, Roughness 0.15, IOR 1.52. I drove the base color with a Musgrave/Noise texture mixed over amber-to-deep-bronze color ramp so internal striations read as layered memory. A thin layer of <em>Volume Absorption</em> (color: warm amber, density 2.5) gives the interior that lit-from-within feel without needing to fake it with an emission.
+      </p>
+    </div>
+    <div>
+      <h3>The collar — aged brass</h3>
+      <p>
+        <em>Principled BSDF</em>, base color <code>#b5944a</code>, Metallic 1.0, Roughness driven by a <em>Pointiness</em> geometry node → ColorRamp so edges stay polished while recesses darken with patina. A subtle dirt overlay (<em>AO → Invert → multiply</em>) into base color gives it age.
+      </p>
+    </div>
+    <div>
+      <h3>The foot — burned wood</h3>
+      <p>
+        Image texture of scorched oak, UV-unwrapped with seams on the underside. Roughness map inverted from the color map's luminance. Light <em>Normal</em> map for grain. Soft fingerprint smudge baked into the roughness only — you can feel where the object has been held.
+      </p>
+    </div>
+    <div>
+      <h3>The glyph — engraved</h3>
+      <p>
+        Shared material with the foot but with a darker tint in the recessed geometry, plus a tiny emission of <code>#3a2a12</code> at strength 0.08 so the glyph glows faintly if you look closely. A clue rather than a light source.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- 7. LIGHT & CAMERA -->
+
+<section>
+  <h2>7. Lighting, HDRi &amp; camera</h2>
+  <p>
+    I wanted museum-table-at-dusk, not sci-fi showroom. The scene uses a warm indoor HDRi at 0.3 strength as the ambient base, plus three lights: a key <em>area light</em> at 45° above camera-left (5500 K, 40 W equivalent, large softbox 60×90 cm for gentle falloff); a cold rim light camera-right (6500 K, 8 W) to separate the vessel from the background; and a tiny warm point light inside the body at 2 W to give the chalcedony its candle-from-within glow.
+  </p>
+  <p>
+    Camera: 85 mm, f/2.8, focus on the thumbprint dimple. Slight tilt — not dead-on. The background is a soft dark-plum velvet plane with depth-of-field blur, evoking a display vitrine. Render in <strong>Cycles</strong>, 1024 samples, with <em>Caustics</em> on because the amber refraction matters. Filmic color transform, high contrast.
+  </p>
+
+  <figure class="render-frame">
+    <div class="inner">
+      <svg viewBox="0 0 300 360" aria-label="Final render mock">
+        <defs>
+          <radialGradient id="glass2" cx="40%" cy="35%" r="70%">
+            <stop offset="0%" stop-color="#ffe6a8"/>
+            <stop offset="40%" stop-color="#c79a5a"/>
+            <stop offset="100%" stop-color="#2c1b08"/>
+          </radialGradient>
+          <linearGradient id="base2" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stop-color="#a68959"/>
+            <stop offset="100%" stop-color="#120d07"/>
+          </linearGradient>
+        </defs>
+        <ellipse cx="150" cy="336" rx="100" ry="10" fill="#000" opacity="0.6"/>
+        <path d="M70,300 Q150,322 230,300 L220,260 Q150,275 80,260 Z" fill="url(#base2)"/>
+        <ellipse cx="150" cy="258" rx="72" ry="12" fill="#d7b46a"/>
+        <ellipse cx="150" cy="254" rx="72" ry="9" fill="#2a1e0d"/>
+        <path d="M90,250 C75,190 95,110 150,80 C205,110 225,190 210,250 Z" fill="url(#glass2)"/>
+        <ellipse cx="148" cy="170" rx="28" ry="58" fill="#ffe29a" opacity="0.55"/>
+        <ellipse cx="142" cy="150" rx="9" ry="22" fill="#fff5d0" opacity="0.85"/>
+        <path d="M108,150 Q115,108 145,90" stroke="#fff6dd" stroke-width="3" fill="none" opacity="0.6" stroke-linecap="round"/>
+        <ellipse cx="150" cy="80" rx="22" ry="6" fill="#1c140a"/>
+        <rect x="142" y="66" width="16" height="16" rx="2" fill="#4e3e22"/>
+      </svg>
+      <small>Final render mock-up · Cycles, 85 mm, f/2.8, warm key + cold rim</small>
+    </div>
+  </figure>
+</section>
+
+<!-- 8. REFLECTION -->
+
+<section>
+  <h2>8. Reflection</h2>
+  <p class="pull">
+    I kept asking the object: if you were dug up, what would you be mistaken for? A lamp? A urn? A seed? The answer I liked best was: something whose purpose the archaeologist has to <em>feel</em>, not read.
+  </p>
+  <p>
+    The hardest design choice was resisting the urge to make the vessel glow. A glowing object announces itself; a quiet object lets you approach it. I think that's the real argument of the project: the augmented future I want is one where the tech goes quiet. No dashboards on your face, no blue light on your wrist — just warm things on shelves that outlive us a little.
+  </p>
+  <p>
+    Next iteration I'd like to try: a scene rather than a still life — two vessels on a kitchen counter at morning light, one in use, one forgotten. The banality is the argument.
+  </p>
+</section>
+
+<footer>
+  © 2026 Michelle Lin · Archeology of the Futures · documented with Blender 4.x sketches and notes. <br>
+  Fonts: Iowan Old Style / Inter.
+</footer>
+
+</div>
+</body>
+</html>

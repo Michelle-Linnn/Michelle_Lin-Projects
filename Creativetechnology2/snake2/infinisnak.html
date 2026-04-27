@@ -50,6 +50,13 @@
     box-shadow:3px 3px 0 var(--pink);
   }
   .nav .play-link:hover{background:var(--yellow);color:#000}
+  .nav-sound{
+    font-family:'Press Start 2P',monospace;font-size:10px;
+    background:#1a1f33;color:var(--cyan);border:2px solid var(--border);
+    padding:8px 12px;cursor:pointer;letter-spacing:1px;
+  }
+  .nav-sound:hover{background:var(--cyan);color:#000;border-color:var(--cyan)}
+  .nav-sound.on{background:var(--green);color:#000;border-color:var(--green);box-shadow:0 0 12px rgba(57,255,20,.5)}
 
   .hero{position:relative;max-width:1200px;margin:0 auto;padding:40px 20px 24px;}
   .hero-title{font-size:56px;line-height:1;color:var(--green);text-shadow:4px 4px 0 var(--pink), 8px 8px 0 rgba(5,217,232,.4);margin-bottom:12px;}
@@ -257,6 +264,7 @@
     <a href="#player-videos">SESSIONS</a>
     <a href="#reviews">REVIEWS</a>
     <div class="spacer"></div>
+    <button id="soundBtn" class="nav-sound" title="Toggle background music">&#9834; SOUND: OFF</button>
     <span class="cta-btn" style="cursor: default;">&gt; PLAY&nbsp;NOW</span>
   </div>
 </nav>
@@ -478,7 +486,7 @@
           Your browser doesn't support embedded video.
         </video>
         <div class="video-missing">
-          <div class="filename">playervideo1.mp4</div>
+          <div class="filename">playervideo1.mov</div>
           <div class="note">First-time player. No tutorial, just vibes.</div>
         </div>
       </div>
@@ -617,8 +625,210 @@ document.querySelectorAll('.media-main').forEach(wrap => {
   const hide = () => miss.style.display = 'none';
   video.addEventListener('loadedmetadata', hide);
   video.addEventListener('canplay', hide);
-  // Also hide if the source URL is reachable (head check is cross-browser tricky; rely on events)
 });
+
+// ---------------- Background chiptune music (looping) ----------------
+(() => {
+  const music = (() => {
+    let ac = null, masterGain = null, bus = null;
+    let muted = false, running = false;
+    let nextBlockStart = 0, scheduleTimer = null;
+    const MASTER_VOL = 0.22; // softer than game since this is a doc page
+
+    const NOTE_IX = {C:0,'C#':1,Db:1,D:2,'D#':3,Eb:3,E:4,F:5,'F#':6,Gb:6,G:7,'G#':8,Ab:8,A:9,'A#':10,Bb:10,B:11};
+    function noteFreq(name) {
+      const m = name.match(/^([A-G](?:#|b)?)(-?\d)$/);
+      if (!m) return 440;
+      const semi = NOTE_IX[m[1]] + parseInt(m[2]) * 12;
+      return 440 * Math.pow(2, (semi - (9 + 4 * 12)) / 12);
+    }
+    function ensureAudio() {
+      if (!ac) {
+        ac = new (window.AudioContext || window.webkitAudioContext)();
+        masterGain = ac.createGain();
+        masterGain.gain.value = muted ? 0 : MASTER_VOL;
+        masterGain.connect(ac.destination);
+      }
+      if (ac.state === 'suspended') ac.resume();
+    }
+    function playNote(dest, startAt, name, dur, type, vol) {
+      if (!name) return;
+      const osc = ac.createOscillator();
+      osc.type = type;
+      osc.frequency.setValueAtTime(noteFreq(name), startAt);
+      const g = ac.createGain();
+      g.gain.setValueAtTime(0, startAt);
+      g.gain.linearRampToValueAtTime(vol, startAt + 0.006);
+      g.gain.exponentialRampToValueAtTime(0.0002, startAt + dur);
+      osc.connect(g); g.connect(dest);
+      osc.start(startAt);
+      osc.stop(startAt + dur + 0.03);
+    }
+    function playKick(dest, startAt) {
+      const osc = ac.createOscillator(); const g = ac.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(160, startAt);
+      osc.frequency.exponentialRampToValueAtTime(42, startAt + 0.11);
+      g.gain.setValueAtTime(0.45, startAt);
+      g.gain.exponentialRampToValueAtTime(0.001, startAt + 0.14);
+      osc.connect(g); g.connect(dest);
+      osc.start(startAt); osc.stop(startAt + 0.18);
+    }
+    function playHat(dest, startAt, vol) {
+      const buf = ac.createBuffer(1, Math.floor(ac.sampleRate * 0.04), ac.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+      const src = ac.createBufferSource(); src.buffer = buf;
+      const hp = ac.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 7000;
+      const g = ac.createGain();
+      g.gain.setValueAtTime(vol, startAt);
+      g.gain.exponentialRampToValueAtTime(0.001, startAt + 0.035);
+      src.connect(hp); hp.connect(g); g.connect(dest);
+      src.start(startAt);
+    }
+    function playSnare(dest, startAt) {
+      const buf = ac.createBuffer(1, Math.floor(ac.sampleRate * 0.15), ac.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+      const src = ac.createBufferSource(); src.buffer = buf;
+      const hp = ac.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 1500;
+      const g = ac.createGain();
+      g.gain.setValueAtTime(0.2, startAt);
+      g.gain.exponentialRampToValueAtTime(0.001, startAt + 0.12);
+      src.connect(hp); hp.connect(g); g.connect(dest);
+      src.start(startAt);
+    }
+
+    const BPM = 128, BEAT = 60 / BPM, BAR = BEAT * 4;
+    const BLOCK_BARS = 8;
+    const BLOCK_DURATION = BAR * BLOCK_BARS;
+    const progression = ['Em','Am','C','D','G','Em','Am','B'];
+    const bassRoot = {Em:'E2',Am:'A2',C:'C3',D:'D3',G:'G2',B:'B2'};
+    const arp = {
+      Em: ['E4','G4','B4','G4'], Am: ['A4','C5','E4','C5'],
+      C:  ['C4','E4','G4','E4'], D:  ['D4','F#4','A4','F#4'],
+      G:  ['G4','B4','D5','B4'], B:  ['B3','D#4','F#4','D#4'],
+    };
+    const lead = {
+      Em: ['E5',null,'G5','B5','E5',null,'G5','B5'],
+      Am: ['A5',null,'E5','C6','A5','G5','E5','C5'],
+      C:  ['G5','E5','G5','C6','G5','E5','G5',null],
+      D:  ['A5','F#5','A5','D6','A5','F#5','A5',null],
+      G:  ['D6',null,'B5','G5','D6','B5','G5','D6'],
+      B:  ['F#5','D#5','F#5','B5','F#5','D#5','F#5','B5'],
+    };
+
+    function scheduleBlock(startAt, withLead) {
+      const dest = bus; if (!dest) return;
+      const eighth = BEAT / 2;
+      for (let bIdx = 0; bIdx < progression.length; bIdx++) {
+        const chord = progression[bIdx];
+        const barStart = startAt + bIdx * BAR;
+        playNote(dest, barStart, bassRoot[chord], BEAT * 1.8, 'triangle', 0.2);
+        playNote(dest, barStart + BEAT * 2, bassRoot[chord], BEAT * 1.8, 'triangle', 0.2);
+        for (let e = 0; e < 8; e++) {
+          playNote(dest, barStart + e * eighth, arp[chord][e % 4], eighth * 0.9, 'square', 0.05);
+        }
+        if (withLead || bIdx >= 1) {
+          for (let e = 0; e < 8; e++) {
+            playNote(dest, barStart + e * eighth, lead[chord][e], eighth * 1.1, 'square', 0.1);
+          }
+        }
+        if (withLead || bIdx >= 1) {
+          playKick(dest, barStart);
+          playKick(dest, barStart + BEAT * 2);
+          playSnare(dest, barStart + BEAT);
+          playSnare(dest, barStart + BEAT * 3);
+          for (let e = 0; e < 8; e++) {
+            playHat(dest, barStart + e * eighth, (e % 2 === 0) ? 0.035 : 0.02);
+          }
+        }
+      }
+    }
+    function tick() {
+      if (!running || !ac) return;
+      while (nextBlockStart < ac.currentTime + 3) {
+        scheduleBlock(nextBlockStart, true);
+        nextBlockStart += BLOCK_DURATION;
+      }
+    }
+    function start() {
+      ensureAudio();
+      if (running) return;
+      stop(true);
+      bus = ac.createGain();
+      bus.gain.value = 1;
+      bus.connect(masterGain);
+      const startAt = ac.currentTime + 0.05;
+      nextBlockStart = startAt;
+      scheduleBlock(nextBlockStart, false);
+      nextBlockStart += BLOCK_DURATION;
+      running = true;
+      scheduleTimer = setInterval(tick, 500);
+    }
+    function stop(silent) {
+      running = false;
+      if (scheduleTimer) { clearInterval(scheduleTimer); scheduleTimer = null; }
+      if (bus && ac) {
+        const old = bus; bus = null;
+        try {
+          old.gain.cancelScheduledValues(ac.currentTime);
+          old.gain.setValueAtTime(old.gain.value, ac.currentTime);
+          old.gain.linearRampToValueAtTime(0, ac.currentTime + (silent ? 0.04 : 0.25));
+        } catch (e) {}
+        setTimeout(() => { try { old.disconnect(); } catch(e){} }, 400);
+      }
+    }
+    function toggleMute() {
+      muted = !muted;
+      ensureAudio();
+      masterGain.gain.linearRampToValueAtTime(muted ? 0 : MASTER_VOL, ac.currentTime + 0.05);
+      return muted;
+    }
+    return { start, stop, toggleMute, isRunning: () => running, isMuted: () => muted };
+  })();
+
+  const soundBtn = document.getElementById('soundBtn');
+  if (soundBtn) {
+    soundBtn.addEventListener('click', () => {
+      if (!music.isRunning()) {
+        music.start();
+        soundBtn.innerHTML = '&#9834; SOUND: ON';
+        soundBtn.classList.add('on');
+      } else {
+        music.stop();
+        soundBtn.innerHTML = '&#128263; SOUND: OFF';
+        soundBtn.classList.remove('on');
+      }
+    });
+  }
+
+  // Pause music if the tab is hidden, resume on return (only if user had it on)
+  let wasOnBeforeHide = false;
+  document.addEventListener('visibilitychange', () => {
+    try {
+      if (document.hidden) {
+        wasOnBeforeHide = music.isRunning();
+        if (wasOnBeforeHide) {
+          music.stop();
+          if (soundBtn) {
+            soundBtn.innerHTML = '&#128263; SOUND: OFF';
+            soundBtn.classList.remove('on');
+          }
+        }
+      } else {
+        if (wasOnBeforeHide) {
+          wasOnBeforeHide = false;
+          music.start();
+          if (soundBtn) {
+            soundBtn.innerHTML = '&#9834; SOUND: ON';
+            soundBtn.classList.add('on');
+          }
+        }
+      }
+    } catch (e) {}
+  });
+})();
 </script>
 
 </body>

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>流体纹理 - 随机配色版</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #000;
+            font-family: sans-serif;
+        }
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
+        /* 按钮样式 */
+        #controls {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            z-index: 100;
+        }
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 30px;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        button:hover {
+            background: rgba(255, 255, 255, 0.4);
+            transform: translateY(-2px);
+        }
+        button:active {
+            transform: translateY(1px);
+        }
+    </style>
+</head>
+<body>
+
+<div id="controls">
+    <button onclick="randomizeColors()">随机切换配色 / Randomize</button>
+</div>
+<canvas id="canvas"></canvas>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+let width, height, frame = 0;
+
+// 初始颜色：玫红
+let colorConfig = {
+    h1: 330,
+    h2: 350,
+    speed: 0.005 
+};
+
+function resize() {
+    width = canvas.width = window.innerWidth;
+    height = canvas.height = window.innerHeight;
+}
+
+window.addEventListener('resize', resize);
+resize();
+
+// 随机配色函数
+function randomizeColors() {
+    // 随机主色相 (0-360)
+    const mainHue = Math.floor(Math.random() * 360);
+    // 随机生成一个相近色 (偏移 -30 到 30 度)
+    const offset = (Math.random() > 0.5 ? 1 : -1) * (15 + Math.random() * 20);
+    
+    colorConfig.h1 = mainHue;
+    colorConfig.h2 = (mainHue + offset + 360) % 360;
+    
+    console.log(`Current Palette: Hue ${colorConfig.h1} & ${colorConfig.h2}`);
+}
+
+function noise(x, y, t) {
+    return Math.sin(x * 0.01 + t) * Math.cos(y * 0.01 + t * 0.5) * 0.5 + 
+           Math.sin(x * 0.02 - t * 0.2) * 0.5;
+}
+
+function draw() {
+    frame += colorConfig.speed;
+    
+    // 填充底层背景（使用第一个颜色稍微暗一点的版本）
+    ctx.fillStyle = `hsl(${colorConfig.h1}, 80%, 20%)`;
+    ctx.fillRect(0, 0, width, height);
+
+    const step = 5; 
+    
+    for (let x = 0; x < width; x += step) {
+        for (let y = 0; y < height; y += step) {
+            let n = noise(x, y, frame);
+            
+            // 混合两个随机出的相近色
+            let currentHue = n > 0 ? colorConfig.h1 : colorConfig.h2;
+            let lightness = 40 + n * 20; 
+            
+            ctx.fillStyle = `hsla(${currentHue}, 90%, ${lightness}%, 0.7)`;
+            ctx.fillRect(x, y, step, step);
+        }
+    }
+    requestAnimationFrame(draw);
+}
+
+draw();
+</script>
+</body>
+</html>

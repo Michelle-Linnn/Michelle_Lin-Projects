@@ -124,6 +124,7 @@
       <div class="studio-actions">
         <button class="primary" id="btnPlay">&#9654; PLAY</button>
         <button class="record" id="btnRecord">&#9679; RECORD &amp; DOWNLOAD</button>
+        <button id="btnMute" title="Toggle music">&#9834; SOUND: ON</button>
         <a href="infinisnake.html">&#8592; PROJECT</a>
         <a href="game.html">PLAY GAME</a>
       </div>
@@ -237,10 +238,190 @@
   const ctx = canvas.getContext('2d');
   const btnPlay = document.getElementById('btnPlay');
   const btnRecord = document.getElementById('btnRecord');
+  const btnMute = document.getElementById('btnMute');
   const statusEl = document.getElementById('status');
   const tcEl = document.getElementById('timecode');
   const barEl = document.getElementById('timeBar');
   const titleEl = document.getElementById('studioTitle');
+
+  // ---------------- Music (Web Audio, procedural chiptune) ----------------
+  const music = (() => {
+    let ac = null, masterGain = null, audioDest = null, bus = null;
+    let muted = false;
+    const MASTER_VOL = 0.32;
+
+    function ensureAudio() {
+      if (!ac) {
+        ac = new (window.AudioContext || window.webkitAudioContext)();
+        masterGain = ac.createGain();
+        masterGain.gain.value = muted ? 0 : MASTER_VOL;
+        masterGain.connect(ac.destination);
+        audioDest = ac.createMediaStreamDestination();
+        masterGain.connect(audioDest);
+      }
+      if (ac.state === 'suspended') ac.resume();
+    }
+
+    // A2 = 110Hz -> C0 = 16.35Hz. Use A4=440 as pivot.
+    const NOTE_IX = {C:0,'C#':1,Db:1,D:2,'D#':3,Eb:3,E:4,F:5,'F#':6,Gb:6,G:7,'G#':8,Ab:8,A:9,'A#':10,Bb:10,B:11};
+    function noteFreq(name) {
+      const m = name.match(/^([A-G](?:#|b)?)(-?\d)$/);
+      if (!m) return 440;
+      const semi = NOTE_IX[m[1]] + parseInt(m[2]) * 12;
+      const a4Semi = 9 + 4 * 12;
+      return 440 * Math.pow(2, (semi - a4Semi) / 12);
+    }
+
+    function playNote(dest, startAt, name, dur, type, vol) {
+      if (!name) return;
+      const osc = ac.createOscillator();
+      osc.type = type;
+      osc.frequency.setValueAtTime(noteFreq(name), startAt);
+      const g = ac.createGain();
+      g.gain.setValueAtTime(0, startAt);
+      g.gain.linearRampToValueAtTime(vol, startAt + 0.006);
+      g.gain.exponentialRampToValueAtTime(0.0002, startAt + dur);
+      osc.connect(g); g.connect(dest);
+      osc.start(startAt);
+      osc.stop(startAt + dur + 0.03);
+    }
+
+    function playKick(dest, startAt) {
+      const osc = ac.createOscillator();
+      const g = ac.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(160, startAt);
+      osc.frequency.exponentialRampToValueAtTime(42, startAt + 0.11);
+      g.gain.setValueAtTime(0.45, startAt);
+      g.gain.exponentialRampToValueAtTime(0.001, startAt + 0.14);
+      osc.connect(g); g.connect(dest);
+      osc.start(startAt); osc.stop(startAt + 0.18);
+    }
+
+    function playHat(dest, startAt, vol) {
+      const buf = ac.createBuffer(1, Math.floor(ac.sampleRate * 0.04), ac.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+      const src = ac.createBufferSource(); src.buffer = buf;
+      const hp = ac.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 7000;
+      const g = ac.createGain();
+      g.gain.setValueAtTime(vol, startAt);
+      g.gain.exponentialRampToValueAtTime(0.001, startAt + 0.035);
+      src.connect(hp); hp.connect(g); g.connect(dest);
+      src.start(startAt);
+    }
+
+    function playSnare(dest, startAt) {
+      const buf = ac.createBuffer(1, Math.floor(ac.sampleRate * 0.15), ac.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+      const src = ac.createBufferSource(); src.buffer = buf;
+      const hp = ac.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 1500;
+      const g = ac.createGain();
+      g.gain.setValueAtTime(0.22, startAt);
+      g.gain.exponentialRampToValueAtTime(0.001, startAt + 0.12);
+      src.connect(hp); hp.connect(g); g.connect(dest);
+      src.start(startAt);
+    }
+
+    function stop() {
+      if (!bus || !ac) return;
+      const old = bus; bus = null;
+      try {
+        old.gain.cancelScheduledValues(ac.currentTime);
+        old.gain.setValueAtTime(old.gain.value, ac.currentTime);
+        old.gain.linearRampToValueAtTime(0, ac.currentTime + 0.08);
+      } catch (e) {}
+      setTimeout(() => { try { old.disconnect(); } catch(e){} }, 300);
+    }
+
+    function start() {
+      ensureAudio();
+      stop();
+      const startAt = ac.currentTime + 0.05;
+      bus = ac.createGain();
+      bus.gain.value = 1;
+      bus.connect(masterGain);
+      const dest = bus;
+
+      // 128 BPM, 4/4. bar = 4 * (60/128) = 1.875s. 16 bars = 30s exact.
+      const bpm = 128, beat = 60 / bpm, eighth = beat / 2, bar = beat * 4;
+
+      // 8-bar progression: Em - Am - C - D - G - Em - Am - B7  (loop ×2 = 16 bars)
+      const progression = ['Em','Am','C','D','G','Em','Am','B'];
+      // Bass roots per chord
+      const bassRoot = {Em:'E2',Am:'A2',C:'C3',D:'D3',G:'G2',B:'B2'};
+      // Arpeggio (4 eighth-note pairs per bar = 8 eighths)
+      const arp = {
+        Em: ['E4','G4','B4','G4'],
+        Am: ['A4','C5','E4','C5'],
+        C:  ['C4','E4','G4','E4'],
+        D:  ['D4','F#4','A4','F#4'],
+        G:  ['G4','B4','D5','B4'],
+        B:  ['B3','D#4','F#4','D#4'],
+      };
+      // Lead melody per chord (8 eighths)
+      const lead = {
+        Em: ['E5',null,'G5','B5','E5',null,'G5','B5'],
+        Am: ['A5',null,'E5','C6','A5','G5','E5','C5'],
+        C:  ['G5','E5','G5','C6','G5','E5','G5',null],
+        D:  ['A5','F#5','A5','D6','A5','F#5','A5',null],
+        G:  ['D6',null,'B5','G5','D6','B5','G5','D6'],
+        B:  ['F#5','D#5','F#5','B5','F#5','D#5','F#5','B5'],
+      };
+
+      // Schedule 16 bars (2 full progressions)
+      for (let loop = 0; loop < 2; loop++) {
+        for (let bIdx = 0; bIdx < progression.length; bIdx++) {
+          const chord = progression[bIdx];
+          const barStart = startAt + ((loop * progression.length) + bIdx) * bar;
+
+          // Bass: half notes (first and third beat)
+          playNote(dest, barStart, bassRoot[chord], beat * 1.8, 'triangle', 0.22);
+          playNote(dest, barStart + beat * 2, bassRoot[chord], beat * 1.8, 'triangle', 0.22);
+
+          // Arpeggio: 8 eighth notes, cycling the 4-note pattern twice
+          for (let e = 0; e < 8; e++) {
+            const n = arp[chord][e % 4];
+            playNote(dest, barStart + e * eighth, n, eighth * 0.9, 'square', 0.06);
+          }
+
+          // Lead: 8 eighths (skip the first pass to let the track build)
+          if (loop > 0 || bIdx >= 2) {
+            for (let e = 0; e < 8; e++) {
+              const n = lead[chord][e];
+              playNote(dest, barStart + e * eighth, n, eighth * 1.1, 'square', 0.11);
+            }
+          }
+
+          // Drums: kick on 1,3  snare on 2,4  hats on every 8th (after bar 1)
+          const drumOn = (loop > 0 || bIdx >= 1);
+          if (drumOn) {
+            playKick(dest, barStart);
+            playKick(dest, barStart + beat * 2);
+            playSnare(dest, barStart + beat);
+            playSnare(dest, barStart + beat * 3);
+            for (let e = 0; e < 8; e++) {
+              const isBeat = (e % 2) === 0;
+              playHat(dest, barStart + e * eighth, isBeat ? 0.04 : 0.025);
+            }
+          }
+        }
+      }
+    }
+
+    function toggleMute() {
+      muted = !muted;
+      ensureAudio();
+      masterGain.gain.linearRampToValueAtTime(muted ? 0 : MASTER_VOL, ac.currentTime + 0.05);
+      return muted;
+    }
+
+    function getStream() { ensureAudio(); return audioDest.stream; }
+    function isMuted() { return muted; }
+
+    return { start, stop, toggleMute, getStream, isMuted, ensureAudio };
+  })();
 
   const W = canvas.width, H = canvas.height, TILE = 24;
   const COLORS = { red:'#ff2a6d', blue:'#05d9e8', yellow:'#ffd400' };
@@ -728,12 +909,14 @@
     lastFrameTime = trailerStart;
     running = true;
     statusEl.textContent = 'PLAYING';
+    try { music.start(); } catch (e) { console.warn('music failed:', e); }
     loop();
   }
 
   function stopTrailer() {
     running = false;
     cancelAnimationFrame(rafId);
+    try { music.stop(); } catch (e) {}
     statusEl.textContent = 'READY';
   }
 
@@ -775,6 +958,11 @@
     startTrailer();
   });
 
+  btnMute.addEventListener('click', () => {
+    const m = music.toggleMute();
+    btnMute.innerHTML = m ? '&#128263; SOUND: OFF' : '&#9834; SOUND: ON';
+  });
+
   // ---------------- Recording ----------------
   btnRecord.addEventListener('click', async () => {
     if (!window.MediaRecorder) {
@@ -786,11 +974,26 @@
     titleEl.classList.add('recording');
     statusEl.textContent = 'RECORDING...';
 
-    const stream = canvas.captureStream(30);
+    const videoStream = canvas.captureStream(30);
+    // Mix in the music audio so the recorded video has sound
+    let stream = videoStream;
+    try {
+      music.ensureAudio();
+      const audioStream = music.getStream();
+      stream = new MediaStream([
+        ...videoStream.getVideoTracks(),
+        ...audioStream.getAudioTracks(),
+      ]);
+    } catch (e) {
+      console.warn('audio mix failed; recording video only:', e);
+    }
     // pick the best supported codec, preferring mp4 if available
     const candidates = [
+      'video/mp4;codecs=avc1,mp4a.40.2',
       'video/mp4;codecs=avc1',
       'video/mp4',
+      'video/webm;codecs=vp9,opus',
+      'video/webm;codecs=vp8,opus',
       'video/webm;codecs=vp9',
       'video/webm;codecs=vp8',
       'video/webm'
