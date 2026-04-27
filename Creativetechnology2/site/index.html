@@ -278,7 +278,7 @@
       <div class="count" id="countLabel">Showing 16 of 16</div>
     </div>
 
-    <div class="gallery" id="gallery"><!-- cards injected --></div>
+    <div class="gallery" id="galleryGrid"><!-- cards injected --></div>
   </div>
 </section>
 
@@ -414,7 +414,7 @@
   const familyLabels = {A:"I · Concentric & Eye", B:"II · Particle Fields", C:"III · Wave Permutations", D:"IV · Image & Text"};
 
   // Render gallery
-  const gallery = document.getElementById("gallery");
+  const gallery = document.getElementById("galleryGrid");
   function renderGallery(filter){
     gallery.innerHTML = "";
     const list = filter === "all" ? artifacts : artifacts.filter(a => a.family === filter);
@@ -500,6 +500,11 @@
   renderGallery("all");
   // Reveal hero / static reveals
   bindReveal();
+
+  // Show a "use a local server" warning if the page is opened directly via file://
+  if (location.protocol === "file:") {
+    document.getElementById("fileNotice").style.display = "block";
+  }
 </script>
 
 </body>
