@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Stone Memory — 钻石地质之旅</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Space+Mono:wght@400;700&display=swap');
+
+  :root {
+    --gold: #C9A84C;
+    --gold-light: #E8C96A;
+    --deep: #0A0806;
+    --lava: #C0392B;
+    --crystal: #7EC8E3;
+    --void: rgba(10,8,6,0.92);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    background: var(--deep);
+    color: #fff;
+    font-family: 'Space Mono', monospace;
+    overflow: hidden;
+    height: 100dvh;
+    touch-action: none;
+  }
+
+  /* ─── LANDING SCREEN ─── */
+  #landing {
+    position: fixed; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    background: radial-gradient(ellipse at 50% 60%, #1a0f00 0%, #0A0806 70%);
+    z-index: 100;
+    transition: opacity 0.8s ease;
+  }
+
+  .geo-lines {
+    position: absolute; inset: 0; overflow: hidden; opacity: 0.15;
+  }
+  .geo-lines svg { width: 100%; height: 100%; }
+
+  .gem-icon {
+    width: 80px; height: 80px;
+    margin-bottom: 32px;
+    position: relative;
+  }
+  .gem-icon svg {
+    width: 100%; height: 100%;
+    filter: drop-shadow(0 0 20px rgba(201,168,76,0.6));
+    animation: gemPulse 3s ease-in-out infinite;
+  }
+  @keyframes gemPulse {
+    0%,100% { filter: drop-shadow(0 0 20px rgba(201,168,76,0.4)); transform: scale(1); }
+    50% { filter: drop-shadow(0 0 40px rgba(201,168,76,0.9)); transform: scale(1.05); }
+  }
+
+  .title-block { text-align: center; margin-bottom: 48px; }
+  .title-main {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2.2rem, 8vw, 3.2rem);
+    font-weight: 300;
+    letter-spacing: 0.08em;
+    color: var(--gold-light);
+    line-height: 1.1;
+  }
+  .title-sub {
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    color: rgba(201,168,76,0.5);
+    margin-top: 10px;
+    text-transform: uppercase;
+  }
+
+  .scan-zone {
+    width: min(240px, 70vw); height: min(240px, 70vw);
+    position: relative; margin-bottom: 36px; cursor: pointer;
+  }
+  .scan-frame {
+    position: absolute; inset: 0;
+    border: 1px solid rgba(201,168,76,0.3);
+    border-radius: 4px;
+  }
+  .scan-corner {
+    position: absolute; width: 20px; height: 20px;
+    border-color: var(--gold);
+    border-style: solid;
+    border-width: 0;
+  }
+  .scan-corner.tl { top: 0; left: 0; border-top-width: 2px; border-left-width: 2px; }
+  .scan-corner.tr { top: 0; right: 0; border-top-width: 2px; border-right-width: 2px; }
+  .scan-corner.bl { bottom: 0; left: 0; border-bottom-width: 2px; border-left-width: 2px; }
+  .scan-corner.br { bottom: 0; right: 0; border-bottom-width: 2px; border-right-width: 2px; }
+
+  .scan-line {
+    position: absolute; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    animation: scanMove 2.5s ease-in-out infinite;
+    top: 0;
+  }
+  @keyframes scanMove {
+    0% { top: 10%; opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { top: 90%; opacity: 0; }
+  }
+
+  .scan-inner {
+    position: absolute; inset: 20px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 8px;
+  }
+  .scan-inner-icon { font-size: 48px; opacity: 0.6; }
+  .scan-inner-text {
+    font-size: 9px; letter-spacing: 0.2em;
+    color: rgba(255,255,255,0.4);
+    text-align: center;
+    text-transform: uppercase;
+  }
+
+  .btn-enter {
+    background: transparent;
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    padding: 14px 36px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+  .btn-enter::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: var(--gold);
+    transform: translateX(-101%);
+    transition: transform 0.3s ease;
+  }
+  .btn-enter:hover::before, .btn-enter:active::before { transform: translateX(0); }
+  .btn-enter span { position: relative; z-index: 1; transition: color 0.3s; }
+  .btn-enter:hover span, .btn-enter:active span { color: var(--deep); }
+
+  .ar-note {
+    position: absolute; bottom: 24px;
+    font-size: 9px; letter-spacing: 0.15em;
+    color: rgba(255,255,255,0.25);
+    text-transform: uppercase;
+    text-align: center;
+    padding: 0 20px;
+  }
+
+  /* ─── PORTAL TRANSITION ─── */
+  #portal-overlay {
+    position: fixed; inset: 0; z-index: 200;
+    display: none; align-items: center; justify-content: center;
+    background: #0A0806;
+  }
+  #portal-overlay.active { display: flex; }
+  #portal-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .portal-text {
+    position: relative; z-index: 10;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(1rem, 5vw, 1.4rem);
+    color: var(--gold-light);
+    letter-spacing: 0.15em;
+    opacity: 0;
+    animation: fadeInOut 4s ease forwards;
+    text-align: center;
+  }
+  @keyframes fadeInOut {
+    0% { opacity: 0; transform: scale(0.95); }
+    20% { opacity: 1; transform: scale(1); }
+    80% { opacity: 1; }
+    100% { opacity: 0; transform: scale(1.05); }
+  }
+
+  /* ─── MAIN EXPERIENCE ─── */
+  #experience {
+    position: fixed; inset: 0;
+    display: none;
+    flex-direction: column;
+  }
+  #experience.active { display: flex; }
+
+  #threejs-canvas {
+    position: absolute; inset: 0;
+    width: 100% !important; height: 100% !important;
+  }
+
+  /* Chapter HUD */
+  #hud {
+    position: absolute; inset: 0;
+    pointer-events: none;
+    display: flex; flex-direction: column;
+    justify-content: space-between;
+    padding: 0;
+  }
+
+  .hud-top {
+    padding: 48px 24px 0;
+    display: flex; justify-content: space-between;
+    align-items: flex-start;
+  }
+  .chapter-badge {
+    background: var(--void);
+    border: 1px solid rgba(201,168,76,0.3);
+    padding: 8px 14px;
+    backdrop-filter: blur(8px);
+  }
+  .chapter-num {
+    font-size: 9px; letter-spacing: 0.3em;
+    color: var(--gold); opacity: 0.7;
+    text-transform: uppercase;
+  }
+  .chapter-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.1rem; font-weight: 300;
+    color: #fff; margin-top: 2px;
+  }
+
+  .data-panel {
+    background: var(--void);
+    border: 1px solid rgba(201,168,76,0.2);
+    padding: 10px 14px;
+    backdrop-filter: blur(8px);
+    text-align: right;
+  }
+  .data-row { margin-bottom: 4px; }
+  .data-label { font-size: 8px; letter-spacing: 0.2em; color: rgba(201,168,76,0.5); text-transform: uppercase; }
+  .data-value { font-size: 13px; color: var(--gold-light); margin-top: 1px; }
+
+  .hud-bottom {
+    padding: 0 24px 36px;
+    pointer-events: auto;
+  }
+
+  .narration-card {
+    background: var(--void);
+    border-top: 1px solid rgba(201,168,76,0.25);
+    border-left: 1px solid rgba(201,168,76,0.1);
+    padding: 20px;
+    backdrop-filter: blur(12px);
+    margin-bottom: 16px;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: all 0.6s ease;
+  }
+  .narration-card.visible { opacity: 1; transform: translateY(0); }
+  .narration-title {
+    font-size: 9px; letter-spacing: 0.25em;
+    color: var(--gold); opacity: 0.7;
+    text-transform: uppercase; margin-bottom: 8px;
+  }
+  .narration-text {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(0.9rem, 3.5vw, 1.05rem);
+    font-weight: 300; font-style: italic;
+    color: rgba(255,255,255,0.85);
+    line-height: 1.65;
+  }
+
+  .nav-row {
+    display: flex; gap: 10px; align-items: center;
+  }
+  .btn-nav {
+    flex: 1;
+    background: var(--void);
+    border: 1px solid rgba(201,168,76,0.3);
+    color: var(--gold);
+    font-family: 'Space Mono', monospace;
+    font-size: 9px; letter-spacing: 0.2em;
+    padding: 12px;
+    cursor: pointer;
+    text-transform: uppercase;
+    backdrop-filter: blur(8px);
+    transition: all 0.2s;
+    pointer-events: auto;
+  }
+  .btn-nav:active { background: rgba(201,168,76,0.15); }
+  .btn-nav:disabled { opacity: 0.25; cursor: default; }
+
+  .progress-dots {
+    display: flex; gap: 6px; align-items: center;
+    justify-content: center; flex: 0 0 auto;
+  }
+  .dot {
+    width: 5px; height: 5px;
+    border: 1px solid var(--gold);
+    border-radius: 50%;
+    transition: background 0.3s;
+  }
+  .dot.active { background: var(--gold); }
+
+  /* AR toggle */
+  .ar-btn {
+    position: absolute; top: 48px; right: 24px;
+    background: var(--void);
+    border: 1px solid rgba(201,168,76,0.3);
+    color: var(--gold);
+    font-family: 'Space Mono', monospace;
+    font-size: 8px; letter-spacing: 0.15em;
+    padding: 8px 12px;
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+    text-transform: uppercase;
+    pointer-events: auto;
+    display: none;
+  }
+  .ar-btn.visible { display: block; }
+
+  /* Loading */
+  #loading {
+    position: fixed; inset: 0; z-index: 300;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--deep);
+    flex-direction: column; gap: 16px;
+  }
+  .loading-bar {
+    width: 120px; height: 1px;
+    background: rgba(201,168,76,0.2);
+    position: relative;
+    overflow: hidden;
+  }
+  .loading-bar::after {
+    content: '';
+    position: absolute; top: 0; left: -40%;
+    width: 40%; height: 100%;
+    background: var(--gold);
+    animation: loadBar 1.2s ease-in-out infinite;
+  }
+  @keyframes loadBar { to { left: 100%; } }
+  .loading-text { font-size: 9px; letter-spacing: 0.3em; color: rgba(201,168,76,0.5); text-transform: uppercase; }
+
+  /* AR status */
+  #ar-status {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: rgba(10,8,6,0.9);
+    border-top: 1px solid rgba(201,168,76,0.2);
+    padding: 10px 20px;
+    font-size: 9px; letter-spacing: 0.15em;
+    color: rgba(201,168,76,0.6);
+    text-align: center;
+    text-transform: uppercase;
+    display: none;
+    z-index: 50;
+  }
+  #ar-status.visible { display: block; }
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="loading-bar"></div>
+  <div class="loading-text">Loading · Stone Memory</div>
+</div>
+
+<!-- LANDING -->
+<div id="landing">
+  <div class="geo-lines">
+    <svg viewBox="0 0 400 700" preserveAspectRatio="xMidYMid slice">
+      <polygon points="200,50 350,200 300,400 100,400 50,200" fill="none" stroke="#C9A84C" stroke-width="0.5"/>
+      <polygon points="200,100 320,220 280,380 120,380 80,220" fill="none" stroke="#C9A84C" stroke-width="0.3"/>
+      <line x1="200" y1="50" x2="200" y2="650" stroke="#C9A84C" stroke-width="0.3"/>
+      <line x1="0" y1="300" x2="400" y2="300" stroke="#C9A84C" stroke-width="0.3"/>
+      <circle cx="200" cy="300" r="150" fill="none" stroke="#C9A84C" stroke-width="0.3"/>
+      <circle cx="200" cy="300" r="80" fill="none" stroke="#C9A84C" stroke-width="0.3"/>
+    </svg>
+  </div>
+
+  <div class="gem-icon">
+    <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <polygon points="40,5 75,28 65,70 15,70 5,28" fill="rgba(201,168,76,0.08)" stroke="#C9A84C" stroke-width="1"/>
+      <polygon points="40,5 75,28 40,42" fill="rgba(201,168,76,0.15)"/>
+      <polygon points="40,5 5,28 40,42" fill="rgba(201,168,76,0.08)"/>
+      <polygon points="40,42 75,28 65,70" fill="rgba(201,168,76,0.12)"/>
+      <polygon points="40,42 5,28 15,70" fill="rgba(201,168,76,0.06)"/>
+      <polygon points="40,42 65,70 15,70" fill="rgba(201,168,76,0.18)"/>
+      <line x1="40" y1="5" x2="40" y2="42" stroke="#C9A84C" stroke-width="0.5" opacity="0.6"/>
+    </svg>
+  </div>
+
+  <div class="title-block">
+    <div class="title-main">Stone Memory</div>
+    <div class="title-main" style="font-style:italic; font-size:80%; margin-top:4px;">石之记忆</div>
+    <div class="title-sub">Diamond · Geological Journey · XR Experience</div>
+  </div>
+
+  <div class="scan-zone" onclick="startExperience()" id="scanZone">
+    <div class="scan-frame"></div>
+    <div class="scan-corner tl"></div>
+    <div class="scan-corner tr"></div>
+    <div class="scan-corner bl"></div>
+    <div class="scan-corner br"></div>
+    <div class="scan-line"></div>
+    <div class="scan-inner">
+      <div class="scan-inner-icon">💎</div>
+      <div class="scan-inner-text">对准宝石<br>点击进入</div>
+    </div>
+  </div>
+
+  <button class="btn-enter" onclick="startExperience()">
+    <span>Begin Journey · 开始旅程</span>
+  </button>
+
+  <div class="ar-note">Android Chrome 支持 AR 模式 · iOS 使用 3D 模式</div>
+</div>
+
+<!-- PORTAL -->
+<div id="portal-overlay">
+  <canvas id="portal-canvas"></canvas>
+  <div class="portal-text" id="portal-text">进入钻石的时间深处...</div>
+</div>
+
+<!-- EXPERIENCE -->
+<div id="experience">
+  <canvas id="threejs-canvas"></canvas>
+  <button class="ar-btn" id="arBtn" onclick="toggleAR()">◎ AR MODE</button>
+
+  <div id="hud">
+    <div class="hud-top">
+      <div class="chapter-badge">
+        <div class="chapter-num" id="chapterNum">Chapter 01</div>
+        <div class="chapter-name" id="chapterName">岩浆房诞生</div>
+      </div>
+      <div class="data-panel">
+        <div class="data-row">
+          <div class="data-label">Depth</div>
+          <div class="data-value" id="dataDepth">150 km</div>
+        </div>
+        <div class="data-row">
+          <div class="data-label">Temp</div>
+          <div class="data-value" id="dataTemp">1,200°C</div>
+        </div>
+        <div class="data-row">
+          <div class="data-label">Time</div>
+          <div class="data-value" id="dataTime">3.3亿年前</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="hud-bottom">
+      <div class="narration-card" id="narrationCard">
+        <div class="narration-title" id="narrationLabel">地质档案 · GEO LOG</div>
+        <div class="narration-text" id="narrationText">你正处于地球深处的岩浆房中。极端的温度与压力，正在把碳原子逼迫成最紧密的排列方式——这是钻石诞生的子宫。</div>
+      </div>
+      <div class="nav-row">
+        <button class="btn-nav" id="btnPrev" onclick="prevChapter()">← 上一幕</button>
+        <div class="progress-dots" id="dots"></div>
+        <button class="btn-nav" id="btnNext" onclick="nextChapter()">下一幕 →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="ar-status"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ─── CHAPTER DATA ───────────────────────────────────────────
+const CHAPTERS = [
+  {
+    num: 'Chapter 01',
+    name: '岩浆房诞生',
+    depth: '150 km',
+    temp: '1,200°C',
+    time: '3.3亿年前',
+    narration: '你正处于地球深处的岩浆房中。极端的温度与压力，正在把碳原子逼迫成最紧密的排列方式——这是钻石诞生的子宫。',
+    bgColor: new THREE.Color(0x1a0500),
+    particleColor: 0xff4400,
+    particleColor2: 0xff8800,
+    cameraZ: 8,
+    scene: 'magma'
+  },
+  {
+    num: 'Chapter 02',
+    name: '碳原子结晶',
+    depth: '150 km',
+    temp: '900°C',
+    time: '3.0亿年前',
+    narration: '缩小。再缩小。你已经进入了单个碳原子的世界。四面体的键合方式，使每一个原子都与四个邻居紧紧相扣——这就是宇宙中最硬物质的秘密。',
+    bgColor: new THREE.Color(0x000a1a),
+    particleColor: 0x00aaff,
+    particleColor2: 0x88ddff,
+    cameraZ: 5,
+    scene: 'crystal'
+  },
+  {
+    num: 'Chapter 03',
+    name: '金伯利岩管',
+    depth: '0 km',
+    temp: '400°C',
+    time: '1.2亿年前',
+    narration: '一场剧烈的火山爆发。金伯利岩浆以每小时数十公里的速度冲破地壳，将已经结晶亿年的钻石，在数小时内送达地表。',
+    bgColor: new THREE.Color(0x0a0500),
+    particleColor: 0xff6600,
+    particleColor2: 0xffaa00,
+    cameraZ: 10,
+    scene: 'eruption'
+  },
+  {
+    num: 'Chapter 04',
+    name: '亿年等待',
+    depth: '地表',
+    temp: '25°C',
+    time: '此刻',
+    narration: '它等了3亿3000万年，才来到你的手中。你手中的这颗石头，比地球上任何生命都要古老。它见过恐龙，见过大陆漂移，见过无数个文明的消亡。',
+    bgColor: new THREE.Color(0x050508),
+    particleColor: 0xc9a84c,
+    particleColor2: 0xe8c96a,
+    cameraZ: 6,
+    scene: 'presence'
+  }
+];
+
+// ─── STATE ──────────────────────────────────────────────────
+let currentChapter = 0;
+let renderer, scene, camera, animFrameId;
+let particleSystems = [];
+let clock;
+let xrSession = null;
+let arSupported = false;
+let isTransitioning = false;
+
+// ─── PORTAL ANIMATION ───────────────────────────────────────
+function runPortal() {
+  const canvas = document.getElementById('portal-canvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  const cx = canvas.width / 2, cy = canvas.height / 2;
+  const particles = [];
+  const N = 300;
+
+  for (let i = 0; i < N; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const r = Math.random() * Math.min(cx, cy) * 0.8;
+    particles.push({
+      x: cx + Math.cos(angle) * r,
+      y: cy + Math.sin(angle) * r,
+      vx: (cx - (cx + Math.cos(angle) * r)) * 0.015,
+      vy: (cy - (cy + Math.sin(angle) * r)) * 0.015,
+      life: 1, alpha: Math.random(),
+      size: Math.random() * 2 + 0.5,
+      hue: 30 + Math.random() * 20
+    });
+  }
+
+  let t = 0;
+  function draw() {
+    ctx.fillStyle = `rgba(10,8,6,${t < 60 ? 0.15 : 0.08})`;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    particles.forEach(p => {
+      p.x += p.vx * (1 + t * 0.02);
+      p.y += p.vy * (1 + t * 0.02);
+      p.alpha -= 0.004;
+      if (p.alpha < 0) p.alpha = 0;
+
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fillStyle = `hsla(${p.hue}, 70%, 60%, ${p.alpha})`;
+      ctx.fill();
+    });
+
+    // Diamond shape
+    const size = 60 + t * 2;
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.strokeStyle = `rgba(201,168,76,${Math.max(0, 1 - t / 80)})`;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, -size);
+    ctx.lineTo(size * 0.8, 0);
+    ctx.lineTo(0, size * 0.6);
+    ctx.lineTo(-size * 0.8, 0);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.restore();
+
+    t++;
+    if (t < 120) requestAnimationFrame(draw);
+    else {
+      setTimeout(() => {
+        document.getElementById('portal-overlay').style.opacity = '0';
+        setTimeout(() => {
+          document.getElementById('portal-overlay').classList.remove('active');
+          document.getElementById('portal-overlay').style.opacity = '1';
+        }, 800);
+      }, 300);
+    }
+  }
+  draw();
+}
+
+// ─── THREE.JS SETUP ─────────────────────────────────────────
+function initThree() {
+  const canvas = document.getElementById('threejs-canvas');
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.xr.enabled = true;
+
+  scene = new THREE.Scene();
+  camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 1000);
+  camera.position.z = CHAPTERS[0].cameraZ;
+
+  clock = new THREE.Clock();
+
+  // Ambient light
+  const ambient = new THREE.AmbientLight(0xffffff, 0.3);
+  scene.add(ambient);
+
+  buildChapterScene(0);
+  checkARSupport();
+  render();
+
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+
+  // Touch rotation
+  let lastX = 0, lastY = 0, isDragging = false;
+  canvas.addEventListener('touchstart', e => { isDragging = true; lastX = e.touches[0].clientX; lastY = e.touches[0].clientY; });
+  canvas.addEventListener('touchmove', e => {
+    if (!isDragging) return;
+    const dx = e.touches[0].clientX - lastX;
+    const dy = e.touches[0].clientY - lastY;
+    scene.rotation.y += dx * 0.005;
+    scene.rotation.x += dy * 0.005;
+    lastX = e.touches[0].clientX; lastY = e.touches[0].clientY;
+  });
+  canvas.addEventListener('touchend', () => isDragging = false);
+  canvas.addEventListener('mousemove', e => {
+    if (e.buttons) {
+      scene.rotation.y += e.movementX * 0.005;
+      scene.rotation.x += e.movementY * 0.005;
+    }
+  });
+}
+
+function buildChapterScene(idx) {
+  // Clear old particles
+  particleSystems.forEach(ps => scene.remove(ps));
+  particleSystems = [];
+  scene.children.filter(c => c.isMesh || c.isPoints).forEach(c => scene.remove(c));
+
+  const ch = CHAPTERS[idx];
+  scene.background = ch.bgColor;
+  camera.position.z = ch.cameraZ;
+  scene.rotation.set(0, 0, 0);
+
+  if (ch.scene === 'magma') buildMagmaScene(ch);
+  else if (ch.scene === 'crystal') buildCrystalScene(ch);
+  else if (ch.scene === 'eruption') buildEruptionScene(ch);
+  else if (ch.scene === 'presence') buildPresenceScene(ch);
+}
+
+function buildMagmaScene(ch) {
+  // Large particle cloud - lava-like
+  const N = 3000;
+  const positions = new Float32Array(N * 3);
+  const colors = new Float32Array(N * 3);
+  const sizes = new Float32Array(N);
+  const c1 = new THREE.Color(ch.particleColor);
+  const c2 = new THREE.Color(ch.particleColor2);
+
+  for (let i = 0; i < N; i++) {
+    const r = 3 + Math.random() * 5;
+    const theta = Math.random() * Math.PI * 2;
+    const phi = Math.random() * Math.PI;
+    positions[i*3] = r * Math.sin(phi) * Math.cos(theta);
+    positions[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
+    positions[i*3+2] = r * Math.cos(phi);
+    const mix = Math.random();
+    const c = c1.clone().lerp(c2, mix);
+    colors[i*3] = c.r; colors[i*3+1] = c.g; colors[i*3+2] = c.b;
+    sizes[i] = Math.random() * 3 + 1;
+  }
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  geo.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+
+  const mat = new THREE.PointsMaterial({ size: 0.08, vertexColors: true, transparent: true, opacity: 0.8, sizeAttenuation: true });
+  const ps = new THREE.Points(geo, mat);
+  scene.add(ps);
+  particleSystems.push(ps);
+
+  // Core diamond wireframe
+  const dGeo = new THREE.OctahedronGeometry(1.2, 0);
+  const dMat = new THREE.MeshBasicMaterial({ color: 0xffaa44, wireframe: true, transparent: true, opacity: 0.4 });
+  const diamond = new THREE.Mesh(dGeo, dMat);
+  scene.add(diamond);
+  particleSystems.push(diamond);
+}
+
+function buildCrystalScene(ch) {
+  // Crystal lattice - cubic pattern
+  const positions = [];
+  const colors = [];
+  const c1 = new THREE.Color(ch.particleColor);
+  const c2 = new THREE.Color(ch.particleColor2);
+  const spacing = 0.6;
+  const range = 4;
+
+  for (let x = -range; x <= range; x++) {
+    for (let y = -range; y <= range; y++) {
+      for (let z = -range; z <= range; z++) {
+        if ((x+y+z) % 2 === 0) {
+          positions.push(x*spacing, y*spacing, z*spacing);
+          const d = Math.sqrt(x*x+y*y+z*z) / range;
+          const c = c1.clone().lerp(c2, d);
+          colors.push(c.r, c.g, c.b);
+        }
+      }
+    }
+  }
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  const mat = new THREE.PointsMaterial({ size: 0.12, vertexColors: true, transparent: true, opacity: 0.9 });
+  const ps = new THREE.Points(geo, mat);
+  scene.add(ps);
+  particleSystems.push(ps);
+
+  // Bond lines
+  const lineMat = new THREE.LineBasicMaterial({ color: 0x3388ff, transparent: true, opacity: 0.15 });
+  const linePos = [];
+  for (let x = -2; x <= 2; x++) {
+    for (let y = -2; y <= 2; y++) {
+      for (let z = -2; z <= 2; z++) {
+        if ((x+y+z) % 2 === 0) {
+          [[1,1,0],[-1,1,0],[1,-1,0],[-1,-1,0]].forEach(([dx,dy,dz]) => {
+            linePos.push(x*spacing, y*spacing, z*spacing);
+            linePos.push((x+dx)*spacing, (y+dy)*spacing, (z+dz)*spacing);
+          });
+        }
+      }
+    }
+  }
+  const lineGeo = new THREE.BufferGeometry();
+  lineGeo.setAttribute('position', new THREE.Float32BufferAttribute(linePos, 3));
+  const lines = new THREE.LineSegments(lineGeo, lineMat);
+  scene.add(lines);
+  particleSystems.push(lines);
+}
+
+function buildEruptionScene(ch) {
+  // Upward streaming particles
+  const N = 4000;
+  const positions = new Float32Array(N * 3);
+  const velocities = new Float32Array(N * 3);
+  const colors = new Float32Array(N * 3);
+  const c1 = new THREE.Color(ch.particleColor);
+  const c2 = new THREE.Color(ch.particleColor2);
+
+  for (let i = 0; i < N; i++) {
+    const r = Math.random() * 2;
+    const theta = Math.random() * Math.PI * 2;
+    positions[i*3] = Math.cos(theta) * r;
+    positions[i*3+1] = (Math.random() - 0.5) * 20;
+    positions[i*3+2] = Math.sin(theta) * r;
+    velocities[i*3] = (Math.random()-0.5)*0.02;
+    velocities[i*3+1] = Math.random() * 0.08 + 0.02;
+    velocities[i*3+2] = (Math.random()-0.5)*0.02;
+    const mix = Math.random();
+    const c = c1.clone().lerp(c2, mix);
+    colors[i*3] = c.r; colors[i*3+1] = c.g; colors[i*3+2] = c.b;
+  }
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  geo.userData.velocities = velocities;
+
+  const mat = new THREE.PointsMaterial({ size: 0.06, vertexColors: true, transparent: true, opacity: 0.85 });
+  const ps = new THREE.Points(geo, mat);
+  scene.add(ps);
+  particleSystems.push(ps);
+}
+
+function buildPresenceScene(ch) {
+  // Gentle golden orbiting particles
+  const N = 2000;
+  const positions = new Float32Array(N * 3);
+  const phases = new Float32Array(N);
+  const radii = new Float32Array(N);
+  const colors = new Float32Array(N * 3);
+  const c1 = new THREE.Color(ch.particleColor);
+  const c2 = new THREE.Color(ch.particleColor2);
+
+  for (let i = 0; i < N; i++) {
+    const r = 1 + Math.random() * 4;
+    const phi = Math.random() * Math.PI;
+    const theta = Math.random() * Math.PI * 2;
+    positions[i*3] = r * Math.sin(phi) * Math.cos(theta);
+    positions[i*3+1] = r * Math.cos(phi);
+    positions[i*3+2] = r * Math.sin(phi) * Math.sin(theta);
+    phases[i] = Math.random() * Math.PI * 2;
+    radii[i] = r;
+    const mix = Math.random();
+    const c = c1.clone().lerp(c2, mix);
+    colors[i*3] = c.r; colors[i*3+1] = c.g; colors[i*3+2] = c.b;
+  }
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  geo.userData.phases = phases;
+  geo.userData.radii = radii;
+
+  const mat = new THREE.PointsMaterial({ size: 0.07, vertexColors: true, transparent: true, opacity: 0.9 });
+  const ps = new THREE.Points(geo, mat);
+  scene.add(ps);
+  particleSystems.push(ps);
+
+  // Central diamond
+  const dGeo = new THREE.OctahedronGeometry(0.8, 1);
+  const dMat = new THREE.MeshBasicMaterial({ color: 0xc9a84c, wireframe: true, transparent: true, opacity: 0.5 });
+  const diamond = new THREE.Mesh(dGeo, dMat);
+  scene.add(diamond);
+  particleSystems.push(diamond);
+}
+
+// ─── RENDER LOOP ────────────────────────────────────────────
+function render() {
+  renderer.setAnimationLoop(() => {
+    const t = clock.getElapsedTime();
+    const ch = CHAPTERS[currentChapter];
+
+    // Animate based on scene type
+    if (ch.scene === 'magma' && particleSystems[0]) {
+      particleSystems[0].rotation.y = t * 0.08;
+      particleSystems[0].rotation.x = t * 0.04;
+      if (particleSystems[1]) { particleSystems[1].rotation.y = t * 0.3; particleSystems[1].rotation.x = t * 0.2; }
+    }
+    if (ch.scene === 'crystal' && particleSystems[0]) {
+      particleSystems[0].rotation.y = t * 0.12;
+      particleSystems[0].rotation.x = t * 0.06;
+      if (particleSystems[1]) { particleSystems[1].rotation.y = t * 0.12; particleSystems[1].rotation.x = t * 0.06; }
+    }
+    if (ch.scene === 'eruption' && particleSystems[0]) {
+      const pos = particleSystems[0].geometry.attributes.position;
+      const vel = particleSystems[0].geometry.userData.velocities;
+      for (let i = 0; i < pos.count; i++) {
+        pos.array[i*3+1] += vel[i*3+1];
+        if (pos.array[i*3+1] > 10) pos.array[i*3+1] = -10;
+      }
+      pos.needsUpdate = true;
+      particleSystems[0].rotation.y = t * 0.05;
+    }
+    if (ch.scene === 'presence' && particleSystems[0]) {
+      particleSystems[0].rotation.y = t * 0.06;
+      if (particleSystems[1]) { particleSystems[1].rotation.y = t * 0.25; particleSystems[1].rotation.x = t * 0.15; }
+    }
+
+    renderer.render(scene, camera);
+  });
+}
+
+// ─── AR SUPPORT CHECK ───────────────────────────────────────
+async function checkARSupport() {
+  if (navigator.xr) {
+    try {
+      arSupported = await navigator.xr.isSessionSupported('immersive-ar');
+      if (arSupported) {
+        document.getElementById('arBtn').classList.add('visible');
+        showARStatus('AR 已就绪 · 点击右上角 ◎ 进入 AR 模式');
+      }
+    } catch(e) {}
+  }
+}
+
+async function toggleAR() {
+  if (xrSession) {
+    await xrSession.end();
+    xrSession = null;
+    showARStatus('已退出 AR 模式');
+    return;
+  }
+  if (!arSupported) { showARStatus('此设备或浏览器不支持 AR · 请使用 Android Chrome'); return; }
+  try {
+    xrSession = await navigator.xr.requestSession('immersive-ar', {
+      requiredFeatures: ['hit-test'],
+      optionalFeatures: ['dom-overlay'],
+      domOverlay: { root: document.getElementById('hud') }
+    });
+    renderer.xr.setSession(xrSession);
+    showARStatus('AR 模式已开启 · 将摄像头对准平面放置宝石');
+    xrSession.addEventListener('end', () => { xrSession = null; showARStatus('已退出 AR 模式'); });
+  } catch(e) {
+    showARStatus('AR 启动失败：' + e.message);
+  }
+}
+
+function showARStatus(msg) {
+  const el = document.getElementById('ar-status');
+  el.textContent = msg;
+  el.classList.add('visible');
+  setTimeout(() => el.classList.remove('visible'), 4000);
+}
+
+// ─── CHAPTER NAVIGATION ─────────────────────────────────────
+function updateHUD() {
+  const ch = CHAPTERS[currentChapter];
+  document.getElementById('chapterNum').textContent = ch.num;
+  document.getElementById('chapterName').textContent = ch.name;
+  document.getElementById('dataDepth').textContent = ch.depth;
+  document.getElementById('dataTemp').textContent = ch.temp;
+  document.getElementById('dataTime').textContent = ch.time;
+
+  const card = document.getElementById('narrationCard');
+  card.classList.remove('visible');
+  setTimeout(() => {
+    document.getElementById('narrationText').textContent = ch.narration;
+    card.classList.add('visible');
+  }, 400);
+
+  // Dots
+  const dotsEl = document.getElementById('dots');
+  dotsEl.innerHTML = CHAPTERS.map((_, i) =>
+    `<div class="dot ${i === currentChapter ? 'active' : ''}"></div>`
+  ).join('');
+
+  document.getElementById('btnPrev').disabled = currentChapter === 0;
+  document.getElementById('btnNext').disabled = currentChapter === CHAPTERS.length - 1;
+}
+
+function prevChapter() {
+  if (currentChapter > 0 && !isTransitioning) {
+    isTransitioning = true;
+    currentChapter--;
+    buildChapterScene(currentChapter);
+    updateHUD();
+    setTimeout(() => isTransitioning = false, 600);
+  }
+}
+
+function nextChapter() {
+  if (currentChapter < CHAPTERS.length - 1 && !isTransitioning) {
+    isTransitioning = true;
+    currentChapter++;
+    buildChapterScene(currentChapter);
+    updateHUD();
+    setTimeout(() => isTransitioning = false, 600);
+  }
+}
+
+// ─── FLOW CONTROL ───────────────────────────────────────────
+function startExperience() {
+  document.getElementById('landing').style.opacity = '0';
+  setTimeout(() => {
+    document.getElementById('landing').style.display = 'none';
+    document.getElementById('portal-overlay').classList.add('active');
+    runPortal();
+    setTimeout(() => {
+      document.getElementById('experience').classList.add('active');
+      initThree();
+      updateHUD();
+    }, 1200);
+  }, 600);
+}
+
+// Hide loading
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    document.getElementById('loading').style.opacity = '0';
+    setTimeout(() => document.getElementById('loading').style.display = 'none', 500);
+  }, 800);
+});
+
+document.getElementById('loading').style.transition = 'opacity 0.5s';
+</script>
+</body>
+</html>
