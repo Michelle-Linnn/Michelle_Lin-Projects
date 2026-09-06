@@ -1,0 +1,15 @@
+# 编辑器
+.vscode/
+.idea/
+*.swp
+
+# 系统
+.DS_Store
+Thumbs.db
+
+# 依赖（本项目不需要，防止误传）
+node_modules/
+
+# 如果你把 key 单独放在了别的文件里，在这里加上文件名，例如：
+# config.local.js
+# .env
