@@ -1,3 +1,19 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="format-detection" content="telephone=no">
+<meta name="description" content="减脂增肌记录：拍照识别热量、AI 教练排每日安排、语音口令训练。">
+<!-- 加到 iPhone 主屏后全屏运行、有独立图标 -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="燃迹">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#F2F6F1" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0E1511" media="(prefers-color-scheme: dark)">
+<link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAIAAACyr5FlAAADpElEQVR42u3d3XHqMBRF4aChD9IM6ShNkI5STUq5b3cyDBAM2Do/33rOTCx5nX0kkM3ucDq+AZcYpgDkADlADpAD5AA5QA6QA+QAOQBygBwgB8gBcoAcIAfIAXKAHAA5QA6QA+QAOabx8/ltEshx1Qx+kAPkeKihCA9ygBwPrUOFBzluecAPcoAcC2NDeJAD5HgiGDqHx2AGP8gBcqwTBj3DYzCDH+QAOdYMgG7hITlAjheVfqvwGMzgBzlAjk3KvUl4SA70lmONQu8QHoMZ/NBWQI5ti7t2eEgOtJRjm7IuHB6DGfzQVkCOSaVcMjwGM/ihraC9HHPLt1h4SA70kCNC4VYKj1JyvH99uAZygBzZCrdSbOSQY2kXn3WHlv7f+KuTfa6VZoHSTLRi3R1Ox3RTeY8iG9+Dhy8psu771MV3Y2bfvz428+P2Dc67ud2ni40s7eZOJ34+v8OGx/6tBBct2SY8zm6tD8FCW/L79iwtymf+/uxfF2AfPwyC725e8nB2zM7i9Pl5DCy6T06f+zCg6Xh9t/J2cSVrQoLK0fPVfQFHLTkuR4XwIAdSybF9ul4Lie3DI1pnkRxIIkec2BAekgPkeCIYOm9bAsnhB/eizUPf5Lg/EtqGx1AuwkNygBzrdIqenSWEHHpKzDnpmByPxUDD8BhKRHhIjhcEQLfwGM2LQ3hIjpeVfqvw8DkHQsoR8FnngOExsbNIDsSTI2lstAoPyYHecqxR6B22LZID5AA5QI75q32/K5tskWhBLTlADpAj47KjyUkDyQFygBwgB8gRck3a59yr5AA5QA4UkSPjG7eivbVMcoAcIEfeDW23hzc7Jsdj97jhY71N28rSO93zgW9rDkSVY+I+7f4wmBgbcw9Tzk+O4H60NUNb+ePeN3+3TAg55pbINQPmmhHhdH6U5IjmBzNitRVPskSbB1vZC1HhNXYR5YjQXDSU/+wOp2OuHYSG0rqt9Fx8BBy1NQeyydEtPGKOd5gvI03ZVjr4EXmM1hxIK0ft8Ag+umEGjSt3W6nnR4oRWXMgvxyVwiPLWIY5NYoibSW7H7mu35oDheTIGx7prjzieY77SXHyI6/NueWIbEmB5XMROeJYUmnLXU2OWZaU/Iy/rBzbWFL7e8H6cqxhSZODSI3keN6SbocXO8qx1JK2j+K1luO2JR7PJMe5JZwgB/7GF28gB8gBcoAcIAfIAXKAHCAHyAGQA+QAOUAOkAPkADlADpAD/fgH/Hh+Z23BBOwAAAAASUVORK5CYII=">
+<link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAIAAACyr5FlAAADpElEQVR42u3d3XHqMBRF4aChD9IM6ShNkI5STUq5b3cyDBAM2Do/33rOTCx5nX0kkM3ucDq+AZcYpgDkADlADpAD5AA5QA6QA+QAOQBygBwgB8gBcoAcIAfIAXKAHAA5QA6QA+QAOabx8/ltEshx1Qx+kAPkeKihCA9ygBwPrUOFBzluecAPcoAcC2NDeJAD5HgiGDqHx2AGP8gBcqwTBj3DYzCDH+QAOdYMgG7hITlAjheVfqvwGMzgBzlAjk3KvUl4SA70lmONQu8QHoMZ/NBWQI5ti7t2eEgOtJRjm7IuHB6DGfzQVkCOSaVcMjwGM/ihraC9HHPLt1h4SA70kCNC4VYKj1JyvH99uAZygBzZCrdSbOSQY2kXn3WHlv7f+KuTfa6VZoHSTLRi3R1Ox3RTeY8iG9+Dhy8psu771MV3Y2bfvz428+P2Dc67ud2ni40s7eZOJ34+v8OGx/6tBBct2SY8zm6tD8FCW/L79iwtymf+/uxfF2AfPwyC725e8nB2zM7i9Pl5DCy6T06f+zCg6Xh9t/J2cSVrQoLK0fPVfQFHLTkuR4XwIAdSybF9ul4Lie3DI1pnkRxIIkec2BAekgPkeCIYOm9bAsnhB/eizUPf5Lg/EtqGx1AuwkNygBzrdIqenSWEHHpKzDnpmByPxUDD8BhKRHhIjhcEQLfwGM2LQ3hIjpeVfqvw8DkHQsoR8FnngOExsbNIDsSTI2lstAoPyYHecqxR6B22LZID5AA5QI75q32/K5tskWhBLTlADpAj47KjyUkDyQFygBwgB8gRck3a59yr5AA5QA4UkSPjG7eivbVMcoAcIEfeDW23hzc7Jsdj97jhY71N28rSO93zgW9rDkSVY+I+7f4wmBgbcw9Tzk+O4H60NUNb+ePeN3+3TAg55pbINQPmmhHhdH6U5IjmBzNitRVPskSbB1vZC1HhNXYR5YjQXDSU/+wOp2OuHYSG0rqt9Fx8BBy1NQeyydEtPGKOd5gvI03ZVjr4EXmM1hxIK0ft8Ag+umEGjSt3W6nnR4oRWXMgvxyVwiPLWIY5NYoibSW7H7mu35oDheTIGx7prjzieY77SXHyI6/NueWIbEmB5XMROeJYUmnLXU2OWZaU/Iy/rBzbWFL7e8H6cqxhSZODSI3keN6SbocXO8qx1JK2j+K1luO2JR7PJMe5JZwgB/7GF28gB8gBcoAcIAfIAXKAHCAHyAGQA+QAOUAOkAPkADlADpAD/fgH/Hh+Z23BBOwAAAAASUVORK5CYII=">
 <title>燃迹</title>
 <style>
 :root{
@@ -51,12 +67,19 @@
   --shadow:0 1px 3px rgba(0,0,0,.3),0 6px 20px rgba(0,0,0,.25);
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%}
 body{
   margin:0;background:var(--bg);color:var(--ink);
   font-family:system-ui,-apple-system,"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif;
   font-size:15px;line-height:1.6;
+  overscroll-behavior-y:none;               /* 主屏模式下不出现下拉回弹 */
 }
-.phone{max-width:440px;margin:0 auto;padding:18px 15px 108px;min-height:100vh}
+img{max-width:100%}
+/* 底部留出 tabbar + iPhone home indicator 的高度 */
+.phone{
+  max-width:440px;margin:0 auto;min-height:100vh;
+  padding:18px 15px calc(108px + env(safe-area-inset-bottom));
+}
 .page{display:none}
 .page.on{display:block}
 .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:13px;gap:10px}
@@ -243,8 +266,10 @@ body{
 .mask.open{opacity:1;pointer-events:auto}
 .sheet{
   position:fixed;left:50%;bottom:0;transform:translate(-50%,105%);width:100%;max-width:440px;
-  background:var(--surface);z-index:50;border-radius:20px 20px 0 0;padding:17px 17px 28px;
-  transition:transform .25s ease;box-shadow:0 -8px 30px rgba(0,0,0,.15);max-height:88vh;overflow-y:auto;
+  background:var(--surface);z-index:50;border-radius:20px 20px 0 0;
+  padding:17px 17px calc(28px + env(safe-area-inset-bottom));
+  transition:transform .25s ease;box-shadow:0 -8px 30px rgba(0,0,0,.15);
+  max-height:88vh;overflow-y:auto;-webkit-overflow-scrolling:touch;
 }
 .sheet.open{transform:translate(-50%,0)}
 .sheet h3{margin:0 0 4px;font-size:17px}
@@ -301,7 +326,8 @@ body{
 .care-row{display:flex;gap:8px;font-size:13px;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:8px 11px;margin-bottom:6px}
 .care-row .mark{color:var(--ring-move);font-weight:800;flex:none}
 /* workout */
-.workout{position:fixed;inset:0;z-index:70;background:var(--bg);display:none;flex-direction:column;align-items:center;padding:24px 20px 28px;text-align:center}
+.workout{position:fixed;inset:0;z-index:70;background:var(--bg);display:none;flex-direction:column;align-items:center;
+  padding:calc(24px + env(safe-area-inset-top)) 20px calc(28px + env(safe-area-inset-bottom));text-align:center}
 .workout.show{display:flex}
 .wk-top{width:100%;max-width:400px;display:flex;justify-content:space-between;align-items:center;font-size:12.5px;color:var(--ink-2)}
 .wk-exit{border:none;background:none;color:var(--ink-3);font-size:22px;cursor:pointer;padding:4px 10px;font-family:inherit}
@@ -334,7 +360,8 @@ body{
 @keyframes fall{to{transform:translateY(110vh) rotate(540deg);opacity:.2}}
 /* toast + tabbar */
 .toast{
-  position:fixed;left:50%;bottom:92px;transform:translateX(-50%);background:var(--ink);color:var(--bg);
+  position:fixed;left:50%;bottom:calc(92px + env(safe-area-inset-bottom));
+  transform:translateX(-50%);background:var(--ink);color:var(--bg);
   padding:9px 17px;border-radius:99px;font-size:13px;font-weight:600;opacity:0;pointer-events:none;
   transition:opacity .25s;z-index:60;max-width:92%;text-align:center;
 }
@@ -342,15 +369,17 @@ body{
 .tabbar{
   position:fixed;left:50%;bottom:0;transform:translateX(-50%);width:100%;max-width:440px;
   background:var(--surface);border-top:1px solid var(--line);display:flex;justify-content:space-around;
-  padding:9px 0 20px;z-index:30;
+  padding:9px 0 calc(9px + env(safe-area-inset-bottom, 14px));z-index:30;
 }
+.tab{padding:2px 0}
 .tab{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;color:var(--ink-3);font-weight:500;cursor:pointer;flex:1}
 .tab.on{color:var(--accent)}
 .tab svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .empty{text-align:center;color:var(--ink-3);font-size:13px;padding:22px 10px;line-height:1.7}
 @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
 </style>
-
+</head>
+<body>
 <div class="phone">
   <!-- ============ 今天 ============ -->
   <div class="page on" id="page-today">
@@ -1910,3 +1939,5 @@ if(mq.addEventListener)mq.addEventListener('change',function(){refreshToday();re
 })();
 })();
 </script>
+</body>
+</html>
