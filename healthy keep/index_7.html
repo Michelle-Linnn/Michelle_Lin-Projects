@@ -688,6 +688,27 @@ img{max-width:100%}
     </div>
 
     <div class="card">
+      <h2>数据备份 <span class="side" id="backupAge"></span></h2>
+      <p class="sub" style="margin-top:0">数据存在这个浏览器里，跟网址绑定。<b>换网址、换手机、清缓存都会丢；iOS Safari 超过 7 天不打开也可能被系统清掉。</b>建议每周导出一次。</p>
+      <div id="dataStat" class="tdee-box" style="margin-bottom:11px"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="cta-btn" id="btnExport" style="flex:1;min-width:130px">导出备份</button>
+        <button class="ghost-btn" id="btnImport" style="margin-top:0;flex:1;min-width:130px">导入备份</button>
+      </div>
+      <input type="file" id="importFile" accept="application/json,.json" hidden>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+        <button class="ghost-btn" id="btnExportCsv" style="margin-top:0;flex:1;min-width:130px">导出 CSV（给 Excel 看）</button>
+        <button class="ghost-btn" id="btnCopyBackup" style="margin-top:0;flex:1;min-width:130px">复制到剪贴板</button>
+      </div>
+      <div class="callout" id="backupMsg" style="display:none"></div>
+      <p class="sub" style="margin-top:10px;font-size:12px">
+        导出的是一个 .json 文件，包含档案、每天的记录、训练明细和对话。<b>不含你的 API key</b>（那个不该到处传）。<br>
+        导入是<b>合并</b>：同一天的记录以文件里的为准，文件里没有的日子保持不动。所以换设备、恢复数据都安全。<br>
+        更新 App 版本时，只要网址没变，数据不受影响——但更新前还是先导一份更稳妥。
+      </p>
+    </div>
+
+    <div class="card">
       <h2>运行状态</h2>
       <div id="capList"></div>
       <p class="sub" style="margin-top:10px">在 iPhone 上用 Safari 打开这个页面，点分享 → 加到主屏幕，就有独立图标和全屏体验。</p>
@@ -2395,6 +2416,130 @@ function renderCaps(){
   });
 }
 
+/* ========== 数据备份 ========== */
+var BACKUP_VERSION=1;
+function buildBackup(){
+  return {
+    app:'burntrack', version:BACKUP_VERSION, exportedAt:new Date().toISOString(),
+    profile:state.profile||null,
+    days:state.days||{},
+    chat:coachTurns.map(function(t){return {role:t.role,content:t.content,applied:t.applied||null};}),
+    model:GEMINI.getModel()
+    // 故意不含 API key
+  };
+}
+function downloadFile(name,text,mime){
+  try{
+    var blob=new Blob([text],{type:(mime||'application/json')+';charset=utf-8'});
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement('a');
+    a.href=url; a.download=name; a.style.display='none';
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){document.body.removeChild(a);URL.revokeObjectURL(url);},1500);
+    return true;
+  }catch(e){ return false; }
+}
+function backupMsg(text,ok){
+  var b=$('backupMsg'); b.style.display=''; b.innerHTML=text;
+  b.style.background=ok?'var(--accent-soft)':'var(--warn-soft)';
+  b.style.color=ok?'var(--accent-deep)':'var(--warn)';
+}
+function markBackedUp(){ try{localStorage.setItem('bt_last_backup',new Date().toISOString());}catch(e){} renderDataStat(); }
+function renderDataStat(){
+  var box=$('dataStat'); if(!box)return;
+  var keys=Object.keys(state.days).sort();
+  var withRec=keys.filter(function(k){var d=state.days[k];return d.kcal>0||d.water>0||d.workoutDone||d.weight;});
+  var workouts=0; keys.forEach(function(k){workouts+=(state.days[k].workouts||[]).length;});
+  var size=0; try{ ['bt_profile','bt_days','bt_chat'].forEach(function(k){size+=(localStorage.getItem(k)||'').length;}); }catch(e){}
+  var rows='';
+  rows+='<div class="tdee-row"><span>有记录的天数</span><b>'+withRec.length+' 天</b></div>';
+  if(withRec.length) rows+='<div class="tdee-row"><span>时间范围</span><b>'+withRec[0]+' → '+withRec[withRec.length-1]+'</b></div>';
+  rows+='<div class="tdee-row"><span>训练明细</span><b>'+workouts+' 次</b></div>';
+  rows+='<div class="tdee-row"><span>对话</span><b>'+coachTurns.length+' 条</b></div>';
+  rows+='<div class="tdee-row"><span>占用空间</span><b>'+(size>1024?(size/1024).toFixed(0)+' KB':size+' 字节')+'</b></div>';
+  box.innerHTML=rows;
+  var last=null; try{last=localStorage.getItem('bt_last_backup');}catch(e){}
+  var el=$('backupAge');
+  if(!el)return;
+  if(!last){ el.textContent=withRec.length?'从没备份过':''; el.style.color=withRec.length?'var(--warn)':''; }
+  else{
+    var days=Math.floor((Date.now()-new Date(last).getTime())/86400000);
+    el.textContent='上次备份：'+(days===0?'今天':days+' 天前');
+    el.style.color=days>=7?'var(--warn)':'';
+  }
+}
+$('btnExport').addEventListener('click',function(){
+  var json=JSON.stringify(buildBackup(),null,2);
+  var name='burntrack-'+TODAY+'.json';
+  if(downloadFile(name,json,'application/json')){
+    markBackedUp();
+    backupMsg('已导出 <b>'+name+'</b>。存到网盘或发给自己一份，换设备时用「导入备份」就能恢复。',true);
+  }else{
+    backupMsg('这个浏览器不让直接下载。用下面的「复制到剪贴板」，粘到备忘录或邮件里保存。',false);
+  }
+});
+$('btnCopyBackup').addEventListener('click',async function(){
+  var json=JSON.stringify(buildBackup());
+  try{
+    await navigator.clipboard.writeText(json);
+    markBackedUp();
+    backupMsg('已复制（'+(json.length/1024).toFixed(0)+' KB）。粘到备忘录、邮件或网盘里存着；恢复时把这段文字存成 .json 文件再导入。',true);
+  }catch(e){
+    backupMsg('复制失败了（浏览器不允许）。改用「导出备份」下载文件。',false);
+  }
+});
+$('btnExportCsv').addEventListener('click',function(){
+  var keys=Object.keys(state.days).sort();
+  var rows=[['日期','早晨体重kg','晚上体重kg','热量kcal','蛋白质g','喝水ml','运动分钟','是否训练','训练明细'].join(',')];
+  keys.forEach(function(k){
+    var d=state.days[k];
+    var detail=(d.workouts||[]).map(function(w){
+      var e=(w.exercises||[]).map(function(x){
+        return x.name+' '+(x.weightKg!=null&&x.weightKg>0?x.weightKg+'kg ':'')+(x.sets||'?')+'x'+(x.reps||'?');
+      }).join(' / ');
+      return (w.type==='gym'?'健身房':(w.type==='cardio'?'有氧':'居家'))+(w.durationMin?' '+w.durationMin+'min':'')+(e?': '+e:'');
+    }).join(' | ');
+    rows.push([k,d.weight||'',d.weightPm||'',Math.round(d.kcal||0),Math.round(d.protein||0),
+      d.water||0,d.moveMin||0,d.workoutDone?'是':'否','"'+detail.replace(/"/g,'""')+'"'].join(','));
+  });
+  var csv='﻿'+rows.join('\n');           // BOM，Excel 打开中文不乱码
+  if(downloadFile('burntrack-'+TODAY+'.csv',csv,'text/csv'))
+    backupMsg('已导出 CSV，可以直接用 Excel 或 Numbers 打开。（CSV 只是给人看的，恢复数据要用上面的 JSON 备份。）',true);
+  else backupMsg('下载失败，改用 JSON 导出。',false);
+});
+$('btnImport').addEventListener('click',function(){ $('importFile').click(); });
+$('importFile').addEventListener('change',function(e){
+  var f=e.target.files&&e.target.files[0]; if(!f)return;
+  var r=new FileReader();
+  r.onload=async function(){
+    var data=null;
+    try{ data=JSON.parse(String(r.result)); }catch(err){ backupMsg('这个文件不是有效的备份（解析不了）。',false); return; }
+    if(!data||data.app!=='burntrack'||!data.days){ backupMsg('这不像是燃迹的备份文件。',false); return; }
+    var incoming=Object.keys(data.days||{});
+    if(!incoming.length){ backupMsg('备份文件里没有记录。',false); return; }
+    var before=Object.keys(state.days).length;
+    // 合并：同一天以文件里的为准，本地独有的日子保留
+    incoming.forEach(function(k){ if(data.days[k]&&data.days[k].date) state.days[k]=data.days[k]; });
+    if(data.profile){
+      // 保留本地已有的起始日期里更早的那个
+      if(state.profile&&state.profile.startDate&&data.profile.startDate)
+        data.profile.startDate=(state.profile.startDate<data.profile.startDate)?state.profile.startDate:data.profile.startDate;
+      await Store.saveProfile(data.profile);
+    }
+    if(Array.isArray(data.chat)&&data.chat.length){ coachTurns=data.chat.slice(-40); saveChat(); }
+    if(data.model) GEMINI.setModel(data.model);
+    state.today=state.days[TODAY]||blankDay(TODAY); state.days[TODAY]=state.today;
+    for(var i=0;i<incoming.length;i++){ await Store.saveDay(state.days[incoming[i]]); }
+    try{ localStorage.setItem('bt_days',JSON.stringify(state.days)); }catch(err){}
+    fillProfileForm(); renderTargets(); renderTdeeBox(); refreshToday(); renderData(); renderDataStat(); fillKeyForm();
+    var after=Object.keys(state.days).length;
+    backupMsg('导入成功：文件里有 <b>'+incoming.length+'</b> 天的记录，合并后一共 <b>'+after+'</b> 天（原来 '+before+' 天）。',true);
+    $('importFile').value='';
+  };
+  r.onerror=function(){ backupMsg('文件读不出来，再试一次。',false); };
+  r.readAsText(f);
+});
+
 /* ========== Gemini key 设置 ========== */
 function keyMsg(text,ok){
   var b=$('keyMsg');b.style.display='';b.textContent=text;
@@ -2442,7 +2587,7 @@ document.querySelectorAll('.tab').forEach(function(tab){
     window.scrollTo(0,0);
     if(p==='data')renderData();
     if(p==='coach'){renderChat();setTimeout(function(){$('stream').scrollTop=$('stream').scrollHeight;},30);}
-    if(p==='me'){fillProfileForm();renderTargets();renderCaps();fillKeyForm();renderTdeeBox();}
+    if(p==='me'){fillProfileForm();renderTargets();renderCaps();fillKeyForm();renderTdeeBox();renderDataStat();}
   });
 });
 
