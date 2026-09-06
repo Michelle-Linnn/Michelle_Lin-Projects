@@ -199,7 +199,82 @@ img{max-width:100%}
   border-radius:8px;padding:8px 0;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;
 }
 .wd-row button.on{background:var(--accent);border-color:transparent;color:#fff}
-/* chat */
+/* 教练页 */
+/* .phone 上下内边距是 18px / 108px，这里要正好填满中间，输入框才不会被底栏压住 */
+/* 注意：必须比 .page.on{display:block} 更具体，否则 flex 布局不生效，
+   输入框会被聊天记录顶到底栏下面去 */
+.page.on.coach-page{display:flex}
+.coach-page{
+  display:flex;flex-direction:column;
+  height:calc(100vh - 126px - env(safe-area-inset-bottom));
+  height:calc(100dvh - 126px - env(safe-area-inset-bottom)); /* 键盘弹出时也正确 */
+  min-height:360px;
+}
+.coach-page .stream{min-height:0}
+.composer{position:relative;z-index:2}
+.coach-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:2px 0 10px}
+.coach-head h1{font-size:19px;font-weight:700;margin:0}
+.coach-head p{margin:1px 0 0;color:var(--ink-2);font-size:12px}
+.coach-clear{border:1px solid var(--line);background:var(--surface);color:var(--ink-3);border-radius:9px;
+  padding:6px 11px;font-size:12px;font-family:inherit;cursor:pointer;flex:none}
+.stream{
+  flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;gap:9px;
+  padding:4px 1px 10px;
+}
+.bub{max-width:86%;border-radius:15px;padding:10px 13px;font-size:14.5px;line-height:1.65;white-space:pre-wrap;word-break:break-word}
+.bub.ai{background:var(--surface);border:1px solid var(--line);align-self:flex-start;border-bottom-left-radius:5px;box-shadow:var(--shadow)}
+.bub.me{background:var(--btn-cta);color:#fff;align-self:flex-end;border-bottom-right-radius:5px}
+.bub.sys{align-self:center;background:var(--accent-soft);color:var(--accent-deep);font-size:12.5px;
+  padding:7px 13px;border-radius:99px;max-width:92%;text-align:center;white-space:normal}
+.bub.err{align-self:center;background:var(--warn-soft);color:var(--warn);font-size:12.5px;
+  padding:8px 13px;border-radius:11px;max-width:92%;white-space:normal}
+.applied{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);font-size:12px;color:var(--accent-deep)}
+.applied div{margin:2px 0}
+.coach-chips{display:flex;gap:7px;overflow-x:auto;padding:8px 1px;flex:none;-webkit-overflow-scrolling:touch}
+.coach-chips .chip{white-space:nowrap;flex:none}
+/* 待发送的图片预览 */
+.attach-strip{display:none;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);
+  border-radius:12px;padding:8px 10px;margin-bottom:7px;flex:none}
+.attach-strip.on{display:flex}
+.attach-strip img{width:46px;height:46px;object-fit:cover;border-radius:8px;flex:none}
+.attach-strip .t{flex:1;font-size:12.5px;color:var(--ink-2);line-height:1.45}
+.attach-strip .x{border:none;background:var(--surface-2);color:var(--ink-2);border-radius:8px;
+  width:30px;height:30px;font-size:17px;cursor:pointer;font-family:inherit;flex:none;line-height:1}
+.bub img{display:block;max-width:190px;border-radius:10px;margin-bottom:6px}
+.btn-attach{
+  border:1px solid var(--line);background:var(--surface-2);color:var(--ink-2);border-radius:14px;
+  width:44px;height:44px;cursor:pointer;flex:none;display:flex;align-items:center;justify-content:center;padding:0;
+}
+.btn-attach svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.composer{display:flex;gap:7px;align-items:flex-end;flex:none;padding-top:2px}
+.composer textarea{
+  flex:1;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);border-radius:14px;
+  padding:11px 13px;font-family:inherit;font-size:15px;outline:none;resize:none;line-height:1.5;
+  max-height:120px;min-height:44px;
+}
+.composer textarea:focus{border-color:var(--accent)}
+.composer button{
+  border:none;background:var(--btn-cta);color:#fff;font-family:inherit;font-weight:700;font-size:14px;
+  border-radius:14px;padding:0 16px;height:44px;cursor:pointer;flex:none;
+}
+.composer button[disabled]{opacity:.5}
+.typing span{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--ink-3);margin-right:3px;
+  animation:blink 1.2s infinite}
+.typing span:nth-child(2){animation-delay:.2s}
+.typing span:nth-child(3){animation-delay:.4s}
+@keyframes blink{0%,60%,100%{opacity:.25}30%{opacity:1}}
+/* 自适应代谢卡 */
+.tdee-box{background:var(--surface-2);border-radius:12px;padding:13px;margin-top:11px}
+.tdee-row{display:flex;justify-content:space-between;align-items:baseline;font-size:13.5px;padding:4px 0}
+.tdee-row b{font-variant-numeric:tabular-nums;font-weight:700}
+.tdee-note{font-size:12px;color:var(--ink-2);margin-top:7px;line-height:1.6}
+/* 健身房记录 */
+.gym{background:var(--surface-2);border:1px solid var(--line);border-radius:11px;padding:11px 13px;margin-bottom:8px}
+.gym-h{display:flex;justify-content:space-between;align-items:baseline;font-size:13.5px;font-weight:700;margin-bottom:5px}
+.gym-h .d{font-size:11.5px;color:var(--ink-3);font-weight:500}
+.gym-e{display:flex;justify-content:space-between;font-size:12.5px;color:var(--ink-2);padding:3px 0;gap:10px}
+.gym-e .s{font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--ink)}
+/* chat（今天页的小窗，保留） */
 .chat-box{display:flex;flex-direction:column;gap:8px;margin-bottom:11px;max-height:36vh;overflow-y:auto}
 .msg{max-width:84%;border-radius:14px;padding:9px 12px;font-size:13.5px;line-height:1.6;white-space:pre-wrap}
 .msg.ai{background:var(--surface-2);border:1px solid var(--line);align-self:flex-start;border-bottom-left-radius:5px}
@@ -467,6 +542,39 @@ img{max-width:100%}
     </div>
   </div>
 
+  <!-- ============ 教练 ============ -->
+  <div class="page coach-page" id="page-coach">
+    <div class="coach-head">
+      <div>
+        <h1>AI 教练</h1>
+        <p>补记、算热量、改计划——直接说就行</p>
+      </div>
+      <button class="coach-clear" id="btnClearChat">清空</button>
+    </div>
+    <div class="stream" id="stream"></div>
+    <div class="coach-chips" id="coachChips">
+      <button class="chip" data-say="我喝了一瓶 295ml 的这个，帮我记上">发营养标签</button>
+      <button class="chip" data-say="我昨天去健身房了，卧推 60kg 做了 4 组每组 8 个，深蹲 80kg 5 组 5 个，练了一小时">补记健身房训练</button>
+      <button class="chip" data-say="我想吃泡面，一桶红烧牛肉面加一个蛋，帮我算热量并记上">想吃泡面</button>
+      <button class="chip" data-say="根据我最近的体重变化和吃的热量，重新算一下我真实的每日消耗">重算我的代谢</button>
+      <button class="chip" data-say="我要开学了，每天时间不固定，帮我改成灵活的训练安排">开学了改计划</button>
+      <button class="chip" data-say="帮我补一下前几天的记录">补前几天</button>
+    </div>
+    <div class="attach-strip" id="attachStrip">
+      <img id="attachThumb" alt="">
+      <div class="t" id="attachText">图片已附上，再说一句要它做什么（不说也行）</div>
+      <button class="x" id="attachClear" aria-label="移除图片">×</button>
+    </div>
+    <div class="composer">
+      <button class="btn-attach" id="btnAttach" aria-label="发图片">
+        <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5"/><circle cx="8.5" cy="10" r="1.6"/><path d="m4 17 5-5 4 4 2.5-2.5L20 17"/></svg>
+      </button>
+      <input type="file" id="coachPhoto" accept="image/*" hidden>
+      <textarea id="coachInput" rows="1" placeholder="跟教练说…"></textarea>
+      <button id="coachSend">发送</button>
+    </div>
+  </div>
+
   <!-- ============ 数据 ============ -->
   <div class="page" id="page-data">
     <div class="topbar"><div class="hello"><h1>数据</h1><p>只看趋势，别看单日</p></div></div>
@@ -486,6 +594,11 @@ img{max-width:100%}
       <h2>近 14 天摄入 <span class="side">柱高=热量 · 深色=蛋白达标</span></h2>
       <div class="chart-wrap"><svg id="kchart" viewBox="0 0 400 150"></svg><div class="tip" id="ktip"></div></div>
       <div class="empty" id="kEmpty" style="display:none">还没有饮食记录。</div>
+    </div>
+
+    <div class="card">
+      <h2>训练记录 <span class="side">教练帮你记的也在这</span></h2>
+      <div id="gymList"></div>
     </div>
 
     <div class="card">
@@ -532,7 +645,16 @@ img{max-width:100%}
         <div class="field"><label>几点起</label><input type="time" id="fWake" value="07:00"></div>
         <div class="field"><label>几点睡</label><input type="time" id="fSleep" value="23:30"></div>
       </div>
+      <div class="field" style="margin-top:11px">
+        <label>时间不固定？用一句话说明（教练排计划时会读）</label>
+        <textarea id="fSchedNote" rows="3" placeholder="例：开学了，周一三五下午有课，周二四全天，晚上 8 点后才有空；周末不一定"
+          style="width:100%;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);border-radius:10px;padding:10px 11px;font-family:inherit;font-size:14px;outline:none;resize:vertical"></textarea>
+      </div>
       <button class="cta-btn" id="btnSaveProfile" style="margin-top:13px">保存并重新计算</button>
+
+      <div class="ex-sec" style="margin-top:18px">你的真实代谢（用实际数据反推）</div>
+      <div class="tdee-box" id="tdeeBox"></div>
+
       <div class="target-grid">
         <div class="tg"><div class="l">每天热量</div><div class="v" id="tgCal">—<small> kcal</small></div></div>
         <div class="tg p"><div class="l">蛋白质</div><div class="v" id="tgPro">—<small> g</small></div></div>
@@ -654,8 +776,10 @@ img{max-width:100%}
 
 <div class="sheet" id="sheetWeight">
   <h3>记体重</h3>
-  <p class="hint">早上空腹、上完厕所、穿一样的衣服，最准</p>
-  <div class="field"><label>体重 kg</label><input type="number" id="wInput" step="0.1" inputmode="decimal"></div>
+  <p class="hint">早上那次最重要——趋势和代谢都靠它算。晚上那次可选，用来看当天水分波动。</p>
+  <div class="field"><label>这次是</label>
+    <div class="seg" id="segWhen"><button data-v="morning" class="on">早上空腹</button><button data-v="evening">晚上</button></div></div>
+  <div class="field" style="margin-top:11px"><label>体重 kg</label><input type="number" id="wInput" step="0.1" inputmode="decimal"></div>
   <button class="cta-btn" id="btnSaveWeight" style="margin-top:13px">记录</button>
 </div>
 
@@ -696,6 +820,7 @@ img{max-width:100%}
 
 <div class="tabbar">
   <div class="tab on" data-page="today"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9h13v-9"/></svg>今天</div>
+  <div class="tab" data-page="coach"><svg viewBox="0 0 24 24"><path d="M20 15.5a2.5 2.5 0 0 1-2.5 2.5H9l-4 3v-3H6.5A2.5 2.5 0 0 1 4 15.5v-8A2.5 2.5 0 0 1 6.5 5h11A2.5 2.5 0 0 1 20 7.5z"/></svg>教练</div>
   <div class="tab" data-page="data"><svg viewBox="0 0 24 24"><path d="M4 19V9m5.5 10V5M15 19v-7m5 7V8"/></svg>数据</div>
   <div class="tab" data-page="me"><svg viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 20c1.2-3.5 3.8-5 7-5s5.8 1.5 7 5"/></svg>我的</div>
 </div>
@@ -1036,7 +1161,83 @@ function computeTargets(p){
     perWeek:perWeek, notes:notes
   };
 }
-function targets(){ return computeTargets(state.profile)||{cal:1800,protein:120,water:2000,move:30,bmr:0,tdee:0,notes:[]}; }
+function targets(){
+  var t=computeTargets(state.profile)||{cal:1800,protein:120,water:2000,move:30,bmr:0,tdee:0,notes:[]};
+  // 如果算出了真实代谢，用它替换公式估算的 TDEE 和目标热量
+  var ad=adaptiveTDEE();
+  if(ad&&ad.usable&&state.profile){
+    t.tdee=ad.tdee;
+    var cal=ad.tdee*(GOAL[state.profile.goal]||0.80);
+    if(cal<t.bmr)cal=t.bmr;
+    var floor=state.profile.sex==='m'?1500:1200;
+    if(cal<floor)cal=floor;
+    t.cal=Math.round(cal);
+    t.adaptive=true;
+  }
+  // 教练手动定过目标就以它为准
+  if(state.profile){
+    if(state.profile.customCal>0){t.cal=state.profile.customCal;t.custom=true;}
+    if(state.profile.customPro>0){t.protein=state.profile.customPro;t.custom=true;}
+  }
+  return t;
+}
+
+/* ===== 用实际数据反推真实每日消耗 =====
+   原理：连续一段时间里，你吃进去多少 + 体重变了多少 → 反推真实消耗。
+   TDEE = 平均摄入 − (每日体重变化 × 7700)
+   比 Mifflin 公式准，因为用的是你身体的真实反馈。 */
+function adaptiveTDEE(){
+  var all=Object.keys(state.days).sort().map(function(k){return state.days[k];});
+  // 只用同时有"早晨体重"和"当天摄入"的日子
+  var pts=all.filter(function(d){return d.weight&&d.kcal>0;});
+  if(pts.length<7) return {usable:false,days:pts.length,need:10};
+  var win=pts.slice(-21);                       // 最多看最近 21 天
+  var n=win.length;
+  // 对体重做最小二乘线性回归，拿到每日变化（比首尾相减抗噪）
+  var xs=win.map(function(d,i){return i;}), ys=win.map(function(d){return d.weight;});
+  var mx=xs.reduce(function(a,b){return a+b;},0)/n;
+  var my=ys.reduce(function(a,b){return a+b;},0)/n;
+  var sNum=0,sDen=0;
+  for(var i=0;i<n;i++){sNum+=(xs[i]-mx)*(ys[i]-my);sDen+=(xs[i]-mx)*(xs[i]-mx);}
+  var perDay=sDen?sNum/sDen:0;                  // kg/天，负数=在掉
+  var avgKcal=win.reduce(function(a,d){return a+d.kcal;},0)/n;
+  var tdee=Math.round(avgKcal-perDay*7700);
+  // 合理性护栏：算出来离公式值太远说明记录不全，不采用
+  var formula=computeTargets(state.profile);
+  var ok=!!formula && tdee>formula.bmr*0.9 && tdee<formula.bmr*2.6;
+  return {
+    usable:n>=10&&ok, days:n, need:10,
+    tdee:tdee, perDay:perDay, perWeek:perDay*7, avgKcal:Math.round(avgKcal),
+    bmrEst:formula?Math.round(tdee/(ACT[state.profile.days]||1.465)):null,
+    formulaTdee:formula?formula.tdee:null,
+    outOfRange:!ok
+  };
+}
+function renderTdeeBox(){
+  var box=$('tdeeBox'); if(!box)return;
+  var ad=adaptiveTDEE(), f=computeTargets(state.profile);
+  if(!ad||ad.days<7){
+    box.innerHTML='<div class="tdee-note">还需要更多数据。<b>同时记录早晨体重和当天吃的热量</b>，攒够 10 天'+
+      '（现在 '+(ad?ad.days:0)+' 天），我就能用你身体的真实反馈算出实际消耗，比公式准得多。</div>';
+    return;
+  }
+  var rows='';
+  rows+='<div class="tdee-row"><span>用到的数据</span><b>'+ad.days+' 天</b></div>';
+  rows+='<div class="tdee-row"><span>这期间平均吃</span><b>'+ad.avgKcal+' kcal/天</b></div>';
+  rows+='<div class="tdee-row"><span>体重变化</span><b>'+(ad.perWeek>=0?'+':'')+ad.perWeek.toFixed(2)+' kg/周</b></div>';
+  if(ad.usable){
+    rows+='<div class="tdee-row" style="border-top:1px solid var(--line);margin-top:5px;padding-top:8px">'+
+      '<span><b>你的真实每日消耗</b></span><b style="font-size:17px;color:var(--accent-deep)">'+ad.tdee+' kcal</b></div>';
+    if(ad.bmrEst) rows+='<div class="tdee-row"><span>推算基础代谢</span><b>约 '+ad.bmrEst+' kcal</b></div>';
+    var diff=f?ad.tdee-f.tdee:0;
+    rows+='<div class="tdee-note">公式估算是 '+(f?f.tdee:'—')+' kcal，实测'+
+      (Math.abs(diff)<80?'和公式基本一致，说明记录很准。':(diff>0?'比公式<b>高 '+diff+'</b>——你的代谢比平均水平好，可以多吃一点。':'比公式<b>低 '+Math.abs(diff)+'</b>——要么代谢偏慢，要么有些吃的没记上。'))+
+      '<br>每日目标热量已经按这个真实值重算了。</div>';
+  }else{
+    rows+='<div class="tdee-note">'+(ad.days<10?'还差 '+(10-ad.days)+' 天数据。':'算出来的数字（'+ad.tdee+' kcal）不太合理，通常是有几天吃的没记全。继续记，会自己修正。')+'</div>';
+  }
+  box.innerHTML=rows;
+}
 
 /* ========== 环 ========== */
 function drawRing(key,val,max,colorVar){
@@ -1149,6 +1350,90 @@ function renderPlan(){
   });
 }
 
+/* ========== 教练可以执行的动作 ========== */
+function dayFor(key){
+  if(!key||!/^\d{4}-\d{2}-\d{2}$/.test(key)) key=TODAY;
+  if(key>TODAY) key=TODAY;                       // 不许记未来
+  if(!state.days[key]) state.days[key]=blankDay(key);
+  if(key===TODAY) state.today=state.days[key];
+  return state.days[key];
+}
+function dayLabel(k){ return k===TODAY?'今天':k.slice(5).replace('-','/'); }
+var num=function(v,def){ var n=Number(v); return isFinite(n)?n:(def||0); };
+
+// 应用一批动作，返回给用户看的中文说明
+async function applyActions(list){
+  if(!Array.isArray(list)||!list.length) return [];
+  var log=[], touched={};
+  for(var i=0;i<list.length;i++){
+    var a=list[i]; if(!a||typeof a!=='object')continue;
+    var op=String(a.op||'');
+    try{
+      if(op==='log_meal'){
+        var d=dayFor(a.date), k=num(a.kcal), p=num(a.protein);
+        if(k<=0)continue;
+        d.kcal+=k; d.protein+=p;
+        d.meals=d.meals||[];
+        d.meals.push({t:Date.now(),kcal:k,protein:p,items:[{name:String(a.name||'记录'),kcal:k,proteinG:p}],via:'coach'});
+        touched[d.date]=1;
+        log.push('🍚 '+dayLabel(d.date)+'：'+(a.name||'一餐')+' +'+Math.round(k)+' kcal / 蛋白 +'+Math.round(p)+' g');
+      }
+      else if(op==='log_water'){
+        var d2=dayFor(a.date), ml=num(a.ml);
+        if(ml<=0)continue;
+        d2.water+=ml; touched[d2.date]=1;
+        log.push('💧 '+dayLabel(d2.date)+'：喝水 +'+ml+' ml');
+      }
+      else if(op==='log_weight'){
+        var d3=dayFor(a.date), kg=num(a.kg);
+        if(kg<25||kg>250)continue;
+        if(String(a.when||'morning')==='evening'){ d3.weightPm=kg; }
+        else { d3.weight=kg; if(state.profile&&d3.date===TODAY){state.profile.weight=kg;await Store.saveProfile(state.profile);} }
+        touched[d3.date]=1;
+        log.push('⚖️ '+dayLabel(d3.date)+'：'+(a.when==='evening'?'晚上':'早上')+' '+kg+' kg');
+      }
+      else if(op==='log_workout'){
+        var d4=dayFor(a.date);
+        var mins=num(a.durationMin,0);
+        var exs=Array.isArray(a.exercises)?a.exercises.map(function(e){
+          return {name:String(e.name||'动作'),sets:num(e.sets),reps:num(e.reps),weightKg:(e.weightKg==null?null:num(e.weightKg))};
+        }):[];
+        d4.workouts=d4.workouts||[];
+        d4.workouts.push({type:String(a.type||'gym'),durationMin:mins,exercises:exs,note:String(a.note||''),via:'coach'});
+        d4.workoutDone=true;
+        if(mins>0) d4.moveMin=(d4.moveMin||0)+mins;
+        touched[d4.date]=1;
+        var where=(a.type==='home'?'居家训练':(a.type==='cardio'?'有氧':'健身房'));
+        log.push('🏋️ '+dayLabel(d4.date)+'：'+where+(mins?' '+mins+' 分钟':'')+
+          (exs.length?('（'+exs.length+' 个动作）'):''));
+      }
+      else if(op==='set_targets'){
+        state.profile=state.profile||{};
+        if(a.kcal)state.profile.customCal=Math.round(num(a.kcal));
+        if(a.protein)state.profile.customPro=Math.round(num(a.protein));
+        await Store.saveProfile(state.profile);
+        log.push('🎯 目标已更新');
+      }
+      else if(op==='set_schedule_note'){
+        state.profile=state.profile||{};
+        state.profile.schedNote=String(a.text||'');
+        await Store.saveProfile(state.profile);
+        log.push('🗓 作息说明已保存');
+      }
+      else if(op==='set_plan'){
+        if(Array.isArray(a.timeline)&&a.timeline.length){
+          state.today.plan={summary:String(a.summary||''),timeline:a.timeline,at:Date.now()};
+          touched[TODAY]=1;
+          log.push('📋 今天的安排已更新');
+        }
+      }
+    }catch(e){ console.warn('action failed',op,e); }
+  }
+  for(var k in touched){ await Store.saveDay(state.days[k]); }
+  if(log.length){ refreshToday(); renderData(); renderTdeeBox(); }
+  return log;
+}
+
 /* ========== 今日安排时间轴 ========== */
 var DAY_S=6,DAY_E=24;
 function hhmmToNum(s){
@@ -1207,8 +1492,9 @@ function scheduleText(){
   var isWork=(s.workdays||[]).indexOf(wd)>=0;
   return {
     isWork:isWork,
-    text:'今天是'+names[wd]+'，'+(isWork?('要上班：'+s.workStart+'–'+s.workEnd):'不上班')+
-      '。'+s.wake+' 起床，'+s.sleep+' 睡觉。'
+    text:'今天是'+names[wd]+'，'+(isWork?('要出门：'+s.workStart+'–'+s.workEnd):'不用出门')+
+      '。'+s.wake+' 起床，'+s.sleep+' 睡觉。'+
+      (p.schedNote?('\n用户补充说明（以这个为准）：'+p.schedNote):'')
   };
 }
 async function genPlan(){
@@ -1572,17 +1858,32 @@ $('btnSaveMove').addEventListener('click',async function(){
 });
 
 /* ========== 体重 ========== */
+var weighWhen='morning';
+$('segWhen').addEventListener('click',function(e){
+  var b=e.target.closest('button');if(!b)return;
+  weighWhen=b.getAttribute('data-v');
+  Array.prototype.forEach.call($('segWhen').children,function(c){c.classList.toggle('on',c===b);});
+  $('wInput').value=(weighWhen==='evening'?state.today.weightPm:state.today.weight)||'';
+});
 $('btnWeight').addEventListener('click',function(){
-  $('wInput').value=state.today.weight||(state.profile?state.profile.weight:'');
+  weighWhen=(new Date().getHours()>=15)?'evening':'morning';
+  Array.prototype.forEach.call($('segWhen').children,function(c){
+    c.classList.toggle('on',c.getAttribute('data-v')===weighWhen);});
+  $('wInput').value=(weighWhen==='evening'?state.today.weightPm:state.today.weight)||
+    (weighWhen==='morning'&&state.profile?state.profile.weight:'')||'';
   openSheet($('sheetWeight'));
 });
 $('btnSaveWeight').addEventListener('click',async function(){
   var v=parseFloat($('wInput').value);
   if(!v||v<25||v>250){say('这个体重看起来不太对，检查一下');return;}
-  var d=state.today;d.weight=v;await Store.saveDay(d);
-  if(state.profile){state.profile.weight=v;await Store.saveProfile(state.profile);}
-  closeSheet();refreshToday();renderData();
-  say('已记录 '+v+' kg — 只看趋势，别看单日');
+  var d=state.today;
+  if(weighWhen==='evening'){ d.weightPm=v; }
+  else { d.weight=v; if(state.profile){state.profile.weight=v;await Store.saveProfile(state.profile);} }
+  await Store.saveDay(d);
+  closeSheet();refreshToday();renderData();renderTdeeBox();
+  say(weighWhen==='evening'
+    ? '晚上 '+v+' kg 已记 — 早晚差主要是水和食物，别当回事'
+    : '早上 '+v+' kg 已记 — 只看趋势，别看单日');
 });
 
 /* ========== 记餐 ========== */
@@ -1694,6 +1995,190 @@ $('btnCoach').addEventListener('click',async function(){
   }finally{b.disabled=false;}
 });
 
+/* ========== 教练对话 ========== */
+var coachTurns=[];
+try{ coachTurns=JSON.parse(localStorage.getItem('bt_chat')||'[]')||[]; }catch(e){ coachTurns=[]; }
+function saveChat(){ try{ localStorage.setItem('bt_chat',JSON.stringify(coachTurns.slice(-40))); }catch(e){} }
+
+function bubble(text,cls,applied,imgUrl){
+  var d=document.createElement('div');
+  d.className='bub '+cls;
+  if(imgUrl){
+    var im=document.createElement('img');im.src=imgUrl;d.appendChild(im);
+  }
+  if(text){
+    var sp=document.createElement('span');sp.textContent=text;d.appendChild(sp);
+  }
+  if(applied&&applied.length){
+    var box=document.createElement('div');box.className='applied';
+    applied.forEach(function(l){var r=document.createElement('div');r.textContent=l;box.appendChild(r);});
+    d.appendChild(box);
+  }
+  $('stream').appendChild(d);
+  $('stream').scrollTop=$('stream').scrollHeight;
+  return d;
+}
+function renderChat(){
+  var s=$('stream'); s.innerHTML='';
+  if(!coachTurns.length){
+    bubble('我在。这里可以做这些事：\n\n· 发图片 —— 拍营养成分表或饭菜照，我算热量。饮料会同时记进喝水和热量\n· 补记录 —— "上周三去健身房，卧推 60kg 4组8个"\n· 算热量 —— "一桶红烧牛肉面加个蛋多少卡"\n· 应付突发 —— "今天想吃火锅怎么办"\n· 重算代谢 —— 攒够 10 天数据后我能算出你真实的每日消耗\n· 改计划 —— "开学了时间不固定"\n\n说完我会直接帮你记进去。','ai');
+    return;
+  }
+  coachTurns.forEach(function(t){
+    if(t.role==='user') bubble(t.content,'me',null,t.imgUrl);
+    else bubble(t.content,'ai',t.applied);
+  });
+}
+
+/* ---- 附带图片 ---- */
+var pendingImg=null, pendingImgUrl=null;
+function clearAttach(){
+  pendingImg=null;
+  if(pendingImgUrl){URL.revokeObjectURL(pendingImgUrl);pendingImgUrl=null;}
+  $('attachStrip').classList.remove('on');
+  $('coachPhoto').value='';
+}
+$('btnAttach').addEventListener('click',function(){ $('coachPhoto').click(); });
+$('coachPhoto').addEventListener('change',function(e){
+  var f=e.target.files&&e.target.files[0];
+  if(!f)return;
+  if(pendingImgUrl)URL.revokeObjectURL(pendingImgUrl);
+  pendingImg=f; pendingImgUrl=URL.createObjectURL(f);
+  $('attachThumb').src=pendingImgUrl;
+  $('attachStrip').classList.add('on');
+  $('coachInput').focus();
+});
+$('attachClear').addEventListener('click',clearAttach);
+
+function contextBlock(){
+  var t=targets(), p=state.profile||{}, ad=adaptiveTDEE();
+  var L=[];
+  L.push('【用户档案】'+(p.sex==='f'?'女':'男')+' '+(p.age||'?')+'岁 '+(p.height||'?')+'cm，当前 '+(p.weight||'?')+'kg，目标 '+(p.target||'?')+'kg，'+
+    '目标类型：'+({cut:'先减脂不掉肌肉',recomp:'减脂增肌同时',bulk:'增肌',shape:'塑形'}[p.goal]||'减脂')+'，'+
+    '基础：'+({beginner:'基本不运动的新手',returning:'以前练过现在恢复',active:'一直在练'}[p.level]||'新手')+'，'+
+    '计划每周练 '+(p.days||5)+' 天。家里只有瑜伽垫；去健身房是不定期的，他会主动告诉你。');
+  if(p.schedNote) L.push('【作息说明】'+p.schedNote);
+  var sc=(p.schedule||{});
+  if(sc.workStart) L.push('【常规作息】上班/上课日 '+sc.workStart+'–'+sc.workEnd+'，'+sc.wake+' 起，'+sc.sleep+' 睡；'+
+    '这几天要出门：'+((sc.workdays||[]).map(function(d){return ['日','一','二','三','四','五','六'][d];}).join('')||'无'));
+  L.push('【当前每日目标】热量 '+t.cal+' kcal，蛋白质 '+t.protein+' g，喝水 '+t.water+' ml，运动 '+t.move+' 分钟。'+
+    '公式基础代谢 '+t.bmr+' kcal（任何情况都不能建议吃低于这个数）。');
+  if(ad&&ad.usable) L.push('【实测代谢】用最近 '+ad.days+' 天的体重趋势和摄入反推，真实每日消耗约 '+ad.tdee+
+    ' kcal（平均吃 '+ad.avgKcal+'，体重 '+(ad.perWeek>=0?'+':'')+ad.perWeek.toFixed(2)+' kg/周）。目标热量已按这个值调整。');
+  else if(ad) L.push('【实测代谢】数据还不够（'+ad.days+'/10 天同时有早晨体重和摄入记录），暂时用公式值。');
+
+  var keys=Object.keys(state.days).sort().slice(-14);
+  var lines=keys.map(function(k){
+    var d=state.days[k];
+    var parts=[];
+    if(d.kcal>0)parts.push('吃 '+Math.round(d.kcal)+'kcal/蛋白 '+Math.round(d.protein)+'g');
+    if(d.water>0)parts.push('水 '+d.water+'ml');
+    if(d.weight)parts.push('晨重 '+d.weight+'kg');
+    if(d.weightPm)parts.push('晚重 '+d.weightPm+'kg');
+    if(d.workoutDone){
+      var w=(d.workouts||[]).map(function(x){
+        var e=(x.exercises||[]).map(function(y){
+          return y.name+' '+(y.weightKg!=null&&y.weightKg>0?y.weightKg+'kg×':'')+(y.sets||'?')+'组×'+(y.reps||'?')+'个';
+        }).join('，');
+        return (x.type==='gym'?'健身房':(x.type==='cardio'?'有氧':'居家'))+(x.durationMin?' '+x.durationMin+'分钟':'')+(e?'：'+e:'');
+      }).join('；');
+      parts.push('训练：'+(w||(d.moveMin+'分钟')));
+    }
+    return k+(k===TODAY?'(今天)':'')+' — '+(parts.length?parts.join('，'):'无记录');
+  });
+  L.push('【最近 14 天】\n'+(lines.length?lines.join('\n'):'（还没有记录）'));
+  L.push('【今天日期】'+TODAY);
+  return L.join('\n');
+}
+
+var COACH_RULES =
+'你是用户的私人健身教练兼营养顾问。说话具体、温暖、不说教，像一个认识他很久的教练。用中文。\n\n'+
+'你能直接操作他的记录。回复必须是一个 JSON 对象：\n'+
+'{"reply":"你要对他说的话","actions":[...]}\n\n'+
+'actions 里可以放这些动作（不需要就给空数组）：\n'+
+'{"op":"log_meal","date":"YYYY-MM-DD","name":"红烧牛肉面+鸡蛋","kcal":620,"protein":22}\n'+
+'{"op":"log_water","date":"YYYY-MM-DD","ml":500}\n'+
+'{"op":"log_weight","date":"YYYY-MM-DD","kg":78.4,"when":"morning"}   // when: morning 或 evening\n'+
+'{"op":"log_workout","date":"YYYY-MM-DD","type":"gym","durationMin":60,"note":"",\n'+
+'  "exercises":[{"name":"卧推","sets":4,"reps":8,"weightKg":60},{"name":"深蹲","sets":5,"reps":5,"weightKg":80}]}\n'+
+'   // type: gym 健身房 / home 居家 / cardio 有氧。徒手动作 weightKg 给 null\n'+
+'{"op":"set_schedule_note","text":"开学后周一三五下午有课，晚上8点后才有空"}\n'+
+'{"op":"set_plan","summary":"今天这么排的理由","timeline":[{"kind":"training","startHHmm":"19:00","endHHmm":"19:40","label":"训练"},{"kind":"meal","startHHmm":"12:00","endHHmm":"13:00","label":"午饭"}]}\n'+
+'   // kind 只能是 sleep/work/training/meal，时间必须在 06:00–24:00\n\n'+
+'规则：\n'+
+'1. 用户补记往日数据时，date 填那一天。他说"昨天""上周三"，你根据【今天日期】自己算出准确日期。日期不明就在 reply 里问清楚，先不要写入。\n'+
+'2. 他说吃了什么、想吃什么，你估算热量和蛋白质并给出 log_meal。估算说明按常见分量，reply 里说清你是怎么估的。\n'+
+'3. 他问"能不能吃"某个东西（泡面、火锅、奶茶），不要说教。告诉他这东西大概多少热量、今天还剩多少额度、怎么吃损失最小（比如泡面别喝汤、配个鸡蛋和蔬菜补蛋白）。如果他已经吃了就记上。\n'+
+'3b. 【喝的东西要记两笔】任何液体——饮料、牛奶、咖啡、奶茶、汤、蛋白粉——都同时给出两个动作：\n'+
+'    log_water（体积毫升，液体都算补水）和 log_meal（热量和蛋白质）。\n'+
+'    纯水、无糖茶、黑咖啡只给 log_water，热量为 0 就不用 log_meal。\n'+
+'    例：295ml 可乐 → [{"op":"log_water","ml":295},{"op":"log_meal","name":"可乐 295ml","kcal":124,"protein":0}]\n'+
+'3c. 【看营养成分表】图里是营养标签时，注意标签上的"每 100ml/每份"和实际喝的量不是一回事，'+
+'    按用户说的实际毫升数换算。算完在 reply 里说清你是怎么换算的（例："标签每 100ml 42 kcal，你喝了 295ml，就是 124 kcal"）。\n'+
+'    看不清标签或分量不确定，就在 reply 里问，先不要写入。\n'+
+'4. 他报健身房训练，务必把每个动作的组数、次数、重量都放进 exercises，一个都别漏。\n'+
+'5. 时间安排变了（开学、加班、出差），用 set_schedule_note 记下来，需要的话再用 set_plan 排今天。\n'+
+'6. 绝不建议低于他基础代谢的摄入；不给医疗诊断；他说哪里疼就建议休息并就医。\n'+
+'7. reply 写人话，不要列 JSON、不要复述动作参数——动作会自动显示给他看。控制在 2–5 句。\n\n'+
+'只输出那个 JSON 对象，前后不要任何其他文字。';
+
+var coachBusy=false;
+async function sendCoach(text){
+  text=(text||'').trim();
+  var img=pendingImg, imgUrl=pendingImgUrl;
+  if((!text&&!img)||coachBusy)return;
+  if(!GEMINI.getKey()){ bubble('还没填 Gemini API key。去「我的」页面最下面填一次就能用了。','err'); return; }
+  coachBusy=true; $('coachSend').disabled=true;
+  $('coachInput').value=''; $('coachInput').style.height='44px';
+  if(img){ pendingImg=null; pendingImgUrl=null; $('attachStrip').classList.remove('on'); $('coachPhoto').value=''; }
+  var shown=text||(img?'（看图）':'');
+  // 图片不存进 localStorage（会撑爆额度），只在本次会话里显示
+  coachTurns.push({role:'user',content:(img?'[发了一张图片] ':'')+shown,imgUrl:imgUrl}); saveChat();
+  bubble(shown,'me',null,imgUrl);
+  var wait=bubble('','ai');
+  wait.className='bub ai typing';
+  wait.innerHTML='<span></span><span></span><span></span>';
+  try{
+    var hist=coachTurns.slice(-10).map(function(t){
+      return (t.role==='user'?'用户：':'教练：')+t.content;
+    }).join('\n');
+    var prompt=COACH_RULES+'\n\n'+contextBlock()+'\n\n【对话记录】\n'+hist+
+      (img?'\n\n【本次附带了一张图片】看图回答。如果是食品或饮料的营养成分表，按标签上的数值和用户说的分量精确计算；如果是食物照片，按常见分量估算。':'')+
+      '\n\n现在请输出 JSON。';
+    var data=await geminiCall(prompt,img||null,true);
+    var reply=(data&&data.reply)?String(data.reply):'好的。';
+    var applied=await applyActions(data&&data.actions);
+    wait.remove();
+    bubble(reply,'ai',applied);
+    coachTurns.push({role:'assistant',content:reply,applied:applied}); saveChat();
+  }catch(err){
+    wait.remove();
+    bubble(geminiErrText(err),'err');
+    coachTurns.pop(); saveChat();
+    if(img){ // 失败了把图片还给用户，不用重新选
+      pendingImg=img; pendingImgUrl=imgUrl;
+      $('attachThumb').src=imgUrl; $('attachStrip').classList.add('on');
+    }
+  }finally{ coachBusy=false; $('coachSend').disabled=false; }
+}
+$('coachSend').addEventListener('click',function(){ sendCoach($('coachInput').value); });
+$('coachInput').addEventListener('keydown',function(e){
+  if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); sendCoach(this.value); }
+});
+$('coachInput').addEventListener('input',function(){
+  this.style.height='44px'; this.style.height=Math.min(120,this.scrollHeight)+'px';
+});
+$('coachChips').addEventListener('click',function(e){
+  var c=e.target.closest('.chip'); if(!c)return;
+  $('coachInput').value=c.getAttribute('data-say');
+  $('coachInput').focus();
+});
+$('btnClearChat').addEventListener('click',function(){
+  if(!coachTurns.length)return;
+  coachTurns=[]; saveChat(); renderChat();
+  say('对话已清空（记录的数据不受影响）');
+});
+
 /* ========== 数据页 ========== */
 function sortedDays(){
   return Object.keys(state.days).sort().map(function(k){return state.days[k];});
@@ -1714,6 +2199,7 @@ function renderData(){
   var proOK=all.filter(function(d){return d.protein>=t.protein;}).length;
   var waterOK=all.filter(function(d){return d.water>=t.water;}).length;
   var full=all.filter(function(d){return dayLevel(d)===3;}).length;
+  renderGym(all);
   var rows=[
     ['有记录的天数',withRec.length+' 天',withRec.length>0],
     ['训练完成',trained+' 天',trained>0],
@@ -1725,6 +2211,31 @@ function renderData(){
   rows.forEach(function(r){
     var e=document.createElement('div');e.className='status-row';
     e.innerHTML='<span class="dot '+(r[2]?'ok':'')+'"></span><span>'+r[0]+'</span><span class="rt">'+r[1]+'</span>';
+    host.appendChild(e);
+  });
+}
+function renderGym(all){
+  var host=$('gymList'); if(!host)return;
+  var recs=[];
+  all.slice().reverse().forEach(function(d){
+    (d.workouts||[]).forEach(function(w){ recs.push({date:d.date,w:w}); });
+  });
+  if(!recs.length){
+    host.innerHTML='<div class="empty">还没有详细的训练记录。<br>去健身房练完，在「教练」页面告诉它——<br>比如"卧推 60kg 做了 4 组每组 8 个"，它会帮你记下来。</div>';
+    return;
+  }
+  host.innerHTML='';
+  recs.slice(0,20).forEach(function(r){
+    var w=r.w;
+    var where=(w.type==='gym'?'健身房':(w.type==='cardio'?'有氧':'居家训练'));
+    var e=document.createElement('div'); e.className='gym';
+    var rows=(w.exercises||[]).map(function(x){
+      var load=(x.weightKg!=null&&x.weightKg>0)?(x.weightKg+' kg · '):'';
+      return '<div class="gym-e"><span>'+x.name+'</span><span class="s">'+load+(x.sets||'?')+' × '+(x.reps||'?')+'</span></div>';
+    }).join('');
+    e.innerHTML='<div class="gym-h"><span>'+where+(w.durationMin?' · '+w.durationMin+' 分钟':'')+
+      '</span><span class="d">'+r.date.slice(5).replace('-','/')+'</span></div>'+
+      (rows||'<div class="gym-e"><span>'+(w.note||'无动作明细')+'</span></div>');
     host.appendChild(e);
   });
 }
@@ -1826,17 +2337,22 @@ function fillProfileForm(){
   workdaysSel=Array.isArray(s.workdays)?s.workdays.slice():[1,2,3,4,5];
   $('fWorkStart').value=s.workStart||'09:00';$('fWorkEnd').value=s.workEnd||'18:00';
   $('fWake').value=s.wake||'07:00';$('fSleep').value=s.sleep||'23:30';
+  $('fSchedNote').value=p.schedNote||'';
   paintWorkdays();
 }
 function renderTargets(){
-  var t=computeTargets(state.profile);
-  if(!t){$('calcDetail').textContent='填完上面的数据点保存，就会算出你的每日目标。';return;}
+  if(!state.profile){$('calcDetail').textContent='填完上面的数据点保存，就会算出你的每日目标。';return;}
+  var t=targets();                       // 有实测代谢就用实测的
+  var f=computeTargets(state.profile);
+  if(!f){$('calcDetail').textContent='填完上面的数据点保存，就会算出你的每日目标。';return;}
   $('tgCal').innerHTML=t.cal+'<small> kcal</small>';
   $('tgPro').innerHTML=t.protein+'<small> g</small>';
   $('tgWater').innerHTML=t.water+'<small> ml</small>';
   $('tgMove').innerHTML=t.move+'<small> 分钟</small>';
-  $('calcDetail').textContent='基础代谢 '+t.bmr+' kcal · 每日总消耗 '+t.tdee+' kcal · 缺口约 '+
-    Math.round(t.tdee-t.cal)+' kcal/天，理论每周掉 '+t.perWeek.toFixed(2)+' kg。';
+  var perWeek=(t.tdee-t.cal)*7/7700;
+  $('calcDetail').textContent='基础代谢 '+t.bmr+' kcal · 每日总消耗 '+t.tdee+' kcal'+
+    (t.adaptive?'（实测值）':'（公式估算）')+' · 缺口约 '+Math.round(t.tdee-t.cal)+
+    ' kcal/天，理论每周掉 '+perWeek.toFixed(2)+' kg。'+(t.custom?' 目标已被你和教练手动调整过。':'');
   var box=$('safetyBox');
   if(t.notes.length){box.style.display='';$('safetyText').textContent=t.notes.join(' ');}
   else box.style.display='none';
@@ -1848,6 +2364,9 @@ $('btnSaveProfile').addEventListener('click',async function(){
     target:parseFloat($('fTarget').value)||70,days:parseInt($('fDays').value,10)||5,
     goal:$('fGoal').value,level:$('fLevel').value,
     startDate:(state.profile&&state.profile.startDate)||TODAY,
+    schedNote:$('fSchedNote').value.trim(),
+    customCal:(state.profile&&state.profile.customCal)||null,
+    customPro:(state.profile&&state.profile.customPro)||null,
     schedule:{
       workdays:workdaysSel.slice(),
       workStart:$('fWorkStart').value||'09:00',workEnd:$('fWorkEnd').value||'18:00',
@@ -1856,7 +2375,7 @@ $('btnSaveProfile').addEventListener('click',async function(){
   };
   if(p.age<14||p.age>90||p.height<130||p.height>220||p.weight<30||p.weight>250){say('有个数字看起来不太对，检查一下');return;}
   await Store.saveProfile(p);
-  renderTargets();refreshToday();renderData();
+  renderTargets();refreshToday();renderData();renderTdeeBox();
   say('已保存 · 目标已重新计算');
 });
 function renderCaps(){
@@ -1922,7 +2441,8 @@ document.querySelectorAll('.tab').forEach(function(tab){
     document.querySelectorAll('.page').forEach(function(pg){pg.classList.toggle('on',pg.id==='page-'+p);});
     window.scrollTo(0,0);
     if(p==='data')renderData();
-    if(p==='me'){fillProfileForm();renderTargets();renderCaps();fillKeyForm();}
+    if(p==='coach'){renderChat();setTimeout(function(){$('stream').scrollTop=$('stream').scrollHeight;},30);}
+    if(p==='me'){fillProfileForm();renderTargets();renderCaps();fillKeyForm();renderTdeeBox();}
   });
 });
 
