@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Street Spray</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=JetBrains+Mono:wght@400;600&family=Permanent+Marker&family=Bungee&family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
+<style>
+  /* ---------- Tokens: light = concrete wall, dark = night asphalt ---------- */
+  :root {
+    --ground: #dfe0dc;      /* cool concrete grey */
+    --panel: #d2d4cf;
+    --ink: #151619;
+    --ink-2: #4a4d52;
+    --rule: #b9bcb6;
+    --spray: #e0119f;       /* single accent: spray pink */
+    --code-bg: #16171a;
+    --code-ink: #e6e7e3;
+    --tag-bg: #151619;
+    --tag-ink: #dfe0dc;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #141518; --panel: #1d1f23; --ink: #ecede8; --ink-2: #a2a59f;
+      --rule: #32353a; --spray: #ff4fc4; --code-bg: #0c0d0f; --code-ink: #e6e7e3;
+      --tag-bg: #ecede8; --tag-ink: #141518;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #141518; --panel: #1d1f23; --ink: #ecede8; --ink-2: #a2a59f;
+    --rule: #32353a; --spray: #ff4fc4; --code-bg: #0c0d0f; --code-ink: #e6e7e3;
+    --tag-bg: #ecede8; --tag-ink: #141518;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font: 400 16px/1.75 "Archivo", system-ui, -apple-system, "Segoe UI", sans-serif;
+    padding-inline: clamp(16px, 4vw, 56px);
+    padding-block: 0 80px;
+  }
+  .wrap { max-width: 1160px; margin: 0 auto; }
+
+  /* ---------- Typography ---------- */
+  .display {
+    font-family: "Archivo", "Noto Sans SC", sans-serif;
+    font-stretch: 125%; font-weight: 900;
+    letter-spacing: -0.01em; line-height: .92;
+    text-wrap: balance;
+  }
+  .label {
+    font: 600 11.5px/1.4 "JetBrains Mono", ui-monospace, monospace;
+    letter-spacing: .12em; text-transform: uppercase; color: var(--ink-2);
+  }
+  h2 {
+    font: 800 clamp(26px, 3.2vw, 36px)/1.1 "Archivo", sans-serif; font-stretch: 112%; letter-spacing: -0.01em;
+    margin: 0; text-wrap: balance;
+  }
+  h3 { font: 700 18px/1.35 "Archivo", sans-serif; margin: 0; }
+  p { margin: 0; }
+  .prose { max-width: 36em; display: grid; gap: 1em; color: var(--ink); }
+  .prose .muted { color: var(--ink-2); }
+  em.hl { font-style: normal; background: linear-gradient(transparent 62%, color-mix(in srgb, var(--spray) 32%, transparent) 0); }
+  code.inline { font: 500 .88em "JetBrains Mono", monospace; background: var(--panel); padding: .1em .4em; border-radius: 3px; }
+
+  /* ---------- Top bar ---------- */
+  .topbar {
+    display: flex; justify-content: space-between; align-items: center; gap: 16px;
+    padding-block: 22px; border-bottom: 1px solid var(--rule);
+  }
+  .topbar a { color: inherit; text-decoration: none; }
+  .topbar a:hover, .topbar a:focus-visible { color: var(--spray); }
+
+  /* ---------- Hero ---------- */
+  .hero {
+    display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    gap: clamp(28px, 5vw, 72px); align-items: end;
+    padding-block: clamp(36px, 6vw, 72px) 48px;
+  }
+  .hero h1 { font-size: clamp(56px, 10.5vw, 148px); margin: 14px 0 0; }
+  .hero h1 .tag {
+    display: block; font-family: "Permanent Marker", cursive; font-stretch: 100%;
+    font-weight: 400; color: var(--spray); font-size: .42em; letter-spacing: 0;
+    transform: rotate(-4deg); transform-origin: left; margin: .15em 0 0 .08em;
+  }
+  .hero .sub { font-size: clamp(18px, 2vw, 21px); font-weight: 500; margin-top: 28px; max-width: 24em; }
+  .meta {
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px 28px; margin-top: 36px; padding-top: 22px; border-top: 2px solid var(--ink);
+  }
+  .meta dd { margin: 4px 0 0; font-size: 14.5px; font-weight: 500; }
+  .meta dt { margin: 0; }
+
+  .reel { position: relative; }
+  .reel video {
+    display: block; width: 100%; max-width: 100%; aspect-ratio: 720 / 854; object-fit: cover;
+    background: #0b0b10; border-radius: 6px;
+  }
+  .reel figcaption { margin-top: 10px; display: flex; justify-content: space-between; gap: 12px; }
+  .reel .sticker {
+    position: absolute; top: -14px; right: -10px; z-index: 2;
+    background: var(--spray); color: #fff; padding: 6px 12px;
+    font: 400 15px/1 "Permanent Marker", cursive; transform: rotate(6deg);
+    box-shadow: 3px 3px 0 var(--ink);
+  }
+
+  /* ---------- Sections ---------- */
+  section.block {
+    display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 24px 48px;
+    padding-block: 56px; border-top: 1px solid var(--rule);
+  }
+  section.block > header { display: grid; gap: 10px; align-content: start; }
+  .body { display: grid; gap: 32px; min-width: 0; }
+
+  /* ---------- Pipeline ---------- */
+  .pipeline { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0; border: 2px solid var(--ink); }
+  .step { padding: 18px 16px 20px; display: grid; gap: 8px; align-content: start; position: relative; }
+  .step + .step { border-left: 2px solid var(--ink); }
+  .step .n { font: 900 13px/1 "Archivo", sans-serif; font-stretch: 125%; color: var(--spray); }
+  .step h3 { font-size: 16px; }
+  .step p { font-size: 13.5px; line-height: 1.6; color: var(--ink-2); }
+  .step .val { font: 500 12px/1.4 "JetBrains Mono", monospace; color: var(--ink); margin-top: 4px; }
+
+  /* ---------- Craft ---------- */
+  .points { display: grid; gap: 40px; }
+  .point { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: 20px 32px; align-items: start; }
+  .point .txt { display: grid; gap: 10px; }
+  .point .txt p { color: var(--ink-2); font-size: 15px; }
+  pre {
+    margin: 0; background: var(--code-bg); color: var(--code-ink);
+    font: 400 12.5px/1.65 "JetBrains Mono", ui-monospace, monospace;
+    padding: 16px 18px; border-radius: 6px; overflow-x: auto;
+  }
+  pre .c { color: #7d8189; }
+  pre .k { color: #ff7ad4; }
+  pre .s { color: #8fe38a; }
+
+  /* ---------- Visual ---------- */
+  .palette { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+  .sw { display: grid; gap: 6px; }
+  .sw i { display: block; aspect-ratio: 1 / 1.15; border-radius: 4px; box-shadow: inset 0 0 0 1px rgba(0,0,0,.12); }
+  .sw span { font: 500 11.5px/1.35 "JetBrains Mono", monospace; color: var(--ink-2); }
+  .sw b { font: 700 12.5px/1.3 "Archivo", sans-serif; color: var(--ink); display: block; }
+  .type-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  .type-card { background: #101114; color: #f2f2ee; border-radius: 4px; padding: 18px 16px; display: grid; gap: 6px; }
+  .type-card .spec { font: 400 34px/1.1 var(--f); }
+  .type-card small { font: 500 11.5px/1.4 "JetBrains Mono", monospace; color: #9a9da3; }
+
+  /* ---------- Gallery ---------- */
+  .gallery { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  .gallery figure { margin: 0; display: grid; gap: 8px; }
+  .gallery img { display: block; width: 100%; max-width: 100%; border-radius: 4px; aspect-ratio: 843 / 1000; object-fit: cover; }
+  .gallery .wide img { aspect-ratio: 3030 / 2033; }
+  .gallery figcaption { font-size: 13.5px; color: var(--ink-2); }
+
+  /* ---------- Reflection ---------- */
+  .two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px; }
+  .list { margin: 12px 0 0; padding: 0; list-style: none; display: grid; gap: 12px; }
+  .list li { padding-left: 18px; position: relative; font-size: 15px; color: var(--ink-2); }
+  .list li::before { content: ""; position: absolute; left: 0; top: .72em; width: 8px; height: 8px; border-radius: 50%; background: var(--spray); }
+  .list li b { color: var(--ink); font-weight: 700; }
+
+  footer.end {
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 16px;
+    padding-top: 28px; border-top: 2px solid var(--ink);
+  }
+  footer.end .display { font-size: clamp(28px, 5vw, 48px); }
+  footer.end a { color: inherit; }
+
+  a:focus-visible { outline: 2px solid var(--spray); outline-offset: 3px; }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 900px) {
+    .hero { grid-template-columns: minmax(0, 1fr); }
+    .reel { max-width: 520px; }
+    section.block { grid-template-columns: minmax(0, 1fr); padding-block: 44px; }
+    .pipeline { grid-template-columns: minmax(0, 1fr); }
+    .step + .step { border-left: 0; border-top: 2px solid var(--ink); }
+    .point { grid-template-columns: minmax(0, 1fr); }
+    .palette { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+  @media (max-width: 560px) {
+    .type-row, .gallery, .two { grid-template-columns: minmax(0, 1fr); }
+    .reel .sticker { right: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="topbar">
+    <span class="label">Portfolio / Experiments</span>
+    <span class="label">Side Experiment · 2026</span>
+  </nav>
+
+  <!-- ================= HERO ================= -->
+  <header class="hero" id="top">
+    <div>
+      <span class="label">Creative Coding / Gesture Interaction</span>
+      <h1 class="display">STREET<br>SPRAY<span class="tag">air graffiti wall</span></h1>
+      <p class="sub">Hold up one index finger and the screen becomes a street wall you can tag in mid-air. A gesture-painting experiment built with nothing but a webcam and a browser.</p>
+      <dl class="meta">
+        <div><dt class="label">Type</dt><dd>Personal experiment · Interactive prototype</dd></div>
+        <div><dt class="label">Date</dt><dd>September 2026</dd></div>
+        <div><dt class="label">Stack</dt><dd>p5.js · MediaPipe Hands · Canvas 2D</dd></div>
+        <div><dt class="label">Role</dt><dd>Concept, interaction, visual design, code</dd></div>
+      </dl>
+    </div>
+    <figure class="reel" style="margin:0">
+      <span class="sticker">LIVE DEMO</span>
+      <video src="assets/demo.mp4" poster="assets/poster.jpg" autoplay muted loop playsinline controls preload="metadata"></video>
+      <figcaption>
+        <span class="label">Screen recording · 42 s</span>
+        <span class="label">Mirrored webcam, bottom</span>
+      </figcaption>
+    </figure>
+  </header>
+
+  <!-- ================= OVERVIEW ================= -->
+  <section class="block">
+    <header><span class="label">Overview</span><h2>The project</h2></header>
+    <div class="body">
+      <div class="prose">
+        <p>Street Spray is a small experiment from everyday life: no controllers, no extra hardware, just a laptop's built-in camera turning the motion of a hand in the air into spray-paint strokes on screen.</p>
+        <p>The system tracks the tip of the index finger in real time and emits paint particles with a randomized spread at that point. The color drifts through a set of neon hues as the hand travels, and every stretch of movement "sprays" out a rotated graffiti word. Each word pops in, holds, fades, and leaves a faint ghost on the wall, so the surface keeps getting denser and more layered the longer you paint.</p>
+        <p class="muted">The whole piece is a single HTML file. Every dependency loads from a CDN, so there is no build step and no server.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= WHY ================= -->
+  <section class="block">
+    <header><span class="label">Motivation</span><h2>Why I made it</h2></header>
+    <div class="body">
+      <div class="prose">
+        <p>Street graffiti is a physical act. The swing of the arm, the distance between can and wall, the pooling and dripping of paint when you pause: the stroke is a record of the movement itself. On screen, drawing usually shrinks down to small nudges of a mouse or trackpad.</p>
+        <p>I wanted to see whether I could <em class="hl">bring that full-body feeling back to the screen with almost no barrier to entry</em>: nothing to wear, nothing to install, just open a page and raise a hand. It was also a small exercise in natural user interfaces, built around one question: without a button, how does someone know when they are painting and when they have stopped?</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= PIPELINE ================= -->
+  <section class="block">
+    <header><span class="label">System</span><h2>From hand to wall</h2></header>
+    <div class="body">
+      <div class="prose muted"><p>Every frame passes through these five stages in order. Detection runs in the MediaPipe callback and rendering runs in the p5.js <code class="inline">draw()</code> loop; the two sides share only a single fingertip coordinate.</p></div>
+      <div class="pipeline">
+        <div class="step"><span class="n">01</span><h3>Capture</h3><p>getUserMedia streams the webcam; the preview is flipped horizontally like a mirror.</p><span class="val">640 × 480 input</span></div>
+        <div class="step"><span class="n">02</span><h3>Detect</h3><p>MediaPipe Hands returns 21 hand landmarks. Landmark 8 becomes the nozzle.</p><span class="val">landmark[8] · index tip</span></div>
+        <div class="step"><span class="n">03</span><h3>Map</h3><p>Flip the x-axis, trim a 10% margin, and stretch to full screen so the hand never has to reach the frame edge.</p><span class="val">margin = 0.10</span></div>
+        <div class="step"><span class="n">04</span><h3>Smooth</h3><p>Exponential smoothing filters detection jitter while keeping the cursor responsive.</p><span class="val">lerp α = 0.45</span></div>
+        <div class="step"><span class="n">05</span><h3>Spray</h3><p>Path interpolation, particles, drips and word animation, composited in layers.</p><span class="val">wall → paint → words → cursor</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= CRAFT ================= -->
+  <section class="block">
+    <header><span class="label">Craft</span><h2>Key decisions</h2></header>
+    <div class="body points">
+
+      <div class="point">
+        <div class="txt">
+          <h3>The gesture is the trigger</h3>
+          <p>The hardest problem in mid-air input is that there is no "pen up". I use hand pose to tell them apart: compare how far the fingertip and the middle knuckle each sit from the wrist. An extended index finger sprays; a fist pauses. The cursor switches between a solid colored ring and a dashed white ring, so the state is always visible.</p>
+          <p>When a hand first enters the frame, the cursor jumps straight to it instead of easing over, so no stray line gets dragged from where the hand last left.</p>
+        </div>
+<pre><span class="c">// Tip clearly farther from the wrist than the knuckle → finger extended</span>
+<span class="k">const</span> dTip = Math.hypot(tip.x - wrist.x, tip.y - wrist.y);
+<span class="k">const</span> dPip = Math.hypot(pip.x - wrist.x, pip.y - wrist.y);
+isSpraying = dTip &gt; dPip * <span class="s">1.15</span>;</pre>
+      </div>
+
+      <div class="point">
+        <div class="txt">
+          <h3>A spray can, not a brush</h3>
+          <p>Each burst has three layers: fine mist scattered on a Gaussian distribution (dense at the center, sparse at the edge), a few large splatters that land outside the nozzle radius, and a very faint base haze that gives the stroke body.</p>
+          <p>Faster movement widens the spray. When the hand holds still, paint keeps building up and is more likely to run down the wall as a drip. These are the physical traits of a real can, reduced to a handful of probability rules.</p>
+        </div>
+<pre><span class="c">// Gaussian radius: dense core, soft falloff</span>
+<span class="k">const</span> rad = abs(randomGaussian(<span class="s">0</span>, r * <span class="s">0.38</span>));
+<span class="c">// 25% chance of a splatter outside the nozzle</span>
+<span class="k">if</span> (random() &lt; <span class="s">0.25</span>) splatter(r * <span class="s">0.9</span>, r * <span class="s">2.2</span>);
+<span class="c">// Drips are 6× likelier when moving slowly</span>
+<span class="k">if</span> (random() &lt; (speed &lt; <span class="s">3</span> ? <span class="s">0.012</span> : <span class="s">0.002</span>)) addDrip();</pre>
+      </div>
+
+      <div class="point">
+        <div class="txt">
+          <h3>No gaps on fast strokes</h3>
+          <p>Camera detection runs at a limited frame rate, so a quick swipe can put two consecutive samples a hundred pixels apart. The renderer fills the gap with a spray point every 6 pixels, keeping the line continuous. Color progress and word emission both advance with distance traveled rather than time, so the more you paint, the more the wall changes.</p>
+        </div>
+<pre><span class="k">const</span> steps = max(<span class="s">1</span>, ceil(d / <span class="s">6</span>));
+<span class="k">for</span> (<span class="k">let</span> s = <span class="s">1</span>; s &lt;= steps; s++) {
+  sprayAt(lerp(a.x, b.x, s / steps),
+          lerp(a.y, b.y, s / steps), d);
+}
+colorT += d * <span class="s">0.0025</span>;   <span class="c">// hue drifts with distance</span></pre>
+      </div>
+
+      <div class="point">
+        <div class="txt">
+          <h3>Words that leave a mark</h3>
+          <p>Every 160 pixels of travel sprays out a word with a random rotation and typeface. Its 1.6-second life has three phases: the first 25% pops in on an overshoot curve, the middle holds, and the last 40% fades while scaling up slightly. When it expires it is written into the paint layer at 70/255 opacity, becoming part of the wall's texture.</p>
+          <p>The word bank mixes English slang with Chinese characters, plus a personal signature, MICHELLE, as the piece's tag.</p>
+        </div>
+<pre><span class="c">// Lifecycle: pop → hold → fade</span>
+<span class="k">if</span> (t &lt; <span class="s">0.25</span>)      s = easeOutBack(t / <span class="s">0.25</span>);
+<span class="k">else if</span> (t &lt; <span class="s">0.6</span>)  s = <span class="s">1</span>;
+<span class="k">else</span>               a = lerp(<span class="s">255</span>, <span class="s">70</span>, k);
+<span class="c">// On expiry, stamp a ghost into the paint layer</span>
+drawGraffitiText(paintLayer, ft, <span class="s">1</span>, <span class="s">70</span>, <span class="k">false</span>);</pre>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ================= VISUAL ================= -->
+  <section class="block">
+    <header><span class="label">Visual language</span><h2>Brick, neon, fresh paint</h2></header>
+    <div class="body">
+      <div class="prose muted"><p>The canvas is a procedurally generated dark brick wall: offset bricks, randomized brightness, fine grain noise and a vignette. Against that ground, saturated neon can actually glow. Words get a heavy black outline, an offset drop shadow and a thin white highlight to suggest the thickness of wet paint.</p></div>
+      <div class="palette">
+        <div class="sw"><i style="background:#39ff14"></i><span><b>Toxic green</b>#39FF14</span></div>
+        <div class="sw"><i style="background:#ff2bd6"></i><span><b>Hot pink</b>#FF2BD6</span></div>
+        <div class="sw"><i style="background:#00e5ff"></i><span><b>Electric cyan</b>#00E5FF</span></div>
+        <div class="sw"><i style="background:#fff200"></i><span><b>Signal yellow</b>#FFF200</span></div>
+        <div class="sw"><i style="background:#ff6b00"></i><span><b>Neon orange</b>#FF6B00</span></div>
+        <div class="sw"><i style="background:#b026ff"></i><span><b>Ultraviolet</b>#B026FF</span></div>
+      </div>
+      <div class="type-row">
+        <div class="type-card" style="--f:'Permanent Marker', cursive"><span class="spec">FRESH</span><small>Permanent Marker · hand-drawn marker</small></div>
+        <div class="type-card" style="--f:'Bungee', 'Archivo', sans-serif"><span class="spec">BOOM</span><small>Bungee · signage block letters</small></div>
+        <div class="type-card" style="--f:'ZCOOL KuaiLe', sans-serif"><span class="spec">街 · 潮 · 燃</span><small>ZCOOL KuaiLe · Chinese display</small></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= OUTPUT ================= -->
+  <section class="block">
+    <header><span class="label">Output</span><h2>Finished walls</h2></header>
+    <div class="body">
+      <div class="gallery">
+        <figure class="wide"><img src="assets/wall-3.jpg" alt="Wide view of the wall mid-session: neon spray trails with MASH, YO!, WILD and MICHELLE, a glowing DOPE popping in on the right" loading="lazy"><figcaption>Mid-session. The glowing word on the right is still animating; the rest have settled into the wall. Fresh drips run down from the trails.</figcaption></figure>
+        <figure class="wide"><img src="assets/wall-4.jpg" alt="Wall with layered words while the webcam shows a raised index finger" loading="lazy"><figcaption>Hand lowered, prompt returns: "Please extend your index finger to start spraying."</figcaption></figure>
+        <figure><img src="assets/wall-1.jpg" alt="Densely layered wall with neon strokes and overlapping FLOW, ZAP and MICHELLE" loading="lazy"><figcaption>About 40 seconds of continuous spraying. Faded ghosts build up underneath the live words.</figcaption></figure>
+        <figure><img src="assets/wall-2.jpg" alt="Nearly full wall with English and Chinese words interwoven with spray lines" loading="lazy"><figcaption>Keep going and the wall fills edge to edge. Press S to save it as a PNG.</figcaption></figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= REFLECTION ================= -->
+  <section class="block">
+    <header><span class="label">Reflection</span><h2>What I learned, what's next</h2></header>
+    <div class="body two">
+      <div>
+        <h3>Takeaways</h3>
+        <ul class="list">
+          <li><b>Feedback beats precision.</b> Detection is never perfect, but when the cursor state is clear, people naturally correct their own gestures.</li>
+          <li><b>Physicality comes from randomness.</b> A few probability rules (Gaussian spread, splatter, drips) are more convincing as "spray paint" than a detailed simulation.</li>
+          <li><b>Drive change with distance.</b> Advancing color and words by distance traveled instead of time lets the rhythm of the image follow the hand.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Next experiments</h3>
+        <ul class="list">
+          <li><b>Two-handed control:</b> one hand sprays while the other switches color or nozzle width by gesture.</li>
+          <li><b>Depth as distance:</b> use landmark spread to estimate how close the hand is, controlling spray width and density like a real can.</li>
+          <li><b>Stencils:</b> placeable cut-out stencils for hard, crisp edges.</li>
+          <li><b>Shared walls:</b> one wall synced live across several devices.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <footer class="end">
+    <span class="display">KEEP SPRAYING.</span>
+  </footer>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Virtual Street Graffiti · Hand Spray</title>
+
+<!-- ============ 字体：涂鸦风英文 + 粗体中文 ============ -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Bungee&family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
+
+<!-- ============ CDN 依赖 ============ -->
+<!-- p5.js：负责画布绘制 -->
+<script src="https://cdn.jsdelivr.net/npm/p5@1.9.4/lib/p5.min.js"></script>
+<!-- MediaPipe Hands：手部 21 个关键点检测 -->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+<!-- MediaPipe Camera Utils：简化摄像头帧的逐帧送检 -->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+
+<style>
+  /* ---------- 全局：深色、无滚动条 ---------- */
+  html, body {
+    margin: 0; padding: 0; overflow: hidden;
+    background: #0b0b10;
+    font-family: "Bungee", "ZCOOL KuaiLe", sans-serif;
+    color: #fff;
+  }
+  canvas { display: block; }
+
+  /* ---------- 顶部标题 ---------- */
+  #title {
+    position: fixed; top: 18px; left: 24px; z-index: 10;
+    font-family: "Permanent Marker", cursive;
+    font-size: 28px; letter-spacing: 2px;
+    color: #39ff14;
+    text-shadow: 0 0 8px #39ff14, 3px 3px 0 #ff2bd6;
+    transform: rotate(-3deg);
+    pointer-events: none;
+  }
+
+  /* ---------- 状态提示 ---------- */
+  #status {
+    position: fixed; top: 22px; left: 50%; z-index: 10;
+    transform: translateX(-50%);
+    padding: 10px 22px;
+    border: 2px solid #fff; border-radius: 999px;
+    background: rgba(0,0,0,.55);
+    backdrop-filter: blur(6px);
+    font-family: "ZCOOL KuaiLe", sans-serif; font-size: 18px;
+    transition: opacity .4s, border-color .4s, color .4s;
+    pointer-events: none;
+  }
+  #status.active { border-color: #39ff14; color: #39ff14; }
+  #status.hidden { opacity: 0; }
+
+  /* ---------- 底部摄像头预览（镜像） ---------- */
+  #videoWrap {
+    position: fixed; bottom: 18px; left: 50%; z-index: 10;
+    transform: translateX(-50%);
+    width: 240px; height: 180px;
+    border: 3px solid #ff2bd6; border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 0 18px rgba(255,43,214,.6);
+    background: #000;
+  }
+  #video {
+    width: 100%; height: 100%; object-fit: cover;
+    transform: scaleX(-1); /* 镜像，像照镜子一样更直观 */
+  }
+
+  /* ---------- 右下角快捷键说明 ---------- */
+  #help {
+    position: fixed; bottom: 22px; right: 24px; z-index: 10;
+    font-family: "ZCOOL KuaiLe", sans-serif; font-size: 14px;
+    line-height: 1.7; text-align: right; opacity: .7;
+    pointer-events: none;
+  }
+  #help b { color: #00e5ff; font-family: "Bungee"; }
+</style>
+</head>
+
+<body>
+  <div id="title">STREET SPRAY</div>
+  <div id="status">Loading gesture model…</div>
+  <div id="videoWrap"><video id="video" playsinline muted></video></div>
+  <div id="help">
+    Reach out<b>Index Finger</b>Spray · Fist Pause<br>
+    <b>C</b> Clear the Wall · <b>S</b> Save Work
+  </div>
+
+<script>
+/* =====================================================================
+ *  一、全局配置
+ * ===================================================================== */
+
+// 街头霓虹色板：荧光绿、亮粉、电光蓝、明黄、霓虹橙、紫
+const PALETTE = ['#39ff14', '#ff2bd6', '#00e5ff', '#fff200', '#ff6b00', '#b026ff'];
+
+// 喷出的涂鸦短语（英文 + 汉字混搭）
+const PHRASES = ['VIBE', 'MASH', 'HCI', 'YO!', 'FRESH', 'WILD', 'BOOM', 'DOPE',
+                 'FLOW', 'ZAP', 'MICHELLE', '燃', '潮', '街', '炸', '飒', '野', '嘻哈'];
+
+const SPRAY_RADIUS    = 26;   // 喷枪基础半径（像素）
+const TEXT_EVERY_DIST = 160;  // 每移动多少像素喷出一个短语
+const COLOR_SPEED     = 0.0025; // 颜色随移动距离渐变的速度
+
+/* =====================================================================
+ *  二、运行时状态
+ * ===================================================================== */
+
+let wallLayer;    // 背景墙（砖墙纹理），只绘制一次
+let paintLayer;   // 油漆层：喷上去的颜料永久保留在这里
+
+let finger = { x: 0, y: 0 };        // 平滑后的指尖坐标（画布坐标系）
+let rawFinger = null;               // MediaPipe 给出的原始指尖坐标
+let lastFinger = null;              // 上一帧指尖坐标，用于插值补点
+let handVisible = false;            // 当前是否检测到手
+let isSpraying = false;             // 食指是否伸直（伸直才喷）
+
+let colorT = 0;                     // 颜色渐变进度
+let distSinceText = 0;              // 距离上次喷字移动了多少
+let floatingTexts = [];             // 正在播放动画的文字
+let drips = [];                     // 正在往下流的油漆滴
+
+const statusEl = document.getElementById('status');
+const videoEl  = document.getElementById('video');
+
+/* =====================================================================
+ *  三、p5.js 生命周期
+ * ===================================================================== */
+
+function setup() {
+  createCanvas(windowWidth, windowHeight);
+  pixelDensity(1);           // 固定像素密度，保证高分屏下的性能
+  buildLayers();
+  finger.x = width / 2;
+  finger.y = height / 2;
+  initHands();               // 启动摄像头 + 手势识别
+}
+
+function draw() {
+  // 1) 平滑指尖坐标：用 lerp 过滤 MediaPipe 的抖动
+  if (rawFinger) {
+    finger.x = lerp(finger.x, rawFinger.x, 0.45);
+    finger.y = lerp(finger.y, rawFinger.y, 0.45);
+  }
+
+  // 2) 喷漆逻辑
+  if (handVisible && isSpraying) {
+    sprayAlongPath();
+  } else {
+    lastFinger = null;       // 抬笔：下次重新开始，不和旧位置连线
+  }
+
+  // 3) 更新流淌的油漆滴（直接画进油漆层）
+  updateDrips();
+
+  // 4) 合成画面：墙 → 油漆 → 动画文字 → 光标
+  image(wallLayer, 0, 0);
+  image(paintLayer, 0, 0);
+  updateAndDrawTexts();
+  drawCursor();
+}
+
+function windowResized() {
+  // 窗口变化时保留已有涂鸦：先拷贝旧油漆层，再重建
+  const old = paintLayer;
+  resizeCanvas(windowWidth, windowHeight);
+  buildLayers();
+  paintLayer.image(old, 0, 0);
+}
+
+/* =====================================================================
+ *  四、图层构建：深色砖墙
+ * ===================================================================== */
+
+function buildLayers() {
+  // ---- 墙面层 ----
+  wallLayer = createGraphics(width, height);
+  wallLayer.background(16, 16, 22);
+  wallLayer.noStroke();
+
+  // 砖块：错位排列，每块亮度随机，营造真实墙面
+  const bw = 90, bh = 38;
+  for (let row = 0; row * bh < height + bh; row++) {
+    const offset = (row % 2) * bw / 2;
+    for (let x = -bw; x < width + bw; x += bw) {
+      const g = random(20, 32);
+      wallLayer.fill(g, g, g + 6);
+      wallLayer.rect(x + offset + 2, row * bh + 2, bw - 4, bh - 4, 3);
+    }
+  }
+  // 细小颗粒噪点，增加粗糙质感
+  for (let i = 0; i < width * height / 60; i++) {
+    wallLayer.fill(255, random(3, 10));
+    wallLayer.rect(random(width), random(height), 1, 1);
+  }
+  // 暗角：四周压暗，突出中央
+  const ctx = wallLayer.drawingContext;
+  const grad = ctx.createRadialGradient(width / 2, height / 2, min(width, height) * 0.2,
+                                        width / 2, height / 2, max(width, height) * 0.75);
+  grad.addColorStop(0, 'rgba(0,0,0,0)');
+  grad.addColorStop(1, 'rgba(0,0,0,0.75)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, width, height);
+
+  // ---- 油漆层（透明） ----
+  paintLayer = createGraphics(width, height);
+  paintLayer.clear();
+}
+
+/* =====================================================================
+ *  五、颜色：沿移动距离在霓虹色之间平滑渐变
+ * ===================================================================== */
+
+function currentColor() {
+  const n = PALETTE.length;
+  const i = floor(colorT) % n;
+  const c1 = color(PALETTE[i]);
+  const c2 = color(PALETTE[(i + 1) % n]);
+  return lerpColor(c1, c2, colorT % 1);   // 两色之间线性插值
+}
+
+/* =====================================================================
+ *  六、喷漆核心：插值补点 + 高斯扩散粒子
+ * ===================================================================== */
+
+function sprayAlongPath() {
+  if (!lastFinger) lastFinger = { x: finger.x, y: finger.y };
+
+  const d = dist(lastFinger.x, lastFinger.y, finger.x, finger.y);
+
+  // 移动很快时两帧之间距离很大，按步长插值补点，避免喷出"断点"
+  const steps = max(1, ceil(d / 6));
+  for (let s = 1; s <= steps; s++) {
+    const t = s / steps;
+    const x = lerp(lastFinger.x, finger.x, t);
+    const y = lerp(lastFinger.y, finger.y, t);
+    sprayAt(x, y, d);
+  }
+
+  // 静止时也少量喷洒，让颜料慢慢积累变浓（真实喷罐的感觉）
+  if (d < 1) sprayAt(finger.x, finger.y, 0);
+
+  // 颜色随移动距离渐变
+  colorT += d * COLOR_SPEED;
+
+  // 累计距离达到阈值就喷出一个短语
+  distSinceText += d;
+  if (distSinceText > TEXT_EVERY_DIST) {
+    distSinceText = 0;
+    spawnText(finger.x, finger.y);
+  }
+
+  lastFinger = { x: finger.x, y: finger.y };
+}
+
+/** 在 (x, y) 处喷一小团颜料 */
+function sprayAt(x, y, speed) {
+  const c = currentColor();
+  const pg = paintLayer;
+  pg.noStroke();
+
+  // 速度越快，喷枪越"散"（半径越大），但每处颜料越薄
+  const r = SPRAY_RADIUS + min(speed, 40) * 0.25;
+
+  // ① 核心雾化粒子：高斯分布，中心密、边缘疏
+  const count = 22;
+  for (let i = 0; i < count; i++) {
+    const ang = random(TWO_PI);
+    const rad = abs(randomGaussian(0, r * 0.38));
+    const px = x + cos(ang) * rad;
+    const py = y + sin(ang) * rad;
+    const size = random(1, 3.2);
+    pg.fill(red(c), green(c), blue(c), random(40, 110));
+    pg.circle(px, py, size);
+  }
+
+  // ② 边缘飞溅：少量大颗粒落在喷枪范围外
+  if (random() < 0.25) {
+    const ang = random(TWO_PI);
+    const rad = random(r * 0.9, r * 2.2);
+    pg.fill(red(c), green(c), blue(c), random(120, 220));
+    pg.circle(x + cos(ang) * rad, y + sin(ang) * rad, random(2, 5));
+  }
+
+  // ③ 中心柔和雾气：让线条更饱满
+  pg.fill(red(c), green(c), blue(c), 10);
+  pg.circle(x, y, r * 1.2);
+
+  // ④ 偶尔产生流淌的油漆滴（在手停留或慢速时更容易出现）
+  if (random() < (speed < 3 ? 0.012 : 0.002)) {
+    drips.push({
+      x: x + random(-r * 0.3, r * 0.3),
+      y: y + random(0, r * 0.3),
+      len: 0,
+      maxLen: random(40, 160),
+      w: random(2, 4.5),
+      c: c
+    });
+  }
+}
+
+/** 油漆滴：每帧向下延伸，速度逐渐变慢，最后停止 */
+function updateDrips() {
+  const pg = paintLayer;
+  pg.noStroke();
+  for (let i = drips.length - 1; i >= 0; i--) {
+    const dp = drips[i];
+    const step = map(dp.len, 0, dp.maxLen, 1.6, 0.2); // 越往下越慢
+    dp.len += step;
+    dp.w *= 0.997;                                     // 越往下越细
+    pg.fill(red(dp.c), green(dp.c), blue(dp.c), 200);
+    pg.circle(dp.x, dp.y + dp.len, dp.w);
+    if (dp.len >= dp.maxLen) {
+      pg.circle(dp.x, dp.y + dp.len, dp.w * 1.6);      // 末端小圆珠
+      drips.splice(i, 1);
+    }
+  }
+}
+
+/* =====================================================================
+ *  七、动态文字：弹出缩放 → 停留 → 渐隐，并在墙上留下淡淡的印子
+ * ===================================================================== */
+
+function spawnText(x, y) {
+  const txt = random(PHRASES);
+  const isChinese = /[\u4e00-\u9fa5]/.test(txt);
+  floatingTexts.push({
+    txt,
+    x: x + random(-30, 30),
+    y: y + random(-30, 30),
+    rot: random(-0.45, 0.45),                 // 随机旋转角度（弧度）
+    spin: random(-0.004, 0.004),              // 缓慢自转
+    size: random(46, 86),
+    font: isChinese ? 'ZCOOL KuaiLe' : random(['Permanent Marker', 'Bungee']),
+    c: currentColor(),
+    born: millis(),
+    life: 1600                                // 动画总时长（毫秒）
+  });
+}
+
+/** 回弹缓动：先放大超过 1，再回落到 1，"砰"地弹出来 */
+function easeOutBack(t) {
+  const c1 = 1.9, c3 = c1 + 1;
+  return 1 + c3 * pow(t - 1, 3) + c1 * pow(t - 1, 2);
+}
+
+/** 用统一样式绘制一个涂鸦字（供动画层与油漆层共用） */
+function drawGraffitiText(g, ft, scaleV, alpha, glow) {
+  g.push();
+  g.translate(ft.x, ft.y);
+  g.rotate(ft.rot);
+  g.scale(scaleV);
+  g.textFont(ft.font);
+  g.textSize(ft.size);
+  g.textAlign(CENTER, CENTER);
+  g.textStyle(BOLD);
+
+  // 立体阴影（涂鸦常见的 3D 偏移效果）
+  g.noStroke();
+  g.fill(0, alpha * 0.8);
+  g.text(ft.txt, 6, 6);
+
+  // 霓虹发光
+  if (glow) {
+    g.drawingContext.shadowBlur = 25;
+    g.drawingContext.shadowColor = ft.c.toString();
+  }
+
+  // 粗黑描边 + 霓虹填充
+  g.stroke(0, alpha);
+  g.strokeWeight(ft.size * 0.12);
+  g.strokeJoin(ROUND);
+  g.fill(red(ft.c), green(ft.c), blue(ft.c), alpha);
+  g.text(ft.txt, 0, 0);
+
+  // 高光描边：一条细白线，增加"新鲜油漆"光泽
+  g.drawingContext.shadowBlur = 0;
+  g.noFill();
+  g.stroke(255, alpha * 0.55);
+  g.strokeWeight(1.5);
+  g.text(ft.txt, -1.5, -1.5);
+  g.pop();
+}
+
+function updateAndDrawTexts() {
+  const now = millis();
+  for (let i = floatingTexts.length - 1; i >= 0; i--) {
+    const ft = floatingTexts[i];
+    const t = (now - ft.born) / ft.life;   // 0 → 1 的生命进度
+    ft.rot += ft.spin;
+
+    if (t >= 1) {
+      // 生命结束：在墙上留下半透明的"残影"，墙面越喷越丰富
+      drawGraffitiText(paintLayer, ft, 1, 70, false);
+      floatingTexts.splice(i, 1);
+      continue;
+    }
+
+    // 前 25%：弹出放大；后 40%：渐隐 + 轻微放大
+    let s, a;
+    if (t < 0.25) {
+      s = easeOutBack(t / 0.25);
+      a = 255;
+    } else if (t < 0.6) {
+      s = 1;
+      a = 255;
+    } else {
+      const k = (t - 0.6) / 0.4;
+      s = 1 + k * 0.12;
+      a = lerp(255, 70, k);    // 淡到 70，正好和残影衔接
+    }
+    drawGraffitiText(this, ft, max(s, 0.01), a, true);
+  }
+}
+
+/* =====================================================================
+ *  八、光标：显示喷枪位置与当前颜色
+ * ===================================================================== */
+
+function drawCursor() {
+  if (!handVisible) return;
+  const c = currentColor();
+  push();
+  noFill();
+  // 外圈：喷涂时为实心色环，暂停时为虚线白环
+  if (isSpraying) {
+    stroke(c); strokeWeight(3);
+    drawingContext.shadowBlur = 18;
+    drawingContext.shadowColor = c.toString();
+  } else {
+    stroke(255, 160); strokeWeight(2);
+    drawingContext.setLineDash([6, 6]);
+  }
+  circle(finger.x, finger.y, SPRAY_RADIUS * 2);
+  drawingContext.setLineDash([]);
+  // 中心准星
+  noStroke(); fill(255);
+  circle(finger.x, finger.y, 5);
+  pop();
+}
+
+/* =====================================================================
+ *  九、MediaPipe Hands：初始化与结果回调
+ * ===================================================================== */
+
+function initHands() {
+  const hands = new Hands({
+    // 指定模型与 wasm 文件从 CDN 加载
+    locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+  });
+
+  hands.setOptions({
+    maxNumHands: 1,               // 只追踪一只手，性能更好
+    modelComplexity: 1,           // 0 更快，1 更准
+    minDetectionConfidence: 0.7,
+    minTrackingConfidence: 0.6
+  });
+
+  hands.onResults(onHandResults);
+
+  // Camera 工具：每帧把视频画面送给 hands 检测
+  const camera = new Camera(videoEl, {
+    onFrame: async () => { await hands.send({ image: videoEl }); },
+    width: 640,
+    height: 480
+  });
+
+  camera.start()
+    .then(() => setStatus('Please extend your index finger to start spraying ☝️'))
+    .catch((err) => {
+      console.error(err);
+      setStatus('Unable to open camera: Please allow camera permissions and refresh the page');
+    });
+}
+
+/**
+ * 每帧检测结果回调
+ * MediaPipe 关键点索引：0 手腕 · 6 食指第二关节(PIP) · 8 食指指尖(TIP)
+ * 坐标为 0~1 的归一化值
+ */
+function onHandResults(results) {
+  const lms = results.multiHandLandmarks;
+
+  if (!lms || lms.length === 0) {
+    handVisible = false;
+    rawFinger = null;
+    setStatus('Please extend your index finger to start spraying ☝️');
+    return;
+  }
+
+  const hand = lms[0];
+  const tip = hand[8];
+
+  // ---- 坐标映射 ----
+  // 视频是镜像显示的，所以 x 取 (1 - x)；再乘以画布宽高映射到全屏
+  // 两边留出 10% 边距：手不用伸到摄像头边缘也能画到屏幕边缘
+  const margin = 0.1;
+  const nx = constrain(((1 - tip.x) - margin) / (1 - 2 * margin), 0, 1);
+  const ny = constrain((tip.y - margin) / (1 - 2 * margin), 0, 1);
+  const target = { x: nx * width, y: ny * height };
+
+  // 手刚出现时直接跳到目标位置，避免从旧位置"拖"过来划出一道线
+  if (!handVisible) {
+    finger.x = target.x;
+    finger.y = target.y;
+    lastFinger = null;
+  }
+  rawFinger = target;
+  handVisible = true;
+
+  // ---- 判断食指是否伸直 ----
+  // 指尖到手腕的距离明显大于第二关节到手腕的距离 → 食指伸直
+  const wrist = hand[0], pip = hand[6];
+  const dTip = Math.hypot(tip.x - wrist.x, tip.y - wrist.y);
+  const dPip = Math.hypot(pip.x - wrist.x, pip.y - wrist.y);
+  isSpraying = dTip > dPip * 1.15;
+
+  if (isSpraying) setStatus('Spraying · SPRAYING', true);
+  else            setStatus('Fist Pause · Extend Index Finger to Continue', false);
+}
+
+/* =====================================================================
+ *  十、UI 辅助与快捷键
+ * ===================================================================== */
+
+let statusTimer = null;
+function setStatus(msg, active = false) {
+  if (statusEl.textContent !== msg) statusEl.textContent = msg;
+  statusEl.classList.toggle('active', active);
+  statusEl.classList.remove('hidden');
+  // 喷涂状态下 1.5 秒后自动隐藏提示，不遮挡画面
+  clearTimeout(statusTimer);
+  if (active) statusTimer = setTimeout(() => statusEl.classList.add('hidden'), 1500);
+}
+
+function keyPressed() {
+  if (key === 'c' || key === 'C') {          // 清空墙面
+    paintLayer.clear();
+    floatingTexts = [];
+    drips = [];
+  }
+  if (key === 's' || key === 'S') {          // 保存作品为 PNG
+    saveCanvas('street-spray', 'png');
+  }
+}
+</script>
+</body>
+</html>
