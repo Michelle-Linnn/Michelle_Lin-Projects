@@ -97,6 +97,21 @@
   .meta dd { margin: 4px 0 0; font-size: 14.5px; font-weight: 500; }
   .meta dt { margin: 0; }
 
+  /* ---------- Try-it CTA ---------- */
+  .try { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; margin-top: 28px; }
+  .btn-try {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: var(--ink); color: var(--ground); text-decoration: none;
+    font: 800 15px/1 "Archivo", sans-serif; font-stretch: 112%; letter-spacing: .02em;
+    padding: 14px 20px; border-radius: 4px; box-shadow: 4px 4px 0 var(--spray);
+    transition: transform .15s, box-shadow .15s;
+  }
+  footer.end a.btn-try { color: var(--ground); }
+  .btn-try:hover, .btn-try:focus-visible { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--spray); }
+  .btn-try:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--spray); }
+  .btn-try .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--spray); box-shadow: 0 0 0 3px color-mix(in srgb, var(--spray) 30%, transparent); }
+  .try-note { font-size: 13px; line-height: 1.5; color: var(--ink-2); max-width: 30em; }
+  .end-try { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; }
   .reel { position: relative; }
   .reel video {
     display: block; width: 100%; max-width: 100%; aspect-ratio: 720 / 854; object-fit: cover;
@@ -263,6 +278,10 @@
         <div><dt class="label">Stack</dt><dd>p5.js · MediaPipe Hands · Canvas 2D</dd></div>
         <div><dt class="label">Role</dt><dd>Concept, interaction, visual design, code</dd></div>
       </dl>
+      <div class="try">
+        <a class="btn-try" href="graffiti-spray.html" target="_blank" rel="noopener"><span class="dot" aria-hidden="true"></span>Try the prototype ↗</a>
+        <p class="try-note">Opens in a new tab and asks for your webcam. Best in Chrome, Edge or Safari on a laptop. Video is processed in your browser and never uploaded.</p>
+      </div>
     </div>
     <figure class="reel" style="margin:0">
       <span class="sticker">LIVE DEMO</span>
@@ -534,6 +553,10 @@ colorT += d * <span class="s">0.0025</span>;   <span class="c">// hue drifts wit
 
   <footer class="end">
     <span class="display">KEEP SPRAYING.</span>
+    <div class="end-try">
+      <span class="try-note">Raise a finger and tag your own wall.</span>
+      <a class="btn-try" href="graffiti-spray.html" target="_blank" rel="noopener"><span class="dot" aria-hidden="true"></span>Try the prototype ↗</a>
+    </div>
   </footer>
 </div>
 
