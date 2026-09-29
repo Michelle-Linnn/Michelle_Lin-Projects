@@ -9,6 +9,7 @@
     "three": "^0.183.2"
   },
   "devDependencies": {
-    "@types/d3-delaunay": "^6.0.4"
+    "@types/d3-delaunay": "^6.0.4",
+    "cloudflared": "^0.7.3"
   }
 }

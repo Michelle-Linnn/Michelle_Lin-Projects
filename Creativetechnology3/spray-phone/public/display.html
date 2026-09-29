@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Street Spray · Wall</title>
+<link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Bungee&family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
+<script src="/vendor/p5.min.js"></script>
+<script src="/vendor/qrcode.js"></script>
+<style>
+  html, body { margin: 0; padding: 0; overflow: hidden; background: #0b0b10; color: #fff;
+               font-family: "Bungee", system-ui, sans-serif; cursor: none; }
+  canvas { display: block; }
+
+  /* All HUD sizes scale with the screen so they read from the back of a room */
+  #title { position: fixed; top: 2.2vmin; left: 2.6vmin; z-index: 10; pointer-events: none;
+           font: 400 3.4vmin/1 "Permanent Marker", cursive; letter-spacing: .1vmin; color: #39ff14;
+           text-shadow: 0 0 1vmin #39ff14, .35vmin .35vmin 0 #ff2bd6; transform: rotate(-3deg); }
+  #status { position: fixed; top: 2.4vmin; left: 50%; transform: translateX(-50%); z-index: 10; pointer-events: none;
+            padding: 1.1vmin 2.6vmin; border: .25vmin solid #fff; border-radius: 999px; background: rgba(0,0,0,.55);
+            font: 400 2vmin/1.2 "Bungee", system-ui, sans-serif; transition: opacity .4s, color .4s, border-color .4s; }
+  #status.live { color: #39ff14; border-color: #39ff14; }
+  #status.hidden { opacity: 0; }
+
+  /* Join card with QR code */
+  #join { position: fixed; right: 2.6vmin; bottom: 2.6vmin; z-index: 10; display: flex; gap: 2vmin; align-items: center;
+          background: rgba(10,10,14,.82); border: .3vmin solid #ff2bd6; border-radius: 1.6vmin; padding: 1.8vmin;
+          box-shadow: 0 0 2.4vmin rgba(255,43,214,.45); transition: opacity .4s, transform .4s; }
+  #join.small { transform: scale(.55); transform-origin: bottom right; opacity: .75; }
+  #join.hidden { opacity: 0; pointer-events: none; }
+  #qr { width: 18vmin; height: 18vmin; background: #fff; border-radius: .8vmin; display: grid; place-items: center; }
+  #qr svg { width: 100%; height: 100%; display: block; }
+  #join .txt { display: grid; gap: .8vmin; max-width: 28vmin; }
+  #join b { font: 400 3vmin/1 "Bungee", system-ui, sans-serif; color: #ff2bd6; }
+  #join span { font: 500 1.5vmin/1.4 system-ui, sans-serif; color: #c9ccd1; word-break: break-all; }
+  #join .n { font: 400 1.8vmin/1 "Bungee", system-ui, sans-serif; color: #00e5ff; }
+
+  #help { position: fixed; left: 2.6vmin; bottom: 2.4vmin; z-index: 10; pointer-events: none; opacity: .45;
+          font: 500 1.4vmin/1.6 system-ui, sans-serif; }
+  #help b { font-family: "Bungee", system-ui, sans-serif; font-weight: 400; color: #00e5ff; }
+</style>
+</head>
+<body>
+<div id="title">STREET SPRAY</div>
+<div id="status">Scan the code to pick up a can</div>
+<div id="join">
+  <div id="qr"></div>
+  <div class="txt">
+    <b>SCAN TO SPRAY</b>
+    <span id="url">Starting secure link…</span>
+    <span class="n" id="count">0 cans connected</span>
+  </div>
+</div>
+<div id="help"><b>F</b> fullscreen · <b>Q</b> QR · <b>C</b> clear · <b>S</b> save · <b>M</b> mouse test</div>
+
+<script>
+/* =====================================================================
+ *  1. Config
+ * ===================================================================== */
+const PALETTE = ['#39ff14', '#ff2bd6', '#00e5ff', '#fff200', '#ff6b00', '#b026ff'];
+const PHRASES = ['VIBE', 'MASH', 'HCI', 'YO!', 'FRESH', 'WILD', 'BOOM', 'DOPE', 'FLOW', 'ZAP', 'MICHELLE',
+                 '酷', '燃', '潮', '街', '炸', '飒', '野', '嘻哈'];
+
+// Tuned at 1080p; everything is multiplied by S so a 4K wall looks the same
+const BASE_RADIUS   = 26;
+const TEXT_EVERY    = 160;
+const COLOR_SPEED   = 0.0025;
+const SMOOTH        = 0.35;   // lower = smoother but laggier cursor
+let S = 1;
+
+/* =====================================================================
+ *  2. State
+ * ===================================================================== */
+let wallLayer, paintLayer;
+let floatingTexts = [], drips = [];
+const players = new Map();   // id -> player
+let mouseMode = false;
+
+function makePlayer(id) {
+  return {
+    id,
+    x: width / 2, y: height / 2,   // smoothed canvas position
+    raw: null,                     // latest target from the phone (canvas px)
+    last: null,                    // previous sprayed point, for gap filling
+    spraying: false,
+    colorT: (id * 2) % PALETTE.length,   // each can starts on a different color
+    distSinceText: 0,
+    seen: 0,
+  };
+}
+
+/* =====================================================================
+ *  3. p5 lifecycle
+ * ===================================================================== */
+function setup() {
+  createCanvas(windowWidth, windowHeight);
+  pixelDensity(1);
+  S = min(width, height) / 1080;
+  buildLayers();
+  connect();
+}
+
+function draw() {
+  const now = millis();
+  if (mouseMode && players.has(0)) players.get(0).seen = now;   // mouse held still still sprays
+  for (const p of players.values()) {
+    if (!p.raw) continue;
+    p.x = lerp(p.x, p.raw.x, SMOOTH);
+    p.y = lerp(p.y, p.raw.y, SMOOTH);
+    const fresh = now - p.seen < 400;         // stop if the phone goes quiet
+    if (p.spraying && fresh) sprayAlongPath(p);
+    else p.last = null;
+  }
+  updateDrips();
+
+  image(wallLayer, 0, 0);
+  image(paintLayer, 0, 0);
+  updateAndDrawTexts();
+  for (const p of players.values()) drawCursor(p, now);
+}
+
+function windowResized() {
+  const old = paintLayer;
+  resizeCanvas(windowWidth, windowHeight);
+  S = min(width, height) / 1080;
+  buildLayers();
+  paintLayer.image(old, 0, 0, width, height);
+}
+
+/* =====================================================================
+ *  4. Brick wall
+ * ===================================================================== */
+function buildLayers() {
+  wallLayer = createGraphics(width, height);
+  wallLayer.pixelDensity(1);
+  wallLayer.background(16, 16, 22);
+  wallLayer.noStroke();
+  const bw = 90 * S, bh = 38 * S;
+  for (let row = 0; row * bh < height + bh; row++) {
+    const off = (row % 2) * bw / 2;
+    for (let x = -bw; x < width + bw; x += bw) {
+      const g = random(20, 32);
+      wallLayer.fill(g, g, g + 6);
+      wallLayer.rect(x + off + 2 * S, row * bh + 2 * S, bw - 4 * S, bh - 4 * S, 3 * S);
+    }
+  }
+  for (let i = 0; i < width * height / 60; i++) {
+    wallLayer.fill(255, random(3, 10));
+    wallLayer.rect(random(width), random(height), S, S);
+  }
+  const ctx = wallLayer.drawingContext;
+  const grad = ctx.createRadialGradient(width / 2, height / 2, min(width, height) * 0.2,
+                                        width / 2, height / 2, max(width, height) * 0.75);
+  grad.addColorStop(0, 'rgba(0,0,0,0)');
+  grad.addColorStop(1, 'rgba(0,0,0,0.75)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, width, height);
+
+  paintLayer = createGraphics(width, height);
+  paintLayer.pixelDensity(1);
+  paintLayer.clear();
+}
+
+/* =====================================================================
+ *  5. Spray engine (per player)
+ * ===================================================================== */
+function colorOf(p) {
+  const n = PALETTE.length, i = floor(p.colorT) % n;
+  return lerpColor(color(PALETTE[i]), color(PALETTE[(i + 1) % n]), p.colorT % 1);
+}
+
+function sprayAlongPath(p) {
+  if (!p.last) p.last = { x: p.x, y: p.y };
+  const d = dist(p.last.x, p.last.y, p.x, p.y);
+  const steps = max(1, ceil(d / (6 * S)));
+  for (let s = 1; s <= steps; s++) {
+    const t = s / steps;
+    sprayAt(p, lerp(p.last.x, p.x, t), lerp(p.last.y, p.y, t), d / S);
+  }
+  if (d < S) sprayAt(p, p.x, p.y, 0);
+
+  p.colorT += (d / S) * COLOR_SPEED;
+  p.distSinceText += d / S;
+  if (p.distSinceText > TEXT_EVERY) { p.distSinceText = 0; spawnText(p); }
+  p.last = { x: p.x, y: p.y };
+}
+
+function sprayAt(p, x, y, speed) {
+  const c = colorOf(p), pg = paintLayer;
+  const R = red(c), G = green(c), B = blue(c);
+  pg.noStroke();
+  const r = (BASE_RADIUS + min(speed, 40) * 0.25) * S;
+
+  for (let i = 0; i < 22; i++) {                       // Gaussian mist
+    const a = random(TWO_PI), rad = abs(randomGaussian(0, r * 0.38));
+    pg.fill(R, G, B, random(40, 110));
+    pg.circle(x + cos(a) * rad, y + sin(a) * rad, random(1, 3.2) * S);
+  }
+  if (random() < 0.25) {                               // splatter
+    const a = random(TWO_PI), rad = random(r * 0.9, r * 2.2);
+    pg.fill(R, G, B, random(120, 220));
+    pg.circle(x + cos(a) * rad, y + sin(a) * rad, random(2, 5) * S);
+  }
+  pg.fill(R, G, B, 10);                                // base haze
+  pg.circle(x, y, r * 1.2);
+
+  if (random() < (speed < 3 ? 0.012 : 0.002)) {        // drips
+    drips.push({ x: x + random(-r * 0.3, r * 0.3), y: y + random(0, r * 0.3), len: 0,
+                 maxLen: random(40, 160) * S, w: random(2, 4.5) * S, c });
+  }
+}
+
+function updateDrips() {
+  const pg = paintLayer;
+  pg.noStroke();
+  for (let i = drips.length - 1; i >= 0; i--) {
+    const d = drips[i];
+    d.len += map(d.len, 0, d.maxLen, 1.6, 0.2) * S;
+    d.w *= 0.997;
+    pg.fill(red(d.c), green(d.c), blue(d.c), 200);
+    pg.circle(d.x, d.y + d.len, d.w);
+    if (d.len >= d.maxLen) { pg.circle(d.x, d.y + d.len, d.w * 1.6); drips.splice(i, 1); }
+  }
+}
+
+/* =====================================================================
+ *  6. Words
+ * ===================================================================== */
+function spawnText(p, big = false) {
+  const txt = random(PHRASES);
+  const zh = /[一-龥]/.test(txt);
+  floatingTexts.push({
+    txt, x: p.x + random(-30, 30) * S, y: p.y + random(-30, 30) * S,
+    rot: random(-0.45, 0.45), spin: random(-0.004, 0.004),
+    size: random(46, 86) * S * (big ? 1.5 : 1),
+    font: zh ? 'ZCOOL KuaiLe' : random(['Permanent Marker', 'Bungee']),
+    c: colorOf(p), born: millis(), life: 1600,
+  });
+}
+
+function easeOutBack(t) { const c1 = 1.9, c3 = c1 + 1; return 1 + c3 * pow(t - 1, 3) + c1 * pow(t - 1, 2); }
+
+function drawGraffitiText(g, ft, sc, alpha, glow) {
+  g.push();
+  g.translate(ft.x, ft.y); g.rotate(ft.rot); g.scale(sc);
+  g.textFont(ft.font); g.textSize(ft.size); g.textAlign(CENTER, CENTER); g.textStyle(BOLD);
+  g.noStroke(); g.fill(0, alpha * 0.8); g.text(ft.txt, 6 * S, 6 * S);
+  if (glow) { g.drawingContext.shadowBlur = 25 * S; g.drawingContext.shadowColor = ft.c.toString(); }
+  g.stroke(0, alpha); g.strokeWeight(ft.size * 0.12); g.strokeJoin(ROUND);
+  g.fill(red(ft.c), green(ft.c), blue(ft.c), alpha); g.text(ft.txt, 0, 0);
+  g.drawingContext.shadowBlur = 0;
+  g.noFill(); g.stroke(255, alpha * 0.55); g.strokeWeight(1.5 * S); g.text(ft.txt, -1.5 * S, -1.5 * S);
+  g.pop();
+}
+
+function updateAndDrawTexts() {
+  const now = millis();
+  for (let i = floatingTexts.length - 1; i >= 0; i--) {
+    const ft = floatingTexts[i];
+    const t = (now - ft.born) / ft.life;
+    ft.rot += ft.spin;
+    if (t >= 1) { drawGraffitiText(paintLayer, ft, 1, 70, false); floatingTexts.splice(i, 1); continue; }
+    let s = 1, a = 255;
+    if (t < 0.25) s = easeOutBack(t / 0.25);
+    else if (t >= 0.6) { const k = (t - 0.6) / 0.4; s = 1 + k * 0.12; a = lerp(255, 70, k); }
+    drawGraffitiText(this, ft, max(s, 0.01), a, true);
+  }
+}
+
+/* =====================================================================
+ *  7. Cursor per can, labeled with the player number
+ * ===================================================================== */
+function drawCursor(p, now) {
+  if (!p.raw || now - p.seen > 3000) return;
+  const c = colorOf(p), R = BASE_RADIUS * S;
+  push();
+  noFill();
+  if (p.spraying) {
+    stroke(c); strokeWeight(3 * S);
+    drawingContext.shadowBlur = 18 * S; drawingContext.shadowColor = c.toString();
+  } else {
+    stroke(255, 170); strokeWeight(2 * S); drawingContext.setLineDash([6 * S, 6 * S]);
+  }
+  circle(p.x, p.y, R * 2);
+  drawingContext.setLineDash([]); drawingContext.shadowBlur = 0;
+  noStroke(); fill(255); circle(p.x, p.y, 5 * S);
+  // player tag
+  fill(c); textFont('Bungee'); textSize(14 * S); textAlign(LEFT, CENTER);
+  text(p.id === 0 ? 'MOUSE' : 'P' + p.id, p.x + R + 6 * S, p.y - R * 0.7);
+  pop();
+}
+
+/* =====================================================================
+ *  8. Network
+ * ===================================================================== */
+const statusEl = document.getElementById('status');
+let statusT;
+function setStatus(msg, live = false, autoHide = false) {
+  statusEl.textContent = msg;
+  statusEl.classList.toggle('live', live);
+  statusEl.classList.remove('hidden');
+  clearTimeout(statusT);
+  if (autoHide) statusT = setTimeout(() => statusEl.classList.add('hidden'), 2500);
+}
+
+function updateCount() {
+  const n = [...players.keys()].filter((k) => k !== 0).length;
+  document.getElementById('count').textContent = n + (n === 1 ? ' can connected' : ' cans connected');
+  document.getElementById('join').classList.toggle('small', n > 0);
+  if (n === 0) setStatus('Scan the code to pick up a can');
+}
+
+function showJoin(publicUrl, lanUrl) {
+  const secure = publicUrl || (location.protocol === 'https:' ? location.origin : null);
+  const base = secure || lanUrl;
+  const urlEl = document.getElementById('url');
+  const qrEl = document.getElementById('qr');
+  if (!base) { urlEl.textContent = 'Starting secure link…'; return; }
+  const phoneUrl = base + '/phone';
+  urlEl.textContent = phoneUrl.replace(/^https?:\/\//, '') +
+    (secure ? '' : '  ·  HTTP only: iPhones need the HTTPS link (install cloudflared)');
+  const qr = qrcode(0, 'M');
+  qr.addData(phoneUrl);
+  qr.make();
+  qrEl.innerHTML = qr.createSvgTag({ cellSize: 6, margin: 2, scalable: true });
+}
+
+function connect() {
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  const ws = new WebSocket(`${proto}://${location.host}/ws`);
+  ws.onopen = () => ws.send(JSON.stringify({ t: 'hello', role: 'display' }));
+  ws.onmessage = (ev) => {
+    const m = JSON.parse(ev.data);
+    if (m.t === 'config') showJoin(m.publicUrl, m.lanUrl);
+    if (m.t === 'join') {
+      if (!players.has(m.id)) players.set(m.id, makePlayer(m.id));
+      setStatus('Can #' + m.id + ' joined', true, true);
+      updateCount();
+    }
+    if (m.t === 'leave') { players.delete(m.id); updateCount(); }
+    if (m.t === 'p') {
+      let p = players.get(m.id);
+      if (!p) { p = makePlayer(m.id); players.set(m.id, p); updateCount(); }
+      const tx = m.x * width, ty = m.y * height;
+      if (!p.raw || millis() - p.seen > 1000) { p.x = tx; p.y = ty; p.last = null; }  // no streak on re-entry
+      p.raw = { x: tx, y: ty };
+      p.spraying = !!m.s;
+      p.seen = millis();
+    }
+    if (m.t === 'shake') {
+      const p = players.get(m.id);
+      if (p) { p.colorT = floor(p.colorT) + 1 + floor(random(PALETTE.length - 1)); spawnText(p, true); }
+    }
+    if (m.t === 'clear') clearWall();
+  };
+  ws.onclose = () => setTimeout(connect, 1000);
+}
+
+/* =====================================================================
+ *  9. Keyboard + mouse test mode (no phone needed)
+ * ===================================================================== */
+function clearWall() { paintLayer.clear(); floatingTexts = []; drips = []; }
+
+function keyPressed() {
+  const k = key.toLowerCase();
+  if (k === 'f') fullscreen(!fullscreen());
+  if (k === 'q') document.getElementById('join').classList.toggle('hidden');
+  if (k === 'c') clearWall();
+  if (k === 's') saveCanvas('street-spray-wall', 'png');
+  if (k === 'm') {
+    mouseMode = !mouseMode;
+    if (mouseMode) players.set(0, makePlayer(0)); else players.delete(0);
+    document.body.style.cursor = mouseMode ? 'crosshair' : 'none';
+    setStatus(mouseMode ? 'Mouse test on: hold the button to spray' : 'Mouse test off', true, true);
+  }
+}
+function mouseMoved()    { feedMouse(false); }
+function mouseDragged()  { feedMouse(true); }
+function mousePressed()  { feedMouse(true); }
+function mouseReleased() { feedMouse(false); }
+function feedMouse(down) {
+  if (!mouseMode) return;
+  const p = players.get(0);
+  p.raw = { x: mouseX, y: mouseY }; p.spraying = down; p.seen = millis();
+}
+</script>
+</body>
+</html>
