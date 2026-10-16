@@ -1,0 +1,748 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>齿轮工坊</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=JetBrains+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&display=swap">
+<style>
+/* Layout: workshop bench — fixed tool rail on the left, full-bleed 3D stage on the right; stacks on phones */
+:root{
+  --bg:#e7ebee; --panel:#f5f7f8; --sunk:#eceff2; --ink:#17212a; --muted:#5b6874; --line:#c8d0d7;
+  --accent:#a8640f; --accent-soft:#f3e3cc; --accent-ink:#ffffff; --warn:#b8352a; --warn-soft:#f7dcd8; --ok:#2d7a4c;
+  --stage:#dde3e7; --grid-a:#b9c3cb; --grid-b:#cdd5db;
+  --f-display:"Barlow Condensed","Noto Sans SC",system-ui,sans-serif;
+  --f-body:"Noto Sans SC",system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#111518; --panel:#181d22; --sunk:#13171b; --ink:#e2e7eb; --muted:#93a0ab; --line:#2b333b;
+  --accent:#e2a64c; --accent-soft:#3a2c17; --accent-ink:#1b1306; --warn:#ff7d6e; --warn-soft:#3b1d1a; --ok:#6fcf97;
+  --stage:#15191d; --grid-a:#2f3940; --grid-b:#212930; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#111518; --panel:#181d22; --sunk:#13171b; --ink:#e2e7eb; --muted:#93a0ab; --line:#2b333b;
+  --accent:#e2a64c; --accent-soft:#3a2c17; --accent-ink:#1b1306; --warn:#ff7d6e; --warn-soft:#3b1d1a; --ok:#6fcf97;
+  --stage:#15191d; --grid-a:#2f3940; --grid-b:#212930; color-scheme:dark }
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.5}
+*{box-sizing:border-box}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.app{display:grid;grid-template-columns:340px minmax(0,1fr);height:100%}
+.side{background:var(--panel);border-right:1px solid var(--line);overflow-y:auto;padding-inline:16px;padding-block:14px 28px;display:flex;flex-direction:column;gap:18px;min-width:0}
+.stage{position:relative;display:flex;flex-direction:column;min-width:0;min-height:0;background:var(--stage)}
+
+.brand{display:flex;align-items:center;gap:10px}
+.brand svg{width:34px;height:34px;flex:none;color:var(--accent)}
+.brand h1{margin:0;font-family:var(--f-display);font-weight:700;font-size:26px;letter-spacing:.02em;line-height:1}
+.brand p{margin:2px 0 0;color:var(--muted);font-size:12px}
+
+.block{display:flex;flex-direction:column;gap:10px}
+.block-h{display:flex;align-items:center;justify-content:space-between;gap:8px}
+h2{margin:0;font-family:var(--f-display);font-weight:600;font-size:15px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+h2 b{color:var(--ink);font-weight:700;letter-spacing:.04em}
+
+select,input[type=number]{background:var(--sunk);border:1px solid var(--line);border-radius:6px;padding:4px 8px;min-width:0}
+input[type=number]{width:74px;font-family:var(--f-mono);font-size:13px;font-variant-numeric:tabular-nums}
+input[type=range]{accent-color:var(--accent);width:100%;min-width:0}
+input[type=checkbox]{accent-color:var(--accent)}
+
+.list{list-style:none;margin:0;padding:0;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--sunk)}
+.list li{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;align-items:center;gap:8px;padding:7px 10px;border-top:1px solid var(--line);cursor:pointer}
+.list li:first-child{border-top:0}
+.list li[aria-selected="true"]{background:var(--accent-soft)}
+.list li:hover{background:color-mix(in srgb,var(--accent-soft) 55%,transparent)}
+.sw{width:14px;height:14px;border-radius:50%;border:1px solid color-mix(in srgb,var(--ink) 25%,transparent)}
+.lab{font-family:var(--f-display);font-weight:700;font-size:17px;width:22px}
+.meta{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meta b{color:var(--ink);font-weight:500}
+.rpm{font-family:var(--f-mono);font-size:12px;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.chip{display:inline-block;font-size:11px;padding:0 6px;border-radius:999px;line-height:18px;white-space:nowrap}
+.chip.warn{background:var(--warn-soft);color:var(--warn)}
+.chip.drv{background:var(--accent);color:var(--accent-ink)}
+.chip.rel{background:var(--sunk);border:1px solid var(--line);color:var(--muted)}
+
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+.btn{border:1px solid var(--line);background:var(--panel);border-radius:7px;padding:6px 12px;cursor:pointer;font-weight:500}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.danger{color:var(--warn)}
+.btn.danger:hover{border-color:var(--warn)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.grow{flex:1}
+
+.field{display:grid;grid-template-columns:76px minmax(0,1fr) auto;align-items:center;gap:10px}
+.field>label:first-child{font-size:13px;color:var(--muted)}
+.field .unit{font-family:var(--f-mono);font-size:11px;color:var(--muted);margin-left:4px}
+.field .ctl{display:flex;align-items:center;gap:6px;min-width:0}
+.seg{display:flex;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+.seg label{flex:1;text-align:center;padding:4px 6px;cursor:pointer;font-size:13px;border-left:1px solid var(--line)}
+.seg label:first-child{border-left:0}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg label:has(input:checked){background:var(--accent);color:var(--accent-ink)}
+.seg label:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:-2px}
+.swatches{display:flex;gap:6px;flex-wrap:wrap}
+.swatches button{width:22px;height:22px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--ink) 20%,transparent)}
+.swatches button[aria-pressed="true"]{border-color:var(--ink)}
+
+.specs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:8px;overflow:hidden;margin:0}
+.specs div{background:var(--sunk);padding:6px 8px;min-width:0}
+.specs dt{font-size:11px;color:var(--muted);white-space:nowrap}
+.specs dd{margin:0;font-family:var(--f-mono);font-size:13px;font-variant-numeric:tabular-nums}
+.warns{display:flex;flex-direction:column;gap:6px}
+.warns p{margin:0;font-size:12.5px;padding:6px 10px;border-radius:6px;background:var(--warn-soft);color:var(--warn)}
+.note{margin:0;font-size:12px;color:var(--muted)}
+.status{font-size:12.5px;min-height:1.5em;margin:0}
+.status.err{color:var(--warn)} .status.ok{color:var(--ok)}
+
+.toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;padding:10px 16px;border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--panel) 85%,transparent)}
+.toolbar .grp{display:flex;align-items:center;gap:8px}
+.toolbar .lbl{font-size:12px;color:var(--muted)}
+.toolbar input[type=range]{width:120px}
+.toolbar .val{font-family:var(--f-mono);font-size:12px;min-width:56px;font-variant-numeric:tabular-nums}
+.tog{display:flex;align-items:center;gap:5px;font-size:13px;cursor:pointer}
+#viewport{position:relative;flex:1;min-height:0;touch-action:none}
+#viewport canvas{display:block;width:100%;height:100%}
+.hud{position:absolute;left:16px;bottom:16px;right:16px;display:flex;flex-wrap:wrap;gap:8px;pointer-events:none}
+.hud .card{background:color-mix(in srgb,var(--panel) 92%,transparent);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:12.5px;backdrop-filter:blur(4px)}
+.hud .big{font-family:var(--f-display);font-size:22px;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums}
+.hud .k{color:var(--muted);font-size:11px;letter-spacing:.08em}
+.nogl{position:absolute;inset:0;display:grid;place-items:center;color:var(--muted);padding:24px;text-align:center}
+
+@media (max-width:820px){
+  .app{display:flex;flex-direction:column;height:auto}
+  .stage{height:62vh;min-height:360px;order:-1;position:sticky;top:env(safe-area-inset-top,0px);z-index:2}
+  .side{border-right:0;overflow:visible}
+  .toolbar input[type=range]{width:90px}
+  .hud{left:10px;right:10px;bottom:10px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+
+<div class="app">
+  <aside class="side">
+    <header class="brand">
+      <svg viewBox="0 0 40 40" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M17.6 2h4.8l.9 4.6a14 14 0 0 1 4 1.7l3.9-2.7 3.4 3.4-2.7 3.9a14 14 0 0 1 1.7 4l4.6.9v4.8l-4.6.9a14 14 0 0 1-1.7 4l2.7 3.9-3.4 3.4-3.9-2.7a14 14 0 0 1-4 1.7l-.9 4.6h-4.8l-.9-4.6a14 14 0 0 1-4-1.7l-3.9 2.7-3.4-3.4 2.7-3.9a14 14 0 0 1-1.7-4L2 22.4v-4.8l4.6-.9a14 14 0 0 1 1.7-4L5.6 8.8 9 5.4l3.9 2.7a14 14 0 0 1 4-1.7zM20 14a6 6 0 1 0 0 12 6 6 0 0 0 0-12z"/></svg>
+      <div><h1>齿轮工坊</h1><p>设计渐开线齿轮 · 搭建传动 · 导出可打印 STL</p></div>
+    </header>
+
+    <section class="block" aria-labelledby="h-asm">
+      <div class="block-h"><h2 id="h-asm">装配</h2>
+        <select id="preset" aria-label="载入示例装配">
+          <option value="">载入示例…</option>
+          <option value="pair">齿轮对 1:3</option>
+          <option value="idler">惰轮链</option>
+          <option value="twoStage">两级减速 9:1</option>
+          <option value="clock">时针减速 12:1</option>
+          <option value="helical">斜齿轮对</option>
+          <option value="herring">人字齿轮对</option>
+        </select>
+      </div>
+      <ul class="list" id="gearList" role="listbox" aria-label="齿轮列表"></ul>
+      <div class="btns">
+        <button class="btn grow" id="addMesh" title="在选中齿轮旁边加一个与它啮合的齿轮">+ 啮合齿轮</button>
+        <button class="btn grow" id="addCoax" title="在选中齿轮上方叠一个同轴、一起转的齿轮">+ 同轴齿轮</button>
+      </div>
+    </section>
+
+    <section class="block" id="editor" aria-labelledby="edTitle">
+      <div class="block-h"><h2 id="edTitle">齿轮</h2><span id="edRel" class="chip rel"></span></div>
+      <div class="field"><label for="f-z">齿数 z</label><div class="ctl"><input type="range" id="f-zr" min="6" max="120" step="1" aria-label="齿数滑块"></div><input type="number" id="f-z" min="6" max="200" step="1"></div>
+      <div class="field"><label for="f-m">模数 m</label><div class="ctl"><select id="f-m">
+        <option>0.5</option><option>0.8</option><option>1</option><option>1.25</option><option>1.5</option><option>2</option><option>2.5</option><option>3</option><option>4</option></select><span class="unit">mm</span></div><span></span></div>
+      <div class="field"><label for="f-pa">压力角</label><div class="ctl"><select id="f-pa"><option value="14.5">14.5°</option><option value="20">20°</option><option value="25">25°</option></select></div><span></span></div>
+      <div class="field"><label for="f-T">齿宽</label><div class="ctl"><input type="range" id="f-Tr" min="2" max="30" step="0.5" aria-label="齿宽滑块"></div><span><input type="number" id="f-T" min="1" max="60" step="0.5"><span class="unit">mm</span></span></div>
+      <div class="field"><label for="f-bore">轴孔直径</label><div class="ctl"><label class="tog"><input type="checkbox" id="f-dflat">D 形</label></div><span><input type="number" id="f-bore" min="0" max="80" step="0.1"><span class="unit">mm</span></span></div>
+      <div class="field"><label for="f-holes">减重孔</label><div class="ctl"><input type="range" id="f-holes" min="0" max="8" step="1"></div><span class="val" id="v-holes" style="font-family:var(--f-mono);font-size:12px"></span></div>
+      <div class="field"><label>齿形</label><div class="seg" role="radiogroup" aria-label="齿形" style="grid-column:span 2">
+        <label><input type="radio" name="f-type" value="spur">直齿</label>
+        <label><input type="radio" name="f-type" value="helical">斜齿</label>
+        <label><input type="radio" name="f-type" value="herring">人字齿</label></div></div>
+      <div class="field" id="row-beta"><label for="f-beta">螺旋角 β</label><div class="ctl"><input type="range" id="f-beta" min="5" max="45" step="1"></div><span class="val" id="v-beta" style="font-family:var(--f-mono);font-size:12px"></span></div>
+      <div class="field" id="row-phi"><label for="f-phi">啮合方位</label><div class="ctl"><input type="range" id="f-phi" min="-180" max="180" step="5"></div><span class="val" id="v-phi" style="font-family:var(--f-mono);font-size:12px"></span></div>
+      <div class="field" id="row-phase"><label for="f-phase">相对转角</label><div class="ctl"><input type="range" id="f-phase" min="0" max="360" step="1"></div><span class="val" id="v-phase" style="font-family:var(--f-mono);font-size:12px"></span></div>
+      <div class="field"><label>耗材颜色</label><div class="swatches" id="swatches" style="grid-column:span 2"></div></div>
+      <dl class="specs" id="specs"></dl>
+      <div class="warns" id="warns"></div>
+      <div class="btns"><button class="btn danger" id="delBtn">删除</button></div>
+    </section>
+
+    <section class="block" aria-labelledby="h-print">
+      <h2 id="h-print">打印公差</h2>
+      <div class="field"><label for="g-bl">齿侧间隙</label><div class="ctl"><input type="range" id="g-blr" min="0" max="0.6" step="0.05" aria-label="齿侧间隙滑块"></div><span><input type="number" id="g-bl" min="0" max="1" step="0.05"><span class="unit">mm</span></span></div>
+      <div class="field"><label for="g-pc">轴销间隙</label><div class="ctl"><input type="range" id="g-pcr" min="0" max="1" step="0.05" aria-label="轴销间隙滑块"></div><span><input type="number" id="g-pc" min="0" max="2" step="0.05"><span class="unit">mm</span></span></div>
+      <p class="note">齿侧间隙从每个齿的分度圆齿厚中减去，FDM 常用 0.1–0.3 mm。轴销间隙是轴销比轴孔小的直径差，影响底板上轴销的松紧。</p>
+    </section>
+
+    <section class="block" aria-labelledby="h-exp">
+      <h2 id="h-exp">导出 STL</h2>
+      <label class="tog"><input type="checkbox" id="x-plate" checked>全套里附带底板和轴销</label>
+      <div class="btns">
+        <button class="btn primary grow" id="expAll">导出全套零件</button>
+        <button class="btn grow" id="expSel">只导出选中零件</button>
+      </div>
+      <p class="status" id="expStatus"></p>
+      <p class="note">文件下载为 .zip，每个零件一个二进制 STL，单位 mm，齿面朝 Z 轴平放，可直接拖进切片软件。同轴叠放的齿轮会合成一个零件一起打印。</p>
+    </section>
+  </aside>
+
+  <main class="stage">
+    <div class="toolbar">
+      <div class="grp"><button class="btn primary" id="playBtn" aria-pressed="true">暂停</button>
+        <button class="btn" id="dirBtn" title="切换主动轮旋转方向">逆时针 ↺</button></div>
+      <div class="grp"><span class="lbl">主动轮转速</span><input type="range" id="rpm" min="1" max="60" step="1" aria-label="主动轮转速"><span class="val" id="v-rpm"></span></div>
+      <div class="grp">
+        <label class="tog"><input type="checkbox" id="t-pitch">分度圆</label>
+        <label class="tog"><input type="checkbox" id="t-plate">底板预览</label>
+      </div>
+      <div class="grp"><button class="btn" id="viewTop">俯视</button><button class="btn" id="view3d">斜视</button></div>
+    </div>
+    <div id="viewport"></div>
+    <div class="hud" id="hud"></div>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(() => {
+const $ = s => document.querySelector(s);
+const TAU = Math.PI * 2, DEG = Math.PI / 180;
+const FIL = [
+  {c:'#e8762b',n:'橙'},{c:'#2a9d8f',n:'青'},{c:'#e6e1d3',n:'原白'},{c:'#3b6db3',n:'蓝'},
+  {c:'#d14848',n:'红'},{c:'#f0bf45',n:'黄'},{c:'#7a5c8f',n:'紫'},{c:'#5b8f3c',n:'绿'},{c:'#4a4f55',n:'石墨'}
+];
+let uid = 0;
+function mkGear(o){
+  uid++;
+  return Object.assign({id:uid,parent:null,rel:'root',phi:0,z:20,m:2,pa:20,T:8,bore:5,dflat:false,holes:0,
+    type:'spur',beta:20,hand:1,color:FIL[(uid-1)%FIL.length].c,phase:0}, o);
+}
+const S = { gears:[], sel:null,
+  g:{backlash:0.15,pegClear:0.4,rpm:12,dir:1,playing:!matchMedia('(prefers-reduced-motion: reduce)').matches,showPitch:false,showPlate:false,expPlate:true} };
+const byId = id => S.gears.find(g => g.id === id);
+const labelOf = g => { const i = S.gears.indexOf(g); let s='', n=i; do { s = String.fromCharCode(65 + n % 26) + s; n = Math.floor(n/26) - 1; } while(n >= 0); return s; };
+
+/* ---------- presets ---------- */
+const PRESETS = {
+  pair(){ const a=mkGear({z:12,m:2,T:8}); const b=mkGear({z:36,parent:a.id,rel:'mesh',phi:0,holes:5}); return [a,b]; },
+  idler(){ const a=mkGear({z:18}); const b=mkGear({z:12,parent:a.id,rel:'mesh',phi:20}); const c=mkGear({z:24,parent:b.id,rel:'mesh',phi:-25,holes:4}); return [a,b,c]; },
+  twoStage(){ const a=mkGear({z:10,m:2,T:8}); const b=mkGear({z:30,parent:a.id,rel:'mesh',phi:0,holes:5});
+    const b2=mkGear({z:10,parent:b.id,rel:'coax',T:8}); const c=mkGear({z:30,parent:b2.id,rel:'mesh',phi:90,holes:5}); return [a,b,b2,c]; },
+  clock(){ const a=mkGear({z:10,m:1.5,T:6,bore:4}); const b=mkGear({z:30,parent:a.id,rel:'mesh',phi:0,holes:6});
+    const b2=mkGear({z:10,m:1,parent:b.id,rel:'coax',T:6,bore:4}); const c=mkGear({z:40,m:1,parent:b2.id,rel:'mesh',phi:90,T:6,bore:4,holes:6}); return [a,b,b2,c]; },
+  helical(){ const a=mkGear({z:15,type:'helical',beta:25,T:10}); const b=mkGear({z:27,parent:a.id,rel:'mesh',phi:0,type:'helical',beta:25,hand:-1,T:10,holes:4}); return [a,b]; },
+  herring(){ const a=mkGear({z:16,type:'herring',beta:30,T:12}); const b=mkGear({z:28,parent:a.id,rel:'mesh',phi:0,type:'herring',beta:30,hand:-1,T:12,holes:5}); return [a,b]; }
+};
+function loadPreset(k){
+  uid = 0; S.gears = PRESETS[k](); S.sel = S.gears[0].id; propagateAll();
+  rebuildAll(); fitView(true);
+}
+
+/* ---------- topology ---------- */
+function meshNeighbors(g){
+  const out = S.gears.filter(c => c.parent === g.id && c.rel === 'mesh');
+  if (g.rel === 'mesh') out.push(byId(g.parent));
+  return out;
+}
+function propagateFrom(src){
+  const seen = new Set([src.id]); const q = [src];
+  while (q.length){ const g = q.shift();
+    for (const n of meshNeighbors(g)) if (!seen.has(n.id)){ seen.add(n.id);
+      n.m = g.m; n.pa = g.pa; n.type = g.type; n.beta = g.beta; n.hand = -g.hand; q.push(n); } }
+}
+function propagateAll(){ S.gears.filter(g => g.rel !== 'mesh').forEach(propagateFrom); }
+function depth(g){ let d=0; while(g.parent){ g = byId(g.parent); d++; } return d; }
+function coaxRoot(g){ while (g.rel === 'coax') g = byId(g.parent); return g; }
+function compoundGroups(){
+  const map = new Map();
+  for (const g of S.gears){ const r = coaxRoot(g); if(!map.has(r.id)) map.set(r.id, []); map.get(r.id).push(g); }
+  return [...map.values()];
+}
+function layout(){
+  const L = new Map();
+  for (const g of S.gears){
+    if (g.rel === 'root'){ L.set(g.id, {x:0,y:0,zb:0}); continue; }
+    const p = byId(g.parent), pl = L.get(p.id);
+    if (g.rel === 'mesh'){ const a = g.m*(p.z+g.z)/2, f = g.phi*DEG; L.set(g.id, {x:pl.x+a*Math.cos(f), y:pl.y+a*Math.sin(f), zb:pl.zb}); }
+    else L.set(g.id, {x:pl.x, y:pl.y, zb:pl.zb+p.T});
+  }
+  return L;
+}
+function speeds(){
+  const W = new Map();
+  for (const g of S.gears){
+    if (g.rel === 'root') W.set(g.id, S.g.dir*S.g.rpm);
+    else { const p = byId(g.parent), wp = W.get(p.id); W.set(g.id, g.rel === 'mesh' ? -wp*p.z/g.z : wp); }
+  }
+  return W;
+}
+function angles(th0){
+  const A = new Map();
+  for (const g of S.gears){
+    if (g.rel === 'root'){ A.set(g.id, th0); continue; }
+    const p = byId(g.parent), tp = A.get(p.id);
+    if (g.rel === 'mesh'){ const f = g.phi*DEG; A.set(g.id, f + Math.PI - Math.PI/g.z + (p.z/g.z)*(f - tp)); }
+    else A.set(g.id, tp + g.phase*DEG);
+  }
+  return A;
+}
+const radii = g => { const a = g.pa*DEG, rp = g.m*g.z/2; return {rp, rb:rp*Math.cos(a), ra:rp+g.m, rf:Math.max(rp-1.25*g.m, 0.5)}; };
+function pegInfo(group){
+  const bores = group.map(g => g.dflat ? g.bore*0.9 : g.bore);
+  return { d: Math.max(0, Math.min(...bores) - S.g.pegClear) };
+}
+function conflicts(){
+  const L = layout(), bad = new Set(), msgs = [];
+  const groups = compoundGroups();
+  const gOf = new Map(); groups.forEach((gr,i) => gr.forEach(g => gOf.set(g.id, i)));
+  const gs = S.gears;
+  for (let i=0;i<gs.length;i++) for (let j=i+1;j<gs.length;j++){
+    const a = gs[i], b = gs[j];
+    if (gOf.get(a.id) === gOf.get(b.id)) continue;
+    if ((b.parent === a.id && b.rel === 'mesh') || (a.parent === b.id && a.rel === 'mesh')) continue;
+    const la = L.get(a.id), lb = L.get(b.id);
+    const zo = Math.min(la.zb+a.T, lb.zb+b.T) - Math.max(la.zb, lb.zb);
+    if (zo <= 0.01) continue;
+    const d = Math.hypot(la.x-lb.x, la.y-lb.y);
+    if (d < radii(a).ra + radii(b).ra + 0.3){ bad.add(a.id); bad.add(b.id); msgs.push(`${labelOf(a)} 与 ${labelOf(b)} 在同一层相互碰撞`); }
+  }
+  groups.forEach((gr,i) => {
+    const r = gr[0], lr = L.get(r.id), top = Math.max(...gr.map(g => L.get(g.id).zb + g.T)), pr = pegInfo(gr).d/2;
+    for (const g of gs){ if (gOf.get(g.id) === i) continue;
+      const lg = L.get(g.id); if (lg.zb >= top + 1.5) continue;
+      if (Math.hypot(lg.x-lr.x, lg.y-lr.y) < radii(g).ra + pr + 0.3 && !(g.rel==='mesh' && gr.some(x=>x.id===g.parent)) && !gr.some(x => x.parent===g.id && x.rel==='mesh')){
+        bad.add(g.id); msgs.push(`${labelOf(g)} 会碰到 ${labelOf(r)} 所在的轴销`); }
+    }
+  });
+  return {bad, msgs:[...new Set(msgs)]};
+}
+
+/* ---------- geometry ---------- */
+const inv = x => Math.tan(x) - x;
+function gearProfile(g, backlash){
+  const a = g.pa*DEG, {rp, rb, ra, rf} = radii(g);
+  const s = Math.PI*g.m/2 - backlash/2, psiP = s/(2*rp);
+  const psi = r => r <= rb ? psiP + inv(a) : psiP + inv(a) - inv(Math.acos(rb/r));
+  const P = TAU/g.z, rS = Math.max(rb, rf), NF = 9, warns = [];
+  let psiA = psi(ra); if (psiA <= 0.002){ psiA = 0.002; warns.push('齿顶已变尖，可增大齿数或换更大压力角'); }
+  const psiR = Math.min(rf < rb ? psi(rb) : psi(rf), P/2 - 0.002);
+  const pol = (r, t) => [r*Math.cos(t), r*Math.sin(t)];
+  const out = [];
+  for (let k=0; k<g.z; k++){
+    const c = k*P;
+    if (rf < rb) out.push(pol(rf, c - psiR));
+    for (let i=0;i<=NF;i++){ const u = i/NF, r = rS + (ra-rS)*(1-(1-u)*(1-u)); out.push(pol(r, c - Math.max(psi(r), psiA*(r>=ra-1e-9)))); }
+    for (let i=1;i<3;i++) out.push(pol(ra, c - psiA + 2*psiA*i/3));
+    for (let i=NF;i>=0;i--){ const u = i/NF, r = rS + (ra-rS)*(1-(1-u)*(1-u)); out.push(pol(r, c + Math.max(psi(r), psiA*(r>=ra-1e-9)))); }
+    if (rf < rb) out.push(pol(rf, c + psiR));
+    for (let i=1;i<4;i++) out.push(pol(rf, c + psiR + (P - 2*psiR)*i/4));
+  }
+  const clean = out.filter((p,i) => { const q = out[(i+out.length-1)%out.length]; return Math.hypot(p[0]-q[0], p[1]-q[1]) > 1e-4; });
+  const holes = [];
+  let br = g.bore/2;
+  const maxB = rf - Math.max(1.2, g.m*0.8);
+  if (br > maxB){ br = Math.max(0, maxB); if (g.bore > 0) warns.push('轴孔太大，已按齿根圆限制'); }
+  if (br > 0.3){
+    const flat = g.dflat ? br - Math.max(0.3, g.bore*0.1) : Infinity, N = 48, h = [];
+    for (let i=0;i<N;i++){ const t = -i/N*TAU; h.push([Math.min(br*Math.cos(t), flat), br*Math.sin(t)]); }
+    holes.push(h);
+  }
+  if (g.holes >= 2){
+    const hub = br + Math.max(2.5, g.bore*0.45), rim = rf - Math.max(1.6*g.m, 2), band = rim - hub;
+    if (band >= 4){
+      const hc = (hub+rim)/2, hr = Math.min(band*0.4, hc*Math.sin(Math.PI/g.holes)*0.72);
+      if (hr >= 1.2) for (let k=0;k<g.holes;k++){ const c = (k+0.5)*TAU/g.holes, h = [];
+        for (let i=0;i<32;i++){ const t = -i/32*TAU; h.push([hc*Math.cos(c)+hr*Math.cos(t), hc*Math.sin(c)+hr*Math.sin(t)]); } holes.push(h); }
+      else warns.push('齿轮太小，放不下减重孔');
+    } else warns.push('齿轮太小，放不下减重孔');
+  }
+  return {outer:clean, holes, warns};
+}
+function gearLayers(g){
+  const T = g.T;
+  if (g.type === 'spur') return [{z:0,r:0},{z:T,r:0}];
+  const rp = g.m*g.z/2, k = Math.tan(g.beta*DEG)/rp*g.hand;
+  if (g.type === 'helical'){ const n = Math.min(48, Math.max(2, Math.ceil(Math.abs(k*T)/(2.5*DEG))));
+    return Array.from({length:n+1}, (_,i) => { const z = T*i/n; return {z, r:k*z}; }); }
+  let n = Math.min(48, Math.max(2, Math.ceil(Math.abs(k*T/2)/(2.5*DEG))*2));
+  return Array.from({length:n+1}, (_,i) => { const z = T*i/n; return {z, r:k*(T/2 - Math.abs(z - T/2))}; });
+}
+const area = pts => { let s=0; for (let i=0;i<pts.length;i++){ const a=pts[i], b=pts[(i+1)%pts.length]; s += a[0]*b[1]-b[0]*a[1]; } return s/2; };
+function extrude(outer, holes, layers){
+  if (area(outer) < 0) outer = outer.slice().reverse();
+  holes = holes.map(h => area(h) > 0 ? h.slice().reverse() : h);
+  const pos = [], idx = [];
+  const rot = (p, r) => r ? [p[0]*Math.cos(r)-p[1]*Math.sin(r), p[0]*Math.sin(r)+p[1]*Math.cos(r)] : p;
+  const n = outer.length;
+  // outer side walls
+  const base = pos.length/3;
+  for (const L of layers) for (const p of outer){ const q = rot(p, L.r); pos.push(q[0], q[1], L.z); }
+  for (let l=0;l<layers.length-1;l++) for (let i=0;i<n;i++){
+    const a = base+l*n+i, b = base+l*n+(i+1)%n, c = b+n, d = a+n; idx.push(a,b,c, a,c,d); }
+  // hole walls
+  const zb = layers[0].z, zt = layers[layers.length-1].z;
+  for (const h of holes){ const m = h.length, b0 = pos.length/3;
+    for (const p of h) pos.push(p[0], p[1], zb);
+    for (const p of h) pos.push(p[0], p[1], zt);
+    for (let i=0;i<m;i++){ const a=b0+i, b=b0+(i+1)%m, c=b+m, d=a+m; idx.push(a,b,c, a,c,d); } }
+  // caps
+  const cap = (L, top) => {
+    const o = outer.map(p => rot(p, L.r)), flat = o.concat(...holes);
+    const tris = THREE.ShapeUtils.triangulateShape(o.map(p => new THREE.Vector2(p[0],p[1])), holes.map(h => h.map(p => new THREE.Vector2(p[0],p[1]))));
+    const b0 = pos.length/3; for (const p of flat) pos.push(p[0], p[1], L.z);
+    for (const t of tris){ const [A,B,C] = t.map(i => flat[i]);
+      const s = (B[0]-A[0])*(C[1]-A[1]) - (B[1]-A[1])*(C[0]-A[0]);
+      if ((s > 0) === top) idx.push(b0+t[0], b0+t[1], b0+t[2]); else idx.push(b0+t[0], b0+t[2], b0+t[1]); }
+  };
+  cap(layers[0], false); cap(layers[layers.length-1], true);
+  return {pos, idx};
+}
+function circlePts(r, n, cx=0, cy=0){ return Array.from({length:n}, (_,i) => [cx + r*Math.cos(i/n*TAU), cy + r*Math.sin(i/n*TAU)]); }
+function roundRect(x0, y0, x1, y1, r){
+  const pts = [], q = 8, cs = [[x1-r,y1-r,0],[x0+r,y1-r,90],[x0+r,y0+r,180],[x1-r,y0+r,270]];
+  for (const [cx,cy,a0] of cs) for (let i=0;i<=q;i++){ const t = (a0 + 90*i/q)*DEG; pts.push([cx+r*Math.cos(t), cy+r*Math.sin(t)]); }
+  return pts;
+}
+function cylinder(r, z0, z1, cx, cy){ const g = extrude(circlePts(r, 40, cx, cy), [], [{z:z0,r:0},{z:z1,r:0}]); return g; }
+const gearKey = (g, bl) => [g.z,g.m,g.pa,g.T,g.bore,g.dflat,g.holes,g.type,g.beta,g.hand,bl].join('|');
+const geoCache = new Map();
+function gearMesh(g){
+  const key = gearKey(g, S.g.backlash);
+  if (!geoCache.has(key)){ const p = gearProfile(g, S.g.backlash); geoCache.set(key, {...extrude(p.outer, p.holes, gearLayers(g)), warns:p.warns}); }
+  return geoCache.get(key);
+}
+function plateParts(){
+  const L = layout(), groups = compoundGroups(), parts = [];
+  let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;
+  for (const g of S.gears){ const l = L.get(g.id), ra = radii(g).ra; x0=Math.min(x0,l.x-ra); y0=Math.min(y0,l.y-ra); x1=Math.max(x1,l.x+ra); y1=Math.max(y1,l.y+ra); }
+  const M = 6, PT = 3;
+  parts.push(extrude(roundRect(x0-M, y0-M, x1+M, y1+M, 6), [], [{z:0,r:0},{z:PT,r:0}]));
+  for (const gr of groups){
+    const l = L.get(gr[0].id), zb = l.zb, top = Math.max(...gr.map(g => L.get(g.id).zb + g.T));
+    const pd = pegInfo(gr).d; if (pd < 1) continue;
+    parts.push(cylinder(pd/2 + 1.8, PT, PT + 1 + zb, l.x, l.y));
+    parts.push(cylinder(pd/2, PT + 1 + zb, PT + 1 + top + 1.5, l.x, l.y));
+  }
+  return parts;
+}
+
+/* ---------- STL & ZIP ---------- */
+function stl(parts, name){
+  let n = 0; for (const p of parts) n += p.idx.length/3;
+  const buf = new ArrayBuffer(84 + 50*n), dv = new DataView(buf);
+  const hdr = ('Gear Workshop ' + name).slice(0,79); for (let i=0;i<hdr.length;i++) dv.setUint8(i, hdr.charCodeAt(i) & 0x7f);
+  dv.setUint32(80, n, true); let o = 84;
+  for (const p of parts){ const P = p.pos, I = p.idx, dz = p.dz||0, dx = p.dx||0, dy = p.dy||0;
+    for (let t=0;t<I.length;t+=3){
+      const v = [0,1,2].map(k => [P[I[t+k]*3]+dx, P[I[t+k]*3+1]+dy, P[I[t+k]*3+2]+dz]);
+      const u = [v[1][0]-v[0][0], v[1][1]-v[0][1], v[1][2]-v[0][2]], w = [v[2][0]-v[0][0], v[2][1]-v[0][1], v[2][2]-v[0][2]];
+      let nx = u[1]*w[2]-u[2]*w[1], ny = u[2]*w[0]-u[0]*w[2], nz = u[0]*w[1]-u[1]*w[0]; const ln = Math.hypot(nx,ny,nz) || 1;
+      dv.setFloat32(o, nx/ln, true); dv.setFloat32(o+4, ny/ln, true); dv.setFloat32(o+8, nz/ln, true); o += 12;
+      for (const q of v){ dv.setFloat32(o, q[0], true); dv.setFloat32(o+4, q[1], true); dv.setFloat32(o+8, q[2], true); o += 12; }
+      dv.setUint16(o, 0, true); o += 2; } }
+  return new Uint8Array(buf);
+}
+const CRC = (() => { const t = new Uint32Array(256); for (let n=0;n<256;n++){ let c=n; for (let k=0;k<8;k++) c = c&1 ? 0xEDB88320^(c>>>1) : c>>>1; t[n]=c>>>0; } return t; })();
+const crc32 = u => { let c = 0xFFFFFFFF; for (let i=0;i<u.length;i++) c = CRC[(c^u[i])&0xFF]^(c>>>8); return (c^0xFFFFFFFF)>>>0; };
+function zip(files){
+  const enc = new TextEncoder(), chunks = [], central = []; let off = 0;
+  const d = new Date(), time = (d.getHours()<<11)|(d.getMinutes()<<5)|(d.getSeconds()>>1), date = ((d.getFullYear()-1980)<<9)|((d.getMonth()+1)<<5)|d.getDate();
+  for (const f of files){
+    const nm = enc.encode(f.name), data = typeof f.data === 'string' ? enc.encode(f.data) : f.data, crc = crc32(data);
+    const h = new DataView(new ArrayBuffer(30));
+    h.setUint32(0,0x04034b50,true); h.setUint16(4,20,true); h.setUint16(6,0x0800,true); h.setUint16(8,0,true);
+    h.setUint16(10,time,true); h.setUint16(12,date,true); h.setUint32(14,crc,true); h.setUint32(18,data.length,true); h.setUint32(22,data.length,true);
+    h.setUint16(26,nm.length,true); h.setUint16(28,0,true);
+    chunks.push(new Uint8Array(h.buffer), nm, data);
+    const c = new DataView(new ArrayBuffer(46));
+    c.setUint32(0,0x02014b50,true); c.setUint16(4,20,true); c.setUint16(6,20,true); c.setUint16(8,0x0800,true); c.setUint16(10,0,true);
+    c.setUint16(12,time,true); c.setUint16(14,date,true); c.setUint32(16,crc,true); c.setUint32(20,data.length,true); c.setUint32(24,data.length,true);
+    c.setUint16(28,nm.length,true); c.setUint32(42,off,true);
+    central.push(new Uint8Array(c.buffer), nm);
+    off += 30 + nm.length + data.length;
+  }
+  const cdSize = central.reduce((s,u) => s+u.length, 0), e = new DataView(new ArrayBuffer(22));
+  e.setUint32(0,0x06054b50,true); e.setUint16(8,files.length,true); e.setUint16(10,files.length,true); e.setUint32(12,cdSize,true); e.setUint32(16,off,true);
+  return new Blob([...chunks, ...central, new Uint8Array(e.buffer)], {type:'application/zip'});
+}
+const fmt = (v, d=2) => (+v).toFixed(d).replace(/\.?0+$/, '');
+function partFiles(groups){
+  const L = layout();
+  return groups.map(gr => {
+    const z0 = L.get(gr[0].id).zb;
+    const parts = gr.map(g => ({...gearMesh(g), dz: L.get(g.id).zb - z0}));
+    const name = gr.length > 1 ? `part_${gr.map(labelOf).join('')}_compound_z${gr.map(g=>g.z).join('-')}.stl` : `part_${labelOf(gr[0])}_z${gr[0].z}_m${fmt(gr[0].m)}.stl`;
+    return {name, data: stl(parts, name)};
+  });
+}
+function readme(withPlate){
+  const L = layout(), W = speeds(), typeN = {spur:'直齿',helical:'斜齿',herring:'人字齿'};
+  const lines = ['齿轮工坊导出清单','', `齿侧间隙 ${S.g.backlash} mm，轴销间隙 ${S.g.pegClear} mm`, `主动轮 ${labelOf(S.gears[0])}：${S.g.rpm} rpm`, '',
+    '齿轮  齿数  模数  压力角  齿宽  轴孔   齿形      关系         转速(rpm)  分度圆直径'];
+  for (const g of S.gears){ const rel = g.rel==='root' ? '主动' : (g.rel==='mesh'?'啮合 ':'同轴 ') + (g.rel!=='root'?labelOf(byId(g.parent)):'');
+    lines.push([labelOf(g).padEnd(5), String(g.z).padEnd(5), fmt(g.m).padEnd(5), (g.pa+'°').padEnd(7), fmt(g.T).padEnd(5), (fmt(g.bore)+(g.dflat?'D':'')).padEnd(6),
+      (typeN[g.type] + (g.type!=='spur'?` ${g.beta}°${g.hand>0?'右':'左'}`:'')).padEnd(9), rel.padEnd(12), fmt(W.get(g.id)).padEnd(10), fmt(g.m*g.z)].join(' ')); }
+  lines.push('', '打印建议：', '- 齿面平放（STL 已按 Z 向上摆好），层高 0.12–0.2 mm，外壁 3 圈以上，填充 30% 以上。',
+    '- 同轴齿轮已合并为一个零件 (compound)，直接整体打印。', '- 斜齿/人字齿啮合的两只齿轮旋向相反，已自动生成。');
+  if (withPlate) lines.push('- base_plate.stl：底板 3 mm，每根轴销下方有垫高台，让各层齿轮落在正确高度。轴销太紧可调大"轴销间隙"重新导出。');
+  return lines.join('\r\n');
+}
+function syncExportUI(){}
+function saveBlob(blob, name){
+  const url = URL.createObjectURL(blob), a = document.createElement('a');
+  a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+function setStatus(t, cls=''){ const el = $('#expStatus'); el.textContent = t; el.className = 'status ' + cls; }
+async function doExport(all){
+  const groups = compoundGroups(); const sel = byId(S.sel);
+  const use = all ? groups : groups.filter(gr => gr.includes(sel));
+  const files = partFiles(use);
+  if (all && S.g.expPlate) files.push({name:'base_plate.stl', data: stl(plateParts(), 'base plate')});
+  files.push({name:'README.txt', data: readme(all && S.g.expPlate)});
+  const name = all ? `gear-set-${S.gears.length}gears.zip` : `${files[0].name.replace('.stl','')}.zip`;
+  try { saveBlob(zip(files), name); setStatus(`已下载 ${name}（${files.length-1} 个 STL）`, 'ok'); }
+  catch(e){ setStatus('导出失败：' + (e && e.message || e), 'err'); }
+}
+
+/* ---------- three.js scene ---------- */
+const vp = $('#viewport');
+let renderer, scene, camera, controls, grid, plateGroup, ok = true;
+try {
+  renderer = new THREE.WebGLRenderer({antialias:true}); renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  vp.appendChild(renderer.domElement);
+} catch(e){ ok = false; vp.innerHTML = '<div class="nogl">此设备无法启用 WebGL 3D 预览，仍可编辑参数并导出 STL。</div>'; }
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const views = new Map();
+let raycastTargets = [];
+if (ok){
+  scene = new THREE.Scene();
+  camera = new THREE.PerspectiveCamera(38, 1, 1, 6000);
+  controls = new THREE.OrbitControls(camera, renderer.domElement); controls.enableDamping = true; controls.dampingFactor = 0.12;
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x556070, 0.85));
+  const d1 = new THREE.DirectionalLight(0xffffff, 0.85); d1.position.set(120, 260, 160); scene.add(d1);
+  const d2 = new THREE.DirectionalLight(0xffffff, 0.3); d2.position.set(-160, 80, -120); scene.add(d2);
+  plateGroup = new THREE.Group(); scene.add(plateGroup);
+  applyTheme();
+  new ResizeObserver(resize).observe(vp);
+  new MutationObserver(applyTheme).observe(document.documentElement, {attributes:true, attributeFilter:['data-theme']});
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
+  let down = null;
+  renderer.domElement.addEventListener('pointerdown', e => down = [e.clientX, e.clientY]);
+  renderer.domElement.addEventListener('pointerup', e => {
+    if (!down || Math.hypot(e.clientX-down[0], e.clientY-down[1]) > 5) return;
+    const r = renderer.domElement.getBoundingClientRect();
+    const ray = new THREE.Raycaster(); ray.setFromCamera({x:(e.clientX-r.left)/r.width*2-1, y:-(e.clientY-r.top)/r.height*2+1}, camera);
+    const hit = ray.intersectObjects(raycastTargets)[0];
+    if (hit){ S.sel = hit.object.userData.id; renderList(); renderEditor(); highlight(); }
+  });
+}
+function applyTheme(){
+  if (!ok) return;
+  scene.background = new THREE.Color(css('--stage'));
+  if (grid) scene.remove(grid);
+  grid = new THREE.GridHelper(600, 60, new THREE.Color(css('--grid-a')), new THREE.Color(css('--grid-b')));
+  grid.position.y = S.g.showPlate ? -4.05 : -0.05; scene.add(grid);
+  highlight();
+}
+function resize(){ const w = vp.clientWidth, h = vp.clientHeight; if (!w || !h) return; renderer.setSize(w, h, false); camera.aspect = w/h; camera.updateProjectionMatrix(); }
+function toGeo(m){ const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(m.pos, 3)); geo.setIndex(m.idx); geo.computeVertexNormals(); return geo; }
+function rebuildAll(){
+  if (ok){
+    const L = layout();
+    for (const [id, v] of views) if (!byId(id)){ scene.remove(v.group); v.mesh.geometry.dispose(); views.delete(id); }
+    for (const g of S.gears){
+      let v = views.get(g.id);
+      if (!v){ const group = new THREE.Group(), holder = new THREE.Group(); holder.rotation.x = -Math.PI/2; group.add(holder);
+        const mat = new THREE.MeshStandardMaterial({roughness:0.58, metalness:0.04});
+        const mesh = new THREE.Mesh(new THREE.BufferGeometry(), mat); mesh.userData.id = g.id; holder.add(mesh);
+        v = {group, holder, mesh, key:'', pitch:null}; views.set(g.id, v); scene.add(group); }
+      const key = gearKey(g, S.g.backlash);
+      if (v.key !== key){ v.mesh.geometry.dispose(); v.mesh.geometry = toGeo(gearMesh(g)); v.key = key;
+        if (v.pitch){ v.mesh.remove(v.pitch); v.pitch.geometry.dispose(); }
+        const pts = circlePts(g.m*g.z/2, 96).map(p => new THREE.Vector3(p[0], p[1], g.T + 0.08));
+        v.pitch = new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({color:0xffffff})); v.mesh.add(v.pitch); }
+      v.pitch.visible = S.g.showPitch;
+      v.mesh.material.color.set(g.color);
+      const l = L.get(g.id); v.group.position.set(l.x, l.zb, -l.y);
+    }
+    raycastTargets = [...views.values()].map(v => v.mesh);
+    buildPlatePreview(); highlight();
+  }
+  renderList(); renderEditor(); renderHud();
+}
+function buildPlatePreview(){
+  while (plateGroup.children.length){ const c = plateGroup.children.pop(); c.geometry.dispose(); }
+  plateGroup.visible = S.g.showPlate; grid.position.y = S.g.showPlate ? -4.05 : -0.05;
+  if (!S.g.showPlate) return;
+  const mat = new THREE.MeshStandardMaterial({color:new THREE.Color('#9aa3ab'), roughness:0.7});
+  const holder = new THREE.Group(); holder.rotation.x = -Math.PI/2; holder.position.y = -4;
+  for (const p of plateParts()){ const m = new THREE.Mesh(toGeo(p), mat); holder.add(m); }
+  plateGroup.add(holder);
+}
+function highlight(){
+  if (!ok) return; const {bad} = conflicts();
+  for (const [id, v] of views){ const e = v.mesh.material.emissive;
+    if (bad.has(id)) e.set('#7a1010'); else if (id === S.sel) e.set(css('--accent')).multiplyScalar(0.28); else e.set(0x000000); }
+}
+function fitView(top=false){
+  if (!ok) return; const L = layout();
+  let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity, zt = 0;
+  for (const g of S.gears){ const l = L.get(g.id), ra = radii(g).ra; x0=Math.min(x0,l.x-ra); y0=Math.min(y0,l.y-ra); x1=Math.max(x1,l.x+ra); y1=Math.max(y1,l.y+ra); zt=Math.max(zt,l.zb+g.T); }
+  const cx = (x0+x1)/2, cz = -(y0+y1)/2, R = Math.max(x1-x0, y1-y0, 30)/2;
+  const dist = R / Math.tan(camera.fov*DEG/2) * (camera.aspect < 1 ? 1.9 : 1.35);
+  controls.target.set(cx, zt/2, cz);
+  if (top) camera.position.set(cx + 0.001, dist + zt, cz + 0.001);
+  else camera.position.set(cx + dist*0.45, dist*0.75, cz + dist*0.75);
+  camera.updateProjectionMatrix(); controls.update();
+}
+let th0 = 0, last = performance.now();
+function frame(now){
+  const dt = Math.min(0.1, (now - last)/1000); last = now;
+  if (S.g.playing) th0 += S.g.dir * S.g.rpm/60*TAU*dt;
+  if (ok){ const A = angles(th0); for (const g of S.gears){ const v = views.get(g.id); if (v) v.mesh.rotation.z = A.get(g.id); }
+    controls.update(); renderer.render(scene, camera); }
+  requestAnimationFrame(frame);
+}
+
+/* ---------- UI ---------- */
+const relText = g => g.rel === 'root' ? '主动轮' : (g.rel === 'mesh' ? '啮合于 ' : '同轴于 ') + labelOf(byId(g.parent));
+const rpmTxt = w => `${Math.abs(w) < 10 ? fmt(Math.abs(w), 2) : fmt(Math.abs(w), 1)} ${w >= 0 ? '↺' : '↻'}`;
+function renderList(){
+  const W = speeds(), {bad} = conflicts(), ul = $('#gearList'); ul.textContent = '';
+  for (const g of S.gears){
+    const li = document.createElement('li'); li.setAttribute('role','option'); li.setAttribute('aria-selected', g.id === S.sel); li.tabIndex = 0;
+    li.style.paddingLeft = (10 + depth(g)*14) + 'px';
+    const sw = document.createElement('span'); sw.className = 'sw'; sw.style.background = g.color;
+    const lab = document.createElement('span'); lab.className = 'lab'; lab.textContent = labelOf(g);
+    const meta = document.createElement('span'); meta.className = 'meta';
+    meta.innerHTML = `<b>z${g.z}</b> · m${fmt(g.m)} · ${relText(g)}`;
+    const r = document.createElement('span'); r.className = 'rpm';
+    if (bad.has(g.id)){ const c = document.createElement('span'); c.className='chip warn'; c.textContent='干涉'; r.append(c, ' '); }
+    else if (g.rel === 'root'){ const c = document.createElement('span'); c.className='chip drv'; c.textContent='主动'; r.append(c, ' '); }
+    r.append(rpmTxt(W.get(g.id)) + ' rpm');
+    li.append(sw, lab, meta, r);
+    const pick = () => { S.sel = g.id; renderList(); renderEditor(); highlight(); renderHud(); };
+    li.addEventListener('click', pick); li.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); pick(); } });
+    ul.append(li);
+  }
+}
+const SW = $('#swatches');
+FIL.forEach(f => { const b = document.createElement('button'); b.style.background = f.c; b.title = f.n; b.setAttribute('aria-label', '颜色 ' + f.n); b.dataset.c = f.c;
+  b.addEventListener('click', () => { const g = byId(S.sel); g.color = f.c; rebuildAll(); }); SW.append(b); });
+function renderEditor(){
+  const g = byId(S.sel); if (!g) return;
+  $('#edTitle').innerHTML = `齿轮 <b>${labelOf(g)}</b>`; $('#edRel').textContent = relText(g);
+  $('#f-z').value = g.z; $('#f-zr').value = Math.min(120, g.z); $('#f-m').value = String(g.m); $('#f-pa').value = String(g.pa);
+  $('#f-T').value = g.T; $('#f-Tr').value = Math.min(30, g.T); $('#f-bore').value = g.bore; $('#f-dflat').checked = g.dflat;
+  $('#f-holes').value = g.holes; $('#v-holes').textContent = g.holes < 2 ? '无' : g.holes + ' 个';
+  document.querySelectorAll('input[name=f-type]').forEach(r => r.checked = r.value === g.type);
+  $('#row-beta').hidden = g.type === 'spur'; $('#f-beta').value = g.beta; $('#v-beta').textContent = `${g.beta}° ${g.hand>0?'右旋':'左旋'}`;
+  $('#row-phi').hidden = g.rel !== 'mesh'; $('#f-phi').value = g.phi; $('#v-phi').textContent = g.phi + '°';
+  $('#row-phase').hidden = g.rel !== 'coax'; $('#f-phase').value = g.phase; $('#v-phase').textContent = g.phase + '°';
+  SW.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b.dataset.c === g.color));
+  const {rp, rb, ra, rf} = radii(g), a = g.pa*DEG;
+  const specs = [['分度圆 d', fmt(2*rp)], ['齿顶圆 da', fmt(2*ra)], ['齿根圆 df', fmt(2*rf)], ['基圆 db', fmt(2*rb)], ['齿距 p', fmt(Math.PI*g.m)]];
+  const W = speeds(), wd = W.get(S.gears[0].id), wg = W.get(g.id);
+  specs.push(['对主动轮', g.rel==='root' ? '1 : 1' : `${fmt(Math.abs(wd/wg))} : 1`]);
+  const warns = [...gearMesh(g).warns];
+  if (g.rel === 'mesh'){ const p = byId(g.parent), r1 = radii(p), cd = g.m*(p.z+g.z)/2;
+    const eps = (Math.sqrt(r1.ra**2 - r1.rb**2) + Math.sqrt(ra**2 - rb**2) - cd*Math.sin(a)) / (Math.PI*g.m*Math.cos(a));
+    specs.push(['中心距 a', fmt(cd)], ['重合度 ε', fmt(eps)], ['与 '+labelOf(p)+' 比', `${p.z} : ${g.z}`]);
+    if (eps < 1.15) warns.push(`与 ${labelOf(p)} 的重合度只有 ${fmt(eps)}，传动会顿挫，建议增加齿数`); }
+  const zmin = Math.ceil(2/Math.sin(a)**2 - 0.001);
+  if (g.z < zmin) warns.push(`齿数少于 ${zmin}，${g.pa}° 压力角下齿根会根切，强度变弱；打印玩具传动一般仍可用`);
+  const {msgs} = conflicts(); msgs.filter(m => m.includes(labelOf(g))).forEach(m => warns.push(m));
+  $('#specs').innerHTML = specs.map(([k,v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('');
+  $('#warns').innerHTML = ''; warns.forEach(w => { const p = document.createElement('p'); p.textContent = w; $('#warns').append(p); });
+  const sub = countSub(g);
+  const del = $('#delBtn'); del.disabled = g.rel === 'root';
+  del.textContent = g.rel === 'root' ? '主动轮不能删除' : (armed === g.id ? `确认删除 ${labelOf(g)}${sub?` 及 ${sub} 个下游齿轮`:''}` : `删除 ${labelOf(g)}${sub?`（连同 ${sub} 个下游齿轮）`:''}`);
+  $('#addMesh').textContent = `+ 与 ${labelOf(g)} 啮合`; $('#addCoax').textContent = `+ 叠在 ${labelOf(g)} 上`;
+}
+function countSub(g){ let n = 0; for (const c of S.gears) if (c.parent === g.id) n += 1 + countSub(c); return n; }
+function renderHud(){
+  const W = speeds(), d = S.gears[0], g = byId(S.sel) || d, {msgs} = conflicts();
+  let slow = S.gears[0]; for (const x of S.gears) if (Math.abs(W.get(x.id)) < Math.abs(W.get(slow.id))) slow = x;
+  const ratio = Math.abs(W.get(d.id)/W.get(slow.id));
+  $('#hud').innerHTML = `
+    <div class="card"><div class="k">主动 ${labelOf(d)}</div><div class="big">${fmt(S.g.rpm,1)} <small style="font-size:13px">rpm</small></div></div>
+    <div class="card"><div class="k">选中 ${labelOf(g)}</div><div class="big">${rpmTxt(W.get(g.id))} <small style="font-size:13px">rpm</small></div></div>
+    <div class="card"><div class="k">最慢 ${labelOf(slow)} · 总传动比</div><div class="big">${ratio >= 1 ? fmt(ratio) + ' : 1' : '1 : ' + fmt(1/ratio)}</div></div>
+    ${msgs.length ? `<div class="card" style="color:var(--warn)"><div class="k" style="color:var(--warn)">干涉</div>${msgs.length} 处，见左侧红色标记</div>` : ''}`;
+}
+function freePhi(parent, z){
+  const tryG = {...mkGearDummy(parent, z)};
+  for (let k=0;k<24;k++){ const phi = [0,90,-90,45,-45,135,-135,180][k%8] + (k>=8 ? (k>=16?-20:20) : 0);
+    S.gears.push({...tryG, phi}); const {bad} = conflicts(); S.gears.pop();
+    if (!bad.has(-1)) return phi; }
+  return 0;
+}
+function mkGearDummy(p, z){ return {id:-1,parent:p.id,rel:'mesh',phi:0,z,m:p.m,pa:p.pa,T:p.T,bore:p.bore,dflat:false,holes:0,type:p.type,beta:p.beta,hand:-p.hand,color:'#888',phase:0}; }
+let armed = null;
+function bind(){
+  const upd = (fn, geo=true) => e => { const g = byId(S.sel); fn(g, e.target); armed = null; rebuildAll(); };
+  const num = (el, lo, hi) => { const v = parseFloat(el.value); return isFinite(v) ? Math.max(lo, Math.min(hi, v)) : null; };
+  $('#f-zr').addEventListener('input', upd((g,el) => g.z = +el.value));
+  $('#f-z').addEventListener('change', upd((g,el) => { const v = num(el,6,200); if (v) g.z = Math.round(v); }));
+  $('#f-m').addEventListener('change', upd((g,el) => { g.m = +el.value; propagateFrom(g); }));
+  $('#f-pa').addEventListener('change', upd((g,el) => { g.pa = +el.value; propagateFrom(g); }));
+  $('#f-Tr').addEventListener('input', upd((g,el) => g.T = +el.value));
+  $('#f-T').addEventListener('change', upd((g,el) => { const v = num(el,1,60); if (v) g.T = v; }));
+  $('#f-bore').addEventListener('change', upd((g,el) => { const v = num(el,0,80); if (v !== null) g.bore = v; }));
+  $('#f-dflat').addEventListener('change', upd((g,el) => g.dflat = el.checked));
+  $('#f-holes').addEventListener('input', upd((g,el) => g.holes = +el.value < 2 ? 0 : +el.value));
+  document.querySelectorAll('input[name=f-type]').forEach(r => r.addEventListener('change', upd((g,el) => { g.type = el.value; propagateFrom(g); })));
+  $('#f-beta').addEventListener('input', upd((g,el) => { g.beta = +el.value; propagateFrom(g); }));
+  $('#f-phi').addEventListener('input', upd((g,el) => g.phi = +el.value));
+  $('#f-phase').addEventListener('input', upd((g,el) => g.phase = +el.value));
+  const pair = (r, n, key, lo, hi) => {
+    const set = v => { S.g[key] = v; $(r).value = v; $(n).value = v; geoCache.clear(); rebuildAll(); };
+    $(r).value = $(n).value = S.g[key];
+    $(r).addEventListener('input', e => set(+e.target.value));
+    $(n).addEventListener('change', e => { const v = num(e.target, lo, hi); if (v !== null) set(v); });
+  };
+  pair('#g-blr', '#g-bl', 'backlash', 0, 1); pair('#g-pcr', '#g-pc', 'pegClear', 0, 2);
+  $('#addMesh').addEventListener('click', () => { const p = byId(S.sel), z = p.z >= 24 ? 14 : 24;
+    const g = mkGear({parent:p.id, rel:'mesh', z, m:p.m, pa:p.pa, T:p.T, bore:p.bore, type:p.type, beta:p.beta, hand:-p.hand, phi: freePhi(p, z), holes: z >= 30 ? 4 : 0});
+    S.gears.push(g); S.sel = g.id; armed = null; rebuildAll(); });
+  $('#addCoax').addEventListener('click', () => { const p = byId(S.sel);
+    const g = mkGear({parent:p.id, rel:'coax', z: p.z >= 20 ? 10 : 30, m:p.m, pa:p.pa, T:p.T, bore:p.bore, type:'spur'});
+    S.gears.push(g); S.sel = g.id; armed = null; rebuildAll(); });
+  $('#delBtn').addEventListener('click', () => { const g = byId(S.sel); if (!g || g.rel === 'root') return;
+    if (armed !== g.id){ armed = g.id; renderEditor(); return; }
+    const kill = new Set([g.id]); for (const c of S.gears) if (kill.has(c.parent)) kill.add(c.id);
+    S.gears = S.gears.filter(x => !kill.has(x.id)); S.sel = g.parent; armed = null; rebuildAll(); });
+  $('#preset').addEventListener('change', e => { if (e.target.value){ loadPreset(e.target.value); e.target.value = ''; } });
+  const play = $('#playBtn');
+  const syncPlay = () => { play.textContent = S.g.playing ? '暂停' : '播放'; play.setAttribute('aria-pressed', S.g.playing); play.classList.toggle('primary', S.g.playing); };
+  play.addEventListener('click', () => { S.g.playing = !S.g.playing; syncPlay(); }); syncPlay();
+  const dir = $('#dirBtn'); const syncDir = () => dir.textContent = S.g.dir > 0 ? '逆时针 ↺' : '顺时针 ↻';
+  dir.addEventListener('click', () => { S.g.dir *= -1; syncDir(); renderList(); renderEditor(); renderHud(); }); syncDir();
+  const rpm = $('#rpm'); rpm.value = S.g.rpm; $('#v-rpm').textContent = S.g.rpm + ' rpm';
+  rpm.addEventListener('input', () => { S.g.rpm = +rpm.value; $('#v-rpm').textContent = S.g.rpm + ' rpm'; renderList(); renderEditor(); renderHud(); });
+  $('#t-pitch').addEventListener('change', e => { S.g.showPitch = e.target.checked; rebuildAll(); });
+  $('#t-plate').addEventListener('change', e => { S.g.showPlate = e.target.checked; if (ok) buildPlatePreview(); });
+  $('#x-plate').addEventListener('change', e => S.g.expPlate = e.target.checked);
+  $('#viewTop').addEventListener('click', () => fitView(true));
+  $('#view3d').addEventListener('click', () => fitView(false));
+  $('#expAll').addEventListener('click', () => doExport(true));
+  $('#expSel').addEventListener('click', () => doExport(false));
+}
+bind();
+if (ok) resize();
+loadPreset('twoStage');
+fitView(false);
+syncExportUI();
+requestAnimationFrame(frame);
+})();
+</script>
+
+</body>
+</html>

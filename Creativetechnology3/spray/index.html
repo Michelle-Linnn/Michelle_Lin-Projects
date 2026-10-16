@@ -96,6 +96,8 @@
   }
   .meta dd { margin: 4px 0 0; font-size: 14.5px; font-weight: 500; }
   .meta dt { margin: 0; }
+  a.inl { color: inherit; text-decoration-color: var(--spray); text-underline-offset: 3px; }
+  a.inl:hover, a.inl:focus-visible { color: var(--spray); }
 
   /* ---------- Try-it CTA ---------- */
   .try { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; margin-top: 28px; }
@@ -140,6 +142,7 @@
   .flow-svg text { text-anchor: middle; font-family: "Archivo", system-ui, sans-serif; }
   .flow-svg .tt { font-size: 21px; font-weight: 700; fill: #f1f1ed; }
   .flow-svg .ss { font-size: 14.5px; fill: #a9acb2; }
+  .flow-svg .tt.sm { font-size: 17px; }
   .flow-svg .tg { font: 600 11.5px "JetBrains Mono", monospace; letter-spacing: .1em; }
   .flow-svg .nt { text-anchor: start; font-size: 13px; fill: var(--ink-2); }
   .flow-svg .up { text-anchor: start; font: 600 12px "JetBrains Mono", monospace; letter-spacing: .12em; fill: var(--ink); }
@@ -224,6 +227,10 @@
   .gallery figure { margin: 0; display: grid; gap: 8px; }
   .gallery img { display: block; width: 100%; max-width: 100%; border-radius: 4px; aspect-ratio: 843 / 1000; object-fit: cover; }
   .gallery .wide img { aspect-ratio: 3030 / 2033; }
+  #v2 .gallery { grid-template-columns: minmax(0, 2.6fr) minmax(0, 1fr); align-items: start; }
+  #v2 .gallery img { aspect-ratio: auto; height: auto; object-fit: contain; }
+  #v2 .gallery .phone img { max-width: 300px; }
+  section#v2 { scroll-margin-top: 20px; }
   .gallery figcaption { font-size: 13.5px; color: var(--ink-2); }
 
   /* ---------- Reflection ---------- */
@@ -252,6 +259,7 @@
     .point { grid-template-columns: minmax(0, 1fr); }
     .palette { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   }
+  @media (max-width: 700px) { #v2 .gallery { grid-template-columns: minmax(0, 1fr); } }
   @media (max-width: 560px) {
     .type-row, .gallery, .two { grid-template-columns: minmax(0, 1fr); }
     .reel .sticker { right: 0; }
@@ -273,9 +281,9 @@
       <h1 class="display">STREET<br>SPRAY<span class="tag">air graffiti wall</span></h1>
       <p class="sub">Hold up one index finger and the screen becomes a street wall you can tag in mid-air. A gesture-painting experiment built with nothing but a webcam and a browser.</p>
       <dl class="meta">
-        <div><dt class="label">Type</dt><dd>Personal experiment · Interactive prototype</dd></div>
+        <div><dt class="label">Type</dt><dd>Personal experiment · v1 hand tracking, <a href="#v2" class="inl">v2 phone spray can</a></dd></div>
         <div><dt class="label">Date</dt><dd>September 2026</dd></div>
-        <div><dt class="label">Stack</dt><dd>p5.js · MediaPipe Hands · Canvas 2D</dd></div>
+        <div><dt class="label">Stack</dt><dd>p5.js · MediaPipe Hands · Node.js WebSocket · iOS motion sensors</dd></div>
         <div><dt class="label">Role</dt><dd>Concept, interaction, visual design, code</dd></div>
       </dl>
       <div class="try">
@@ -323,7 +331,7 @@
       <div class="prose"><p>The fingertip is treated as a spray nozzle. Its position and per-frame velocity fan out to three modules (coordinate mapping, spray control and the word trigger), which all feed a single p5.js renderer. Because rendering is decoupled from input and output, the same drawing logic can later move from a webcam and browser to motion capture and an LED wall.</p></div>
       <figure class="flow" id="flow">
         <div class="flow-scroll"><svg class="flow-svg" viewBox="0 0 1000 1030" role="img" aria-labelledby="flowTitle">
-<title id="flowTitle">Logic flow: Webcam Input to MediaPipe Hands to Index Fingertip nozzle, branching to Coordinate Mapping, Spray Control and Type Trigger, merging into the p5.js Renderer and Web Canvas Output, with an upgrade path to OptiTrack or RealSense tracking, physical can sensors and an LED wall.</title>
+<title id="flowTitle">Logic flow: Webcam Input to MediaPipe Hands to Index Fingertip nozzle, branching to Coordinate Mapping, Spray Control and Type Trigger, merging into the p5.js Renderer and Web Canvas Output, with an upgrade path to OptiTrack or RealSense tracking, physical can sensors (built in version 2) and an LED wall.</title>
 <defs><marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 1 L9 5 L0 9 z" fill="currentColor"/></marker></defs>
 <rect x="330" y="20" width="340" height="80" rx="10" fill="#1b1d22" stroke="#00e5ff" stroke-width="2"/>
 <text x="500.0" y="42.0" class="tg" fill="#00e5ff">START</text>
@@ -338,7 +346,8 @@
 <rect x="300" y="260" width="400" height="80" rx="10" fill="#1b1d22" stroke="#ff8a00" stroke-width="2"/>
 <text x="500.0" y="299.0" class="tt">Index Fingertip = Nozzle</text>
 <text x="500.0" y="318.0" class="ss">Position (x, y) + frame velocity v</text>
-<text x="688" y="277" class="ct" fill="#ff8a00">CODE ↓</text></a>
+<text x="688" y="277" class="ct" fill="#ff8a00">CODE ↓</text>
+</a>
 <path d="M500 340 V370 M170 370 H830" class="wire" fill="none" stroke="currentColor" stroke-width="2"/>
 <path d="M170 370 V396" class="wire" fill="none" stroke="currentColor" stroke-width="2" marker-end="url(#arr)"/>
 <path d="M500 370 V396" class="wire" fill="none" stroke="currentColor" stroke-width="2" marker-end="url(#arr)"/>
@@ -348,19 +357,22 @@
 <text x="170.0" y="439.0" class="tt">Coordinate Mapping</text>
 <text x="170.0" y="458.0" class="ss">Fingertip → canvas UV</text>
 <text x="170.0" y="478.0" class="ss">Align to portrait pixels</text>
-<text x="298" y="417" class="ct" fill="#00e5ff">CODE ↓</text></a>
+<text x="298" y="417" class="ct" fill="#00e5ff">CODE ↓</text>
+</a>
 <a class="node" href="#code-spray" role="button" aria-label="Spray Control: jump to code">
 <rect x="360" y="400" width="280" height="100" rx="10" fill="#1b1d22" stroke="#ff2bd6" stroke-width="2"/>
 <text x="500.0" y="439.0" class="tt">Spray Control</text>
 <text x="500.0" y="458.0" class="ss">Velocity → amount / splatter</text>
 <text x="500.0" y="478.0" class="ss">Idle or lost hand → stop</text>
-<text x="628" y="417" class="ct" fill="#ff2bd6">CODE ↓</text></a>
+<text x="628" y="417" class="ct" fill="#ff2bd6">CODE ↓</text>
+</a>
 <a class="node" href="#code-type" role="button" aria-label="Type Trigger: jump to code">
 <rect x="690" y="400" width="280" height="100" rx="10" fill="#1b1d22" stroke="#ffe600" stroke-width="2"/>
 <text x="830.0" y="439.0" class="tt">Type Trigger</text>
 <text x="830.0" y="458.0" class="ss">Travel distance threshold</text>
 <text x="830.0" y="478.0" class="ss">Spawn VIBE / MASH</text>
-<text x="958" y="417" class="ct" fill="#ffe600">CODE ↓</text></a>
+<text x="958" y="417" class="ct" fill="#ffe600">CODE ↓</text>
+</a>
 <path d="M170 500 V530 M830 500 V530 M170 530 H830" class="wire" fill="none" stroke="currentColor" stroke-width="2"/>
 <path d="M500 500 V556" class="wire" fill="none" stroke="currentColor" stroke-width="2" marker-end="url(#arr)"/>
 <a class="node" href="#code-render" role="button" aria-label="p5.js Renderer: jump to code">
@@ -368,14 +380,16 @@
 <text x="500.0" y="594.0" class="tt">p5.js Renderer</text>
 <text x="500.0" y="613.0" class="ss">Neon gradient strokes · noise particles · drips</text>
 <text x="500.0" y="633.0" class="ss">High-absorbency dark canvas</text>
-<text x="718" y="577" class="ct" fill="#39ff14">CODE ↓</text></a>
+<text x="718" y="577" class="ct" fill="#39ff14">CODE ↓</text>
+</a>
 <path d="M500 650 V686" class="wire" fill="none" stroke="currentColor" stroke-width="2" marker-end="url(#arr)"/>
 <rect x="330" y="690" width="340" height="80" rx="10" fill="#1b1d22" stroke="#00e5ff" stroke-width="2"/>
 <text x="500.0" y="729.0" class="tt">Web Canvas Output</text>
 <text x="500.0" y="748.0" class="ss">Runnable in the browser</text>
 <path d="M500 770 V880" class="wire" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="5 5"/>
 <text x="514" y="822" class="nt">Reuse the same renderer</text>
-<text x="30" y="846" class="up">UPGRADE PATH</text><text x="30" y="866" class="nt">Same render logic, swap I/O</text>
+<text x="30" y="846" class="up">UPGRADE PATH</text>
+<text x="30" y="866" class="nt">Same render logic, swap I/O</text>
 <path d="M170 880 H830" class="wire" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="5 5"/>
 <path d="M170 880 V906" class="wire" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="5 5" marker-end="url(#arr)"/>
 <path d="M500 880 V906" class="wire" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="5 5" marker-end="url(#arr)"/>
@@ -385,11 +399,14 @@
 <text x="170.0" y="957.0" class="tt">Swap Tracking Input</text>
 <text x="170.0" y="976.0" class="ss">OptiTrack / RealSense</text>
 <text x="170.0" y="996.0" class="ss">Can pose (x, y, z) + rotation</text>
+<a class="node" href="#v2" role="button" aria-label="Physical Can Sensors: jump to version 2">
 <rect x="360" y="910" width="280" height="100" rx="10" fill="#1b1d22" stroke="#ff8a00" stroke-width="2"/>
-<text x="500.0" y="932.0" class="tg" fill="#ff8a00">UPGRADE IN</text>
+<text x="500.0" y="932.0" class="tg" fill="#ff8a00">UPGRADE IN · BUILT</text>
 <text x="500.0" y="957.0" class="tt">Physical Can Sensors</text>
-<text x="500.0" y="976.0" class="ss">Microswitch + IMU</text>
-<text x="500.0" y="996.0" class="ss">Trigger / shake to change color</text>
+<text x="500.0" y="976.0" class="ss">Phone gyro + touch trigger</text>
+<text x="500.0" y="996.0" class="ss">Shake to change pen</text>
+<text x="628" y="927" class="ct" fill="#ff8a00">V2 ↓</text>
+</a>
 <rect x="690" y="910" width="280" height="100" rx="10" fill="#1b1d22" stroke="#39ff14" stroke-width="2"/>
 <text x="830.0" y="932.0" class="tg" fill="#39ff14">UPGRADE OUT</text>
 <text x="830.0" y="957.0" class="tt">LED Wall Output</text>
@@ -527,6 +544,292 @@ colorT += d * <span class="s">0.0025</span>;   <span class="c">// hue drifts wit
     </div>
   </section>
 
+  <!-- ================= VERSION 2 ================= -->
+  <section class="block" id="v2">
+    <header><span class="label">Version 2</span><h2>Your phone is the can</h2></header>
+    <div class="body">
+      <div class="prose">
+        <p>The webcam version worked at a desk, but I wanted to paint on the big screens at school, where a camera can't see a hand from across the room. So I built the "Physical Can Sensors" step from the upgrade path: an iPhone becomes the spray can. Point it at the wall to aim, hold the pad to spray, shake it to swap the nozzle.</p>
+        <p>Several people can join at once. Each phone scans one QR code, gets a player number, and paints on the same wall with its own pen and color.</p>
+        <p class="muted">Stack: a small Node.js server relays phone data over WebSocket, and a Cloudflare quick tunnel gives phones an HTTPS link, which iOS requires before it shares motion sensors. The wall reuses the p5.js renderer from version 1.</p>
+      </div>
+
+      <figure class="flow" id="flow2">
+        <div class="flow-scroll"><svg class="flow-svg" viewBox="0 0 1000 1440" role="img" aria-labelledby="flowTitle2">
+<title id="flowTitle2">Multiplayer logic: the host display and a realtime relay let each iPhone join and get a player id. On each phone, shaking cycles pens, tapping picks a pen or color (picking a color on Neon Tag switches to Fat Cap), and holding the spray button paints. Five pens: Neon Tag, Fat Cap, Skinny Cap, Splatter, Drip Marker. Phones send position, pen and color to the host, which keeps one cursor per player and renders everyone onto one shared wall.</title>
+<defs><marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 1 L9 5 L0 9 z" fill="currentColor"/></marker></defs>
+<a class="node" href="#v2-join" role="button" aria-label="Host Display: jump to code">
+<rect x="40" y="20" width="400" height="80" rx="10" fill="#1b1d22" stroke="#00e5ff" stroke-width="2"/>
+<text x="240.0" y="42.0" class="tg" fill="#00e5ff">BIG SCREEN</text>
+<text x="240.0" y="67.0" class="tt">Host Display</text>
+<text x="240.0" y="86.0" class="ss">Big screen opens the wall page + QR</text>
+<text x="428" y="37" class="ct" fill="#00e5ff">CODE ↓</text>
+</a>
+<path d="M440 60 H556" class="wire" fill="none" stroke="currentColor" stroke-width="2" marker-end="url(#arr)"/>
+<a class="node" href="#v2-relay" role="button" aria-label="Realtime Relay: jump to code">
+<rect x="560" y="20" width="400" height="80" rx="10" fill="#1b1d22" stroke="#ffe600" stroke-width="2"/>
+<text x="760.0" y="42.0" class="tg" fill="#ffe600">NETWORK</text>
+<text x="760.0" y="67.0" class="tt">Realtime Relay</text>
+<text x="760.0" y="86.0" class="ss">Node.js WebSocket + HTTPS tunnel</text>
+<text x="948" y="37" class="ct" fill="#ffe600">CODE ↓</text>
+</a>
+<path d="M760 100 V130 H500" class="wire" fill="none" stroke="currentColor" stroke-width="2"/>
+<path d="M500 130 V156" class="wire" fill="none" stroke="currentColor" stroke-width="2" marker-end="url(#arr)"/>
+<a class="node" href="#v2-join" role="button" aria-label="iPhone opens /phone: jump to code">
+<rect x="300" y="160" width="400" height="75" rx="10" fill="#1b1d22" stroke="#ff2bd6" stroke-width="2"/>
+<text x="500.0" y="179.5" class="tg" fill="#ff2bd6">JOIN</text>
+<text x="500.0" y="204.5" class="tt">iPhone opens /phone</text>
+<text x="500.0" y="223.5" class="ss">Scan the QR · one player per phone</text>
+<text x="688" y="177" class="ct" fill="#ff2bd6">CODE ↓</text>
+</a>
+<path d="M500 235 V266" class="wire" fill="none" stroke="currentColor" stroke-width="2" marker-end="url(#arr)"/>
+<a class="node" href="#v2-relay" role="button" aria-label="Host assigns player id: jump to code">
+<rect x="290" y="270" width="420" height="75" rx="10" fill="#1b1d22" stroke="#ff8a00" stroke-width="2"/>
+<text x="500.0" y="289.5" class="tg" fill="#ff8a00">IDENTITY</text>
+<text x="500.0" y="314.5" class="tt">Host assigns player id</text>
+<text x="500.0" y="333.5" class="ss">P1, P2, P3…  HUD: “P1 · SPLATTER”</text>
+<text x="698" y="287" class="ct" fill="#ff8a00">CODE ↓</text>
+</a>
+<text x="30" y="378" class="up">ON EACH PHONE</text>
+<text x="168" y="378" class="nt">local input loop</text>
+<path d="M500 345 V392 M115 392 H885" class="wire" fill="none" stroke="currentColor" stroke-width="2"/>
+<path d="M115 392 V416" class="wire" fill="none" stroke="currentColor" stroke-width="2" marker-end="url(#arr)"/>
+<path d="M372 392 V416" class="wire" fill="none" stroke="currentColor" stroke-width="2" marker-end="url(#arr)"/>
+<path d="M628 392 V416" class="wire" fill="none" stroke="currentColor" stroke-width="2" marker-end="url(#arr)"/>
+<path d="M885 392 V416" class="wire" fill="none" stroke="currentColor" stroke-width="2" marker-end="url(#arr)"/>
+<a class="node" href="#v2-pens" role="button" aria-label="Shake to Cycle Pen: jump to code">
+<rect x="5" y="420" width="220" height="80" rx="10" fill="#1b1d22" stroke="#ff8a00" stroke-width="2"/>
+<text x="115.0" y="442.0" class="tg" fill="#ff8a00">GESTURE</text>
+<text x="115.0" y="467.0" class="tt sm">Shake to Cycle Pen</text>
+<text x="115.0" y="486.0" class="ss">mag &gt; 22 · next pen in order</text>
+<text x="213" y="437" class="ct" fill="#ff8a00">CODE ↓</text>
+</a>
+<a class="node" href="#v2-pens" role="button" aria-label="Tap Pen Icon: jump to code">
+<rect x="262" y="420" width="220" height="80" rx="10" fill="#1b1d22" stroke="#ff2bd6" stroke-width="2"/>
+<text x="372.0" y="442.0" class="tg" fill="#ff2bd6">UI</text>
+<text x="372.0" y="467.0" class="tt sm">Tap Pen Icon</text>
+<text x="372.0" y="486.0" class="ss">Jump straight to that pen</text>
+<text x="470" y="437" class="ct" fill="#ff2bd6">CODE ↓</text>
+</a>
+<a class="node" href="#v2-pens" role="button" aria-label="Tap Color Swatch: jump to code">
+<rect x="518" y="420" width="220" height="80" rx="10" fill="#1b1d22" stroke="#ffe600" stroke-width="2"/>
+<text x="628.0" y="442.0" class="tg" fill="#ffe600">UI</text>
+<text x="628.0" y="467.0" class="tt sm">Tap Color Swatch</text>
+<text x="628.0" y="486.0" class="ss">Swipe right: rainbow picker</text>
+<text x="726" y="437" class="ct" fill="#ffe600">CODE ↓</text>
+</a>
+<a class="node" href="#v2-aim" role="button" aria-label="Spray Button: jump to code">
+<rect x="775" y="420" width="220" height="80" rx="10" fill="#1b1d22" stroke="#39ff14" stroke-width="2"/>
+<text x="885.0" y="432.0" class="tg" fill="#39ff14">UI</text>
+<text x="885.0" y="457.0" class="tt sm">Spray Button</text>
+<text x="885.0" y="476.0" class="ss">Hold to paint</text>
+<text x="885.0" y="496.0" class="ss">Fill = current color</text>
+<text x="983" y="437" class="ct" fill="#39ff14">CODE ↓</text>
+</a>
+<path d="M628 500 V536" class="wire" fill="none" stroke="currentColor" stroke-width="2" marker-end="url(#arr)"/>
+<a class="node" href="#v2-pens" role="button" aria-label="Pen == NEON TAG?: jump to code">
+<rect x="508" y="540" width="240" height="72" rx="10" fill="#1b1d22" stroke="#ffe600" stroke-width="2"/>
+<text x="628.0" y="558.0" class="tg" fill="#ffe600">DECISION</text>
+<text x="628.0" y="583.0" class="tt sm">Pen == NEON TAG?</text>
+<text x="628.0" y="602.0" class="ss">Tag ignores the picker</text>
+<text x="736" y="557" class="ct" fill="#ffe600">CODE ↓</text>
+</a>
+<path d="M628 612 V632 M520 632 H735" class="wire" fill="none" stroke="currentColor" stroke-width="2"/>
+<path d="M520 632 V656" class="wire" fill="none" stroke="currentColor" stroke-width="2" marker-end="url(#arr)"/>
+<path d="M735 632 V656" class="wire" fill="none" stroke="currentColor" stroke-width="2" marker-end="url(#arr)"/>
+<rect x="428" y="660" width="184" height="68" rx="10" fill="#1b1d22" stroke="#ff8a00" stroke-width="2"/>
+<text x="520.0" y="693.0" class="tt sm">YES → FAT CAP</text>
+<text x="520.0" y="712.0" class="ss">Switch to Fat Cap</text>
+<rect x="643" y="660" width="184" height="68" rx="10" fill="#1b1d22" stroke="#00e5ff" stroke-width="2"/>
+<text x="735.0" y="693.0" class="tt sm">NO → keep pen</text>
+<text x="735.0" y="712.0" class="ss">Color goes to this pen</text>
+<text x="30" y="770" class="up">FIVE PENS</text>
+<text x="138" y="770" class="nt">#1 is the original auto-color + street-type tool</text>
+<path d="M115 500 V790 M372 500 V790 M520 728 V790 M735 728 V790 M885 500 V790 M100 790 H900" class="wire" fill="none" stroke="currentColor" stroke-width="2"/>
+<path d="M100 790 V816" class="wire" fill="none" stroke="currentColor" stroke-width="2" marker-end="url(#arr)"/>
+<path d="M300 790 V816" class="wire" fill="none" stroke="currentColor" stroke-width="2" marker-end="url(#arr)"/>
+<path d="M500 790 V816" class="wire" fill="none" stroke="currentColor" stroke-width="2" marker-end="url(#arr)"/>
+<path d="M700 790 V816" class="wire" fill="none" stroke="currentColor" stroke-width="2" marker-end="url(#arr)"/>
+<path d="M900 790 V816" class="wire" fill="none" stroke="currentColor" stroke-width="2" marker-end="url(#arr)"/>
+<a class="node" href="#v2-brushes" role="button" aria-label="1  NEON TAG: jump to code">
+<rect x="10" y="820" width="180" height="85" rx="10" fill="#1b1d22" stroke="#ff2bd6" stroke-width="2"/>
+<text x="100.0" y="851.5" class="tt sm">1  NEON TAG</text>
+<text x="100.0" y="870.5" class="ss">Self-shifting color</text>
+<text x="100.0" y="890.5" class="ss">+ graffiti words</text>
+</a>
+<a class="node" href="#v2-brushes" role="button" aria-label="2  FAT CAP: jump to code">
+<rect x="210" y="820" width="180" height="85" rx="10" fill="#1b1d22" stroke="#00e5ff" stroke-width="2"/>
+<text x="300.0" y="851.5" class="tt sm">2  FAT CAP</text>
+<text x="300.0" y="870.5" class="ss">Wide soft spray</text>
+<text x="300.0" y="890.5" class="ss">Picked color</text>
+</a>
+<a class="node" href="#v2-brushes" role="button" aria-label="3  SKINNY CAP: jump to code">
+<rect x="410" y="820" width="180" height="85" rx="10" fill="#1b1d22" stroke="#ffe600" stroke-width="2"/>
+<text x="500.0" y="851.5" class="tt sm">3  SKINNY CAP</text>
+<text x="500.0" y="870.5" class="ss">Thin clean line</text>
+<text x="500.0" y="890.5" class="ss">Picked color</text>
+</a>
+<a class="node" href="#v2-brushes" role="button" aria-label="4  SPLATTER: jump to code">
+<rect x="610" y="820" width="180" height="85" rx="10" fill="#1b1d22" stroke="#ff8a00" stroke-width="2"/>
+<text x="700.0" y="851.5" class="tt sm">4  SPLATTER</text>
+<text x="700.0" y="870.5" class="ss">Flung blobs + spikes</text>
+<text x="700.0" y="890.5" class="ss">Picked color</text>
+</a>
+<a class="node" href="#v2-brushes" role="button" aria-label="5  DRIP MARKER: jump to code">
+<rect x="810" y="820" width="180" height="85" rx="10" fill="#1b1d22" stroke="#39ff14" stroke-width="2"/>
+<text x="900.0" y="851.5" class="tt sm">5  DRIP MARKER</text>
+<text x="900.0" y="870.5" class="ss">Solid stroke that runs</text>
+<text x="900.0" y="890.5" class="ss">Picked color</text>
+</a>
+<path d="M100 905 V935 M300 905 V935 M700 905 V935 M900 905 V935 M100 935 H900" class="wire" fill="none" stroke="currentColor" stroke-width="2"/>
+<path d="M500 905 V935" class="wire" fill="none" stroke="currentColor" stroke-width="2"/>
+<path d="M500 935 V961" class="wire" fill="none" stroke="currentColor" stroke-width="2" marker-end="url(#arr)"/>
+<a class="node" href="#v2-relay" role="button" aria-label="Phone → host payload: jump to code">
+<rect x="250" y="965" width="500" height="72" rx="10" fill="#1b1d22" stroke="#ffe600" stroke-width="2"/>
+<text x="500.0" y="983.0" class="tg" fill="#ffe600">MESSAGE</text>
+<text x="500.0" y="1008.0" class="tt">Phone → host payload</text>
+<text x="500.0" y="1027.0" class="ss">{ x, y, spraying, pen, color } · ~60 per second</text>
+<text x="738" y="982" class="ct" fill="#ffe600">CODE ↓</text>
+</a>
+<path d="M500 1037 V1071" class="wire" fill="none" stroke="currentColor" stroke-width="2" marker-end="url(#arr)"/>
+<a class="node" href="#v2-relay" role="button" aria-label="Host multiplexes players: jump to code">
+<rect x="250" y="1075" width="500" height="72" rx="10" fill="#1b1d22" stroke="#00e5ff" stroke-width="2"/>
+<text x="500.0" y="1093.0" class="tg" fill="#00e5ff">COMPOSE</text>
+<text x="500.0" y="1118.0" class="tt">Host multiplexes players</text>
+<text x="500.0" y="1137.0" class="ss">One cursor per Pn · pen name pops on change</text>
+<text x="738" y="1092" class="ct" fill="#00e5ff">CODE ↓</text>
+</a>
+<path d="M500 1147 V1175 M280 1175 H720" class="wire" fill="none" stroke="currentColor" stroke-width="2"/>
+<path d="M280 1175 V1201" class="wire" fill="none" stroke="currentColor" stroke-width="2" marker-end="url(#arr)"/>
+<path d="M720 1175 V1201" class="wire" fill="none" stroke="currentColor" stroke-width="2" marker-end="url(#arr)"/>
+<a class="node" href="#v2-brushes" role="button" aria-label="Shared Renderer: jump to code">
+<rect x="110" y="1205" width="340" height="85" rx="10" fill="#1b1d22" stroke="#39ff14" stroke-width="2"/>
+<text x="280.0" y="1219.5" class="tg" fill="#39ff14">DRAW</text>
+<text x="280.0" y="1244.5" class="tt">Shared Renderer</text>
+<text x="280.0" y="1263.5" class="ss">That player's pen + color</text>
+<text x="280.0" y="1283.5" class="ss">Spray gated by the button</text>
+<text x="438" y="1222" class="ct" fill="#39ff14">CODE ↓</text>
+</a>
+<a class="node" href="#v2-pens" role="button" aria-label="State shown on phones: jump to code">
+<rect x="550" y="1205" width="340" height="85" rx="10" fill="#1b1d22" stroke="#ff2bd6" stroke-width="2"/>
+<text x="720.0" y="1219.5" class="tg" fill="#ff2bd6">SYNC</text>
+<text x="720.0" y="1244.5" class="tt">State shown on phones</text>
+<text x="720.0" y="1263.5" class="ss">Button fill follows color</text>
+<text x="720.0" y="1283.5" class="ss">Icons show active pen</text>
+<text x="878" y="1222" class="ct" fill="#ff2bd6">CODE ↓</text>
+</a>
+<path d="M280 1290 V1320 H500" class="wire" fill="none" stroke="currentColor" stroke-width="2"/>
+<path d="M500 1320 V1346" class="wire" fill="none" stroke="currentColor" stroke-width="2" marker-end="url(#arr)"/>
+<rect x="300" y="1350" width="400" height="75" rx="10" fill="#1b1d22" stroke="#00e5ff" stroke-width="2"/>
+<text x="500.0" y="1386.5" class="tt">One LED wall / web canvas</text>
+<text x="500.0" y="1405.5" class="ss">Everyone paints the same surface at once</text>
+</svg></div>
+        <figcaption><span class="label">Full logic · multiplayer</span><span>Host room, N phones, five pens, one shared wall. Steps marked <b class="codetag">CODE ↓</b> (and the five pens) jump to their implementation.</span></figcaption>
+      </figure>
+
+      <div class="points">
+
+      <div class="point" id="v2-join" style="--nc:#00e5ff">
+        <div class="txt">
+          <h3>One QR code, one HTTPS link</h3>
+          <p>iPhones only expose the gyroscope to pages served over HTTPS, and setting up certificates is not something you want to do minutes before a demo. The server starts a free Cloudflare quick tunnel on launch, reads the public address from its output, and the wall turns it into a QR code. Scan, tap Start, allow motion access, and you are holding a can.</p>
+          <p>The wall also polls the server for this link on its own, so the QR code appears even if the drawing code is still loading.</p>
+          <a class="back" href="#flow2">↑ Back to the diagram</a>
+        </div>
+<div class="code"><span class="from">From the diagram · Host Display / Join</span>
+<pre><span class="c">// server.js: open an HTTPS tunnel and catch its URL</span>
+<span class="k">const</span> proc = spawn(<span class="s">'cloudflared'</span>, [<span class="s">'tunnel'</span>, <span class="s">'--url'</span>, <span class="s">`http://localhost:${PORT}`</span>]);
+proc.stderr.on(<span class="s">'data'</span>, (buf) =&gt; {
+  <span class="k">const</span> hit = String(buf).match(<span class="s">/https:\/\/[a-z0-9-]+\.trycloudflare\.com/</span>);
+  <span class="k">if</span> (hit) toDisplays({ t: <span class="s">'config'</span>, publicUrl: hit[<span class="s">0</span>] });
+});
+<span class="c">// display.html: draw the QR for /phone</span>
+<span class="k">const</span> qr = qrcode(<span class="s">0</span>, <span class="s">'M'</span>); qr.addData(publicUrl + <span class="s">'/phone'</span>); qr.make();</pre></div>
+      </div>
+
+      <div class="point" id="v2-aim" style="--nc:#39ff14">
+        <div class="txt">
+          <h3>Aiming without position</h3>
+          <p>A phone can't measure how far it has moved. Integrating the accelerometer twice drifts off within seconds. What it measures very well is which way it is pointing, and that is how a spray can works anyway: you aim at the wall.</p>
+          <p>Held like a TV remote, the direction of the phone's top edge reduces to yaw = −alpha and pitch = beta, with roll ignored. Tapping Center stores a reference angle, and ±28° of yaw covers the full width of the wall. The Reach button switches between 18°, 28° and 40° for small wrist moves or big arm swings. The spray pad uses pointer capture, so a thumb that slides off the pad keeps spraying until it lifts.</p>
+          <a class="back" href="#flow2">↑ Back to the diagram</a>
+        </div>
+<div class="code"><span class="from">From the diagram · Spray Button</span>
+<pre><span class="c">// phone.html: angles → 0..1 wall coordinates</span>
+yaw = -e.alpha;  pitch = e.beta;
+<span class="k">const</span> dYaw = ((yaw - yaw0 + <span class="s">540</span>) % <span class="s">360</span>) - <span class="s">180</span>;   <span class="c">// wrap ±180°</span>
+<span class="k">const</span> x = clamp(<span class="s">0.5</span> + dYaw / (<span class="s">2</span> * reach.x));
+<span class="k">const</span> y = clamp(<span class="s">0.5</span> - (pitch - pitch0) / (<span class="s">2</span> * reach.y));
+<span class="c">// ~60 times a second, with pen, color and trigger state</span>
+send({ t: <span class="s">'p'</span>, x, y, s: spraying ? <span class="s">1</span> : <span class="s">0</span>, b: brushIdx, c: colorHex });</pre></div>
+      </div>
+
+      <div class="point" id="v2-pens" style="--nc:#ff2bd6">
+        <div class="txt">
+          <h3>Shake, tap, pick</h3>
+          <p>Pens can be changed without looking down: a hard shake (more than 22 m/s² of linear acceleration, at most once every 0.9 s) moves to the next pen. The threshold is high on purpose, so a sweeping arm doesn't swap the nozzle mid-stroke.</p>
+          <p>Neon Tag picks its own colors, so a swatch has nothing to change there. Instead of ignoring the tap, the phone reads it as "I want this color" and switches to Fat Cap. The spray pad and the active pen icon take on the current color, so the phone always shows what will come out.</p>
+          <a class="back" href="#flow2">↑ Back to the diagram</a>
+        </div>
+<div class="code"><span class="from">From the diagram · Shake / Tap / Decision</span>
+<pre><span class="c">// Shake = next pen</span>
+<span class="k">const</span> mag = Math.hypot(a.x, a.y, a.z);           <span class="c">// gravity removed</span>
+<span class="k">if</span> (mag &gt; <span class="s">22</span> &amp;&amp; now - lastShake &gt; <span class="s">900</span>) setBrush(brushIdx + <span class="s">1</span>);
+<span class="c">// Picking a color while on Neon Tag → hop to Fat Cap</span>
+<span class="k">function</span> setColor(c) {
+  colorHex = c;
+  root.style.setProperty(<span class="s">'--cur'</span>, c);              <span class="c">// pad + icons follow</span>
+  <span class="k">if</span> (BRUSHES[brushIdx].rainbow) setBrush(<span class="s">1</span>);
+}</pre></div>
+      </div>
+
+      <div class="point" id="v2-relay" style="--nc:#ffe600">
+        <div class="txt">
+          <h3>A tiny relay, many cans</h3>
+          <p>The server is a switchboard. Each phone says hello and gets the next player number. Every packet after that is stamped with that id and forwarded to the wall, after a quick check that the pen is a small integer and the color is a real hex value.</p>
+          <p>The wall keeps one record per player: smoothed position, pen, color, word timer, last-seen time. If a phone goes quiet for 0.4 s its spray stops, so a locked screen never leaves a can stuck on. When a pen changes, its name pops up above that player's cursor.</p>
+          <a class="back" href="#flow2">↑ Back to the diagram</a>
+        </div>
+<div class="code"><span class="from">From the diagram · Relay / Payload / Multiplex</span>
+<pre><span class="c">// server.js: stamp the id, validate, forward</span>
+<span class="k">if</span> (m.t === <span class="s">'p'</span>) {
+  <span class="k">const</span> out = { t: <span class="s">'p'</span>, id: p.id, x: +m.x, y: +m.y, s: m.s ? <span class="s">1</span> : <span class="s">0</span> };
+  <span class="k">if</span> (Number.isInteger(m.b) &amp;&amp; m.b &lt; <span class="s">16</span>) out.b = m.b;
+  <span class="k">if</span> (<span class="s">/^#[0-9a-f]{6}$/i</span>.test(m.c)) out.c = m.c;
+  toDisplays(out);
+}
+<span class="c">// display.html: one player record per phone</span>
+<span class="k">const</span> fresh = millis() - p.seen &lt; <span class="s">400</span>;
+<span class="k">if</span> (p.spraying &amp;&amp; fresh) sprayAlongPath(p);</pre></div>
+      </div>
+
+      <div class="point" id="v2-brushes" style="--nc:#ff8a00">
+        <div class="txt">
+          <h3>Five pens, one engine</h3>
+          <p>The three aerosol pens share one spray function driven by a table: radius, particle count, spread, opacity, overspray and drip rate. Fat Cap is wide and soft, with a high drip rate for wet base coats. Skinny Cap is a dense 10 px line for outlines and signatures. Neon Tag keeps the original drifting palette and graffiti words.</p>
+          <p>The other two pens work differently. Splatter drops a noise-shaped blob every 55 px, with tapered spikes and droplets thrown along the direction of travel, so faster swings fling paint further. Drip Marker draws a solid stroke that keeps sending runs down the wall. All sizes scale with screen height, so a 4K LED wall looks like the 1080p laptop.</p>
+          <a class="back" href="#flow2">↑ Back to the diagram</a>
+        </div>
+<div class="code"><span class="from">From the diagram · Five pens / Renderer</span>
+<pre><span class="c">// display.html: aerosol caps (1080p units, × S on bigger walls)</span>
+<span class="k">const</span> CAPS = {
+  tag:    { r: <span class="s">26</span>, n: <span class="s">22</span>, sigma: <span class="s">.38</span>, splat: <span class="s">.25</span>, drip: [<span class="s">.012</span>, <span class="s">.002</span>] },
+  fat:    { r: <span class="s">58</span>, n: <span class="s">50</span>, sigma: <span class="s">.42</span>, splat: <span class="s">.35</span>, drip: [<span class="s">.020</span>, <span class="s">.004</span>] },
+  skinny: { r: <span class="s">10</span>, n: <span class="s">14</span>, sigma: <span class="s">.33</span>, splat: <span class="s">.06</span>, drip: [<span class="s">.004</span>, <span class="s">.0008</span>] },
+};
+<span class="c">// Splatter: spikes thrown forward when moving</span>
+<span class="k">const</span> a = flung &amp;&amp; random() &lt; <span class="s">0.6</span> ? p.dir + randomGaussian(<span class="s">0</span>, <span class="s">0.45</span>) : random(TWO_PI);</pre></div>
+      </div>
+
+      </div>
+
+      <div class="gallery">
+        <figure class="wide"><img src="assets/v2-pens.jpg" alt="Five horizontal test strokes on the brick wall, top to bottom: Neon Tag with words, a wide cyan Fat Cap band, a thin yellow Skinny Cap line, pink Splatter blobs with drips, and a solid green Drip Marker line" loading="lazy"><figcaption>All five pens, top to bottom: Neon Tag, Fat Cap, Skinny Cap, Splatter, Drip Marker. Recorded during development with simulated phone input.</figcaption></figure>
+        <figure class="phone"><img src="assets/v2-phone.jpg" alt="Phone controller with aim preview, five pen icons, color swatches, Center, Reach and Clear buttons, and a large hold-to-spray pad" loading="lazy"><figcaption>The phone controller: aim preview, pens, colors, and the spray pad.</figcaption></figure>
+      </div>
+    </div>
+  </section>
+
   <!-- ================= REFLECTION ================= -->
   <section class="block">
     <header><span class="label">Reflection</span><h2>What I learned, what's next</h2></header>
@@ -542,10 +845,10 @@ colorT += d * <span class="s">0.0025</span>;   <span class="c">// hue drifts wit
       <div>
         <h3>Next experiments</h3>
         <ul class="list">
-          <li><b>Swap the tracking input:</b> replace the webcam with OptiTrack or RealSense to get full can pose, (x, y, z) plus rotation.</li>
-          <li><b>A physical can:</b> a real spray can fitted with a microswitch and IMU. Press the trigger to spray, shake it to change color.</li>
+          <li><b>Built: a phone as the can.</b> Gyro aiming, touch trigger and shake-to-swap pens, for several players at once. See <a class="inl" href="#v2">Version 2</a>.</li>
+          <li><b>A real can shell:</b> a 3D-printed can holding a microswitch and IMU, so the trigger feels like a nozzle.</li>
           <li><b>LED wall output:</b> drive a flexible or curved LED panel for street-scale immersion, reusing the same renderer.</li>
-          <li><b>Stencils:</b> placeable cut-out stencils for hard, crisp edges.</li>
+          <li><b>Swap the tracking input:</b> OptiTrack or RealSense for full can position, so distance controls spray width.</li>
         </ul>
       </div>
     </div>
@@ -566,7 +869,9 @@ colorT += d * <span class="s">0.0025</span>;   <span class="c">// hue drifts wit
     function flash(id) {
       var el = document.getElementById(id);
       if (!el) return;
-      el.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' });
+      const smooth = matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+      if (!el.classList.contains('point')) { el.scrollIntoView({ behavior: smooth, block: 'start' }); return; }
+      el.scrollIntoView({ behavior: smooth, block: 'center' });
       el.classList.remove('flash');
       void el.offsetWidth; // restart the animation on repeat clicks
       setTimeout(function () { el.classList.add('flash'); }, 350);
