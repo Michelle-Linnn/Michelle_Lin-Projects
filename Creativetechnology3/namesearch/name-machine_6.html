@@ -1,0 +1,1167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The Name Machine</title>
+<meta name="description" content="Type a name. The machine finds an artist by that name in museum collections, follows the colours of their work into prints, posters, textiles and illustration, and composes a moodboard.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,700;1,9..144,400&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&family=Pinyon+Script&family=Mrs+Saint+Delafield&display=swap">
+<style>
+/* Layout: a full-screen pegboard where cards hang on hemp rope (Rope mode),
+   and a white presentation board that recomposes the same material (Moodboard mode). */
+:root {
+  --board: #18202b;
+  --board-dot: rgba(217, 199, 163, .09);
+  --rope: #d9c7a3;
+  --rope-dark: #8c7a58;
+  --card: #f4f1ea;
+  --ink: #1d2230;
+  --ink-2: #646b78;
+  --tag: #ffcf5a;
+  --live: #ffcf5a;
+  --sat: 1.1;
+  --con: 1.03;
+  --display: "Bricolage Grotesque", "Helvetica Neue", Arial, sans-serif;
+  --body: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --mono: "IBM Plex Mono", "SFMono-Regular", Menlo, monospace;
+  --serif: "Fraunces", Georgia, "Times New Roman", serif;
+  --script: "Pinyon Script", "Snell Roundhand", "Apple Chancery", cursive;
+  --brush: "Mrs Saint Delafield", "Pinyon Script", "Snell Roundhand", cursive;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--board); color: var(--card); font-family: var(--body); overflow: hidden; }
+
+#stage { position: fixed; inset: 0; overflow: hidden; touch-action: none; cursor: grab;
+  background-image: radial-gradient(var(--board-dot) 1.4px, transparent 1.6px); background-size: 28px 28px; }
+#stage.panning { cursor: grabbing; }
+#ropes, #labels { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+#labels { z-index: 5; }
+#world { position: absolute; left: 0; top: 0; width: 0; height: 0; transform-origin: 0 0; z-index: 2; }
+
+/* ---------- nodes ---------- */
+.node { position: absolute; left: 0; top: 0; width: max-content; visibility: hidden; cursor: grab; user-select: none; -webkit-user-select: none; }
+.node.live { visibility: visible; }
+.node.dragging { cursor: grabbing; z-index: 50; }
+.node:hover { z-index: 40; }
+.node .tilt { transform-origin: 50% 0; }
+.node.live .card { animation: pop .55s cubic-bezier(.2, 1.6, .4, 1) both; }
+@keyframes pop { 0% { transform: scale(0); opacity: 0; } 60% { opacity: 1; } 100% { transform: scale(1); } }
+
+.card { background: var(--card); color: var(--ink); box-shadow: 0 10px 24px rgba(0,0,0,.35), 0 2px 4px rgba(0,0,0,.25); }
+.key .card { padding: .55rem .8rem .6rem; min-width: 130px; max-width: 230px; border-top: 4px solid var(--rope-dark); }
+.key.trigger .card { border-top-color: var(--live); }
+.key.artist .card { border-top-color: #b5471f; }
+.via { display: block; font-family: var(--mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
+.val { display: block; font-family: var(--display); font-weight: 800; font-size: 24px; line-height: 1.05; letter-spacing: -.02em; margin: .15rem 0 .1rem; }
+.what { display: block; font-size: 12px; color: var(--ink-2); }
+.trigger .val { font-size: 40px; }
+
+.query .card { background: var(--tag); padding: .5rem .75rem; max-width: 250px; border-radius: 2px 14px 14px 2px; }
+.query .via { color: rgba(29,34,48,.7); }
+.query .val { font-size: 19px; }
+.query .val::before { content: "q = "; font-family: var(--mono); font-weight: 400; font-size: 12px; vertical-align: .3em; opacity: .7; }
+.query.none .card { opacity: .5; }
+
+.img .card { width: 186px; padding: 7px 7px 6px; position: relative; }
+.img img, .mb img { filter: saturate(var(--sat)) contrast(var(--con)); }
+.img img { display: block; width: 100%; height: auto; max-height: 250px; object-fit: cover; background: #ddd; pointer-events: none; }
+.img figcaption { font-family: var(--mono); font-size: 9.5px; line-height: 1.3; color: var(--ink-2); margin-top: 5px;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.img figcaption b { color: var(--ink); font-weight: 600; }
+.badge { position: absolute; top: 12px; left: 12px; font: 600 9px var(--mono); letter-spacing: .1em; text-transform: uppercase; padding: 2px 5px; background: var(--ink); color: var(--card); }
+.k-photo .badge { background: var(--tag); color: var(--ink); }
+.k-illustration .badge, .k-print .badge, .k-drawing .badge { background: #b5471f; color: #fff; }
+.k-poster .badge, .k-graphic .badge { background: #2f5bd3; color: #fff; }
+.k-textile .badge, .k-texture .badge { background: #2e7d4f; color: #fff; }
+
+.swatch .card { width: 156px; padding: 0; }
+.swatch .chip { height: 64px; }
+.swatch .lab { padding: .4rem .6rem .5rem; }
+.swatch .val { font-size: 19px; }
+
+.hint .card { background: transparent; color: var(--rope); box-shadow: none; border: 1.5px dashed var(--rope-dark); padding: 1rem 1.2rem; max-width: 300px; }
+.hint .val { color: var(--card); }
+.hint .what { color: var(--rope); line-height: 1.45; }
+
+/* ---------- chrome ---------- */
+.bar { position: fixed; top: 0; left: 0; right: 0; z-index: 100; display: flex; flex-wrap: wrap; gap: .6rem 1rem; align-items: center;
+  padding-block: calc(.7rem + env(safe-area-inset-top, 0px)) .7rem;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  background: linear-gradient(var(--board) 60%, transparent); pointer-events: none; }
+body.mode-board .bar { background: var(--board); }
+.bar > * { pointer-events: auto; }
+.brand { font-family: var(--display); font-weight: 800; font-size: 20px; letter-spacing: -.02em; color: var(--card); }
+.brand span { color: var(--live); transition: color .6s; }
+form { display: flex; gap: .4rem; flex: 1 1 260px; max-width: 400px; min-width: 0; }
+input#name { flex: 1; min-width: 0; font: 600 17px var(--display); padding: .5rem .7rem; border: 1.5px solid var(--rope-dark); background: rgba(0,0,0,.25); color: var(--card); border-radius: 0; }
+input#name:focus { outline: 2px solid var(--tag); outline-offset: 1px; }
+button { font: 600 12px var(--mono); letter-spacing: .08em; text-transform: uppercase; padding: .55rem .9rem; border: 1.5px solid var(--rope-dark); background: transparent; color: var(--rope); cursor: pointer; border-radius: 0; }
+button.primary { background: var(--tag); border-color: var(--tag); color: var(--ink); min-width: 74px; }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--tag); outline-offset: 2px; }
+.seg { display: flex; border: 1.5px solid var(--rope-dark); flex-wrap: wrap; }
+.seg button { border: 0; padding: .5rem .8rem; }
+.seg button[aria-pressed="true"] { background: var(--rope); color: var(--ink); }
+.tools { display: flex; gap: .4rem; margin-left: auto; flex-wrap: wrap; }
+body.mode-board .rope-only { display: none; }
+#tuneBtn[aria-expanded="true"] { background: var(--rope); color: var(--ink); }
+
+/* tune panel */
+#tune { position: fixed; z-index: 120; right: max(16px, env(safe-area-inset-right, 0px)); top: calc(70px + env(safe-area-inset-top, 0px));
+  width: min(340px, calc(100% - 32px)); background: #10151d; border: 1.5px solid var(--rope-dark); padding: 1rem 1.1rem 1.1rem; box-shadow: 0 20px 40px rgba(0,0,0,.45);
+  display: grid; gap: 1rem; font-size: 13px; }
+#tune h4 { margin: 0 0 .45rem; font: 600 10.5px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--rope-dark); }
+#tune .row { display: flex; align-items: center; gap: .6rem; }
+#tune input[type=range] { flex: 1; accent-color: var(--tag); }
+#tune .scale { display: flex; justify-content: space-between; font: 10.5px var(--mono); color: var(--rope-dark); margin-top: .2rem; }
+#tune .ramp { height: 10px; margin-top: .45rem; background: linear-gradient(90deg, #8a8a8a, #b3836a, #e8622c, #ff3d6e, #6b3dff); opacity: .9; }
+.chips { display: flex; flex-wrap: wrap; gap: .4rem; }
+.chips label { display: inline-flex; align-items: center; gap: .35rem; border: 1.5px solid var(--rope-dark); padding: .35rem .6rem; cursor: pointer; color: var(--rope); font: 12px var(--mono); }
+.chips input { accent-color: var(--tag); margin: 0; }
+.chips label:has(input:checked) { background: rgba(255,207,90,.12); border-color: var(--tag); color: var(--card); }
+#tune p { margin: .3rem 0 0; font-size: 11.5px; color: var(--rope-dark); line-height: 1.45; }
+
+.ticker { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(14px + env(safe-area-inset-bottom, 0px)); z-index: 100;
+  max-width: calc(100% - 32px); font-family: var(--mono); font-size: 12.5px; color: var(--rope);
+  background: rgba(10, 14, 20, .88); border: 1px solid var(--rope-dark); padding: .5rem .9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ticker b { color: var(--tag); font-weight: 600; }
+.legend { position: fixed; left: max(16px, env(safe-area-inset-left, 0px)); bottom: calc(60px + env(safe-area-inset-bottom, 0px)); z-index: 90; font: 11px var(--mono); color: var(--rope-dark); line-height: 1.6; pointer-events: none; }
+.counter { position: fixed; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(60px + env(safe-area-inset-bottom, 0px)); z-index: 90; font: 11px var(--mono); color: var(--rope-dark); text-align: right; line-height: 1.6; pointer-events: none; font-variant-numeric: tabular-nums; }
+body.mode-board .legend, body.mode-board .counter, body.mode-board .ticker { display: none; }
+
+/* ---------- moodboard mode ---------- */
+#boardView { position: fixed; inset: 0; z-index: 60; overflow: auto; background: #2a2f38;
+  padding-block: calc(76px + env(safe-area-inset-top, 0px)) 60px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.mb-tools { max-width: 1500px; margin: 0 auto 14px; display: flex; flex-wrap: wrap; gap: .6rem 1rem; align-items: center; }
+.mb-tools .lbl { font: 600 10.5px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--rope-dark); }
+.mb-tools .spacer { flex: 1; }
+.mb-scroll { overflow-x: auto; max-width: 100%; }
+.mb { --mb-ink: #111; width: 100%; min-width: 900px; max-width: 1500px; margin: 0 auto; aspect-ratio: 16 / 9; background: #fff; color: var(--mb-ink);
+  box-shadow: 0 30px 70px rgba(0,0,0,.45); position: relative; overflow: hidden; }
+.mb.grid { display: grid; grid-template-columns: repeat(12, 1fr); grid-template-rows: repeat(8, 1fr); padding: 3.2% 3.6% 2.6%; }
+.mb > * { min-width: 0; min-height: 0; animation: rise .7s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes rise { from { opacity: 0; transform: translateY(18px) scale(.98); } to { opacity: 1; } }
+.mb .ph { overflow: hidden; background: #eee; position: relative; }
+.mb .ph img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.mb .ph.contain { background: var(--bgc, #f1f1f1); }
+.mb .ph.contain img { object-fit: contain; padding: 6%; }
+.mb .ttl { padding: 0 1.2rem .4rem 0; overflow: hidden; font-size: clamp(10px, 1.15vw, 18px); }
+.mb .ttl h3 { font: 700 2.3em/1.04 var(--body); letter-spacing: -.02em; margin: 0 0 .3em; text-wrap: balance; overflow-wrap: anywhere; }
+.mb .ttl h3 em { display: block; font-style: normal; font-weight: 500; font-size: .62em; color: #555; margin-top: .15em; }
+.mb .ttl p { font: 400 1.15em/1.3 var(--body); margin: 0; }
+.mb .ttl small { display: block; margin-top: .8em; font: .68em/1.4 var(--mono); color: #777; letter-spacing: .04em; }
+.mb .nm { display: flex; align-items: center; justify-content: center; overflow: hidden; font-size: clamp(40px, 6.4vw, 104px); padding: 0 4%; }
+.mb .nm span { font-family: var(--script); font-size: 1em; line-height: 1.15; white-space: nowrap; padding: .05em .15em .12em; }
+.mb .kw { padding: 7% 8%; display: flex; flex-direction: column; justify-content: center; overflow: hidden; font-size: clamp(10px, 1.1vw, 17px); }
+.mb .kw b { font: 700 2.1em/1.02 var(--serif); overflow-wrap: anywhere; }
+.mb .kw i { font: italic 400 1.6em/1.12 var(--serif); overflow-wrap: anywhere; }
+.mb .kw span { font: 400 .9em/1.35 var(--serif); letter-spacing: .12em; text-transform: uppercase; margin-top: .45em; overflow-wrap: anywhere; }
+.mb .pal { display: flex; align-items: stretch; gap: 3%; padding: 2% 3% 2% 0; overflow: hidden; }
+.mb .pal .sw { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; container-type: size; }
+.mb .pal .sw i { display: block; width: min(100cqw, calc(100cqh - 18px)); aspect-ratio: 1; border-radius: 50%; }
+.mb .pal .sw em { font: normal 9.5px/1 var(--mono); color: #666; white-space: nowrap; }
+.mb .foot { align-self: end; font: 11.5px var(--body); color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 1rem; }
+/* poster layout */
+.mb .hero-name { position: absolute; left: 4%; right: 4%; bottom: 4%; height: 42%; display: flex; align-items: flex-end; overflow: hidden; font: 800 clamp(48px, 8vw, 150px)/.9 var(--display); letter-spacing: -.045em; color: #fff; mix-blend-mode: difference; }
+.mb .hero-name span { white-space: nowrap; padding-bottom: .04em; }
+.mb .strip { display: flex; }
+.mb .strip div { flex: 1; display: flex; align-items: flex-end; padding: .6em; font: 11px var(--mono); }
+/* scrapbook layout */
+.mb.free > * { position: absolute; }
+.mb.free .ph { box-shadow: 0 1px 0 rgba(0,0,0,.04); }
+.mb .bars div { position: absolute; left: 0; width: 100%; }
+.mb .brush { font-family: var(--brush); font-size: clamp(60px, 9vw, 170px); line-height: 1.1; z-index: 6; display: flex; align-items: center; overflow: hidden; }
+.mb .brush span { white-space: nowrap; padding: 0 .2em; }
+.mb .pill { z-index: 6; font: 400 clamp(14px, 1.6vw, 26px)/1 var(--serif); letter-spacing: .35em; padding: .45em .9em .5em; white-space: nowrap; text-transform: lowercase; max-width: 40%; overflow: hidden; }
+.mb .tape { z-index: 5; background: rgba(226, 216, 205, .72); }
+.mb .splat { z-index: 4; pointer-events: none; }
+.mb-empty { max-width: 520px; margin: 12vh auto 0; text-align: center; color: var(--rope); font: 14px/1.6 var(--mono); border: 1.5px dashed var(--rope-dark); padding: 2rem; min-width: 0; aspect-ratio: auto; box-shadow: none; background: transparent; }
+.mb-credits { max-width: 1500px; margin: 1.2rem auto 0; font: 11px/1.6 var(--mono); color: var(--rope-dark); columns: 2 320px; }
+
+/* ---------- about panel ---------- */
+#about { position: fixed; inset: 0; z-index: 200; overflow-y: auto; background: rgba(10,14,20,.6);
+  padding-block: calc(2rem + env(safe-area-inset-top, 0px)) 2rem;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.sheet { --paper: #f4f1ea; --paper-2: #e9e4d8; --ink: #1d2230; --ink-2: #5e6573; --rule: #cdc4b1; --stamp: #b5471f;
+  max-width: 880px; margin: 0 auto; background: var(--paper); color: var(--ink); padding: 2rem clamp(1rem, 4vw, 2.75rem) 3rem; position: relative; box-shadow: 0 30px 60px rgba(0,0,0,.4); }
+.sheet .close { position: absolute; top: 1rem; right: 1rem; color: var(--ink); border-color: var(--ink); }
+.sheet h1 { font-family: var(--display); font-weight: 800; font-size: clamp(2rem, 5vw, 3.2rem); letter-spacing: -.03em; line-height: 1; margin: .5rem 0 1rem; text-wrap: balance; }
+.sheet h1 em { font-style: normal; color: var(--stamp); }
+.sheet .lede { font-size: 1.05rem; color: var(--ink-2); max-width: 64ch; }
+.prose { max-width: 68ch; line-height: 1.55; }
+.prose h2 { font-family: var(--display); font-weight: 800; font-size: 1.6rem; letter-spacing: -.02em; margin: 2.5rem 0 .75rem; }
+.prose .q { font-family: var(--mono); font-size: .78rem; letter-spacing: .06em; text-transform: uppercase; color: var(--stamp); margin: 1.8rem 0 .25rem; }
+.diagram { margin: 1.5rem 0; border: 1px solid var(--rule); background: var(--paper-2); overflow-x: auto; max-width: 100%; }
+.diagram svg { display: block; min-width: 760px; width: 100%; height: auto; }
+.table-wrap { overflow-x: auto; margin: 1rem 0 2rem; }
+.steps { font-family: var(--mono); font-size: .8rem; border-collapse: collapse; width: 100%; }
+.steps th, .steps td { text-align: left; vertical-align: top; padding: .45rem .55rem; border-top: 1px solid var(--rule); }
+.steps th { color: var(--ink-2); font-size: .7rem; letter-spacing: .08em; text-transform: uppercase; }
+.video video { width: 100%; border: 2px solid var(--ink); background: #000; }
+@media (max-width: 640px) { .legend, .counter { display: none; } .tools button { padding: .5rem .6rem; } }
+@media (prefers-reduced-motion: reduce) { .node.live .card, .mb > * { animation: none; } }
+</style>
+</head>
+<body>
+
+<div id="stage"><canvas id="ropes"></canvas><div id="world"></div><canvas id="labels"></canvas></div>
+
+<div id="boardView" hidden>
+  <div class="mb-tools">
+    <span class="lbl">Layout</span>
+    <div class="seg" id="layouts" role="group" aria-label="Moodboard layout">
+      <button type="button" data-l="editorial" aria-pressed="true">Editorial</button>
+      <button type="button" data-l="gallery" aria-pressed="false">Gallery</button>
+      <button type="button" data-l="scrapbook" aria-pressed="false">Scrapbook</button>
+      <button type="button" data-l="poster" aria-pressed="false">Poster</button>
+    </div>
+    <span class="spacer"></span>
+    <button id="recompose" type="button">Recompose</button>
+  </div>
+  <div class="mb-scroll"><div id="mb"></div></div>
+  <div class="mb-credits" id="mbCredits"></div>
+</div>
+
+<header class="bar">
+  <div class="brand">The Name <span>Machine</span></div>
+  <form id="trigger">
+    <label for="name" hidden>A first name</label>
+    <input id="name" type="text" placeholder="Type a first name" value="Claude" autocomplete="off" maxlength="40" required>
+    <button id="go" class="primary" type="submit">Pull</button>
+  </form>
+  <div class="seg" role="group" aria-label="View">
+    <button id="mRope" type="button" aria-pressed="true">Rope</button>
+    <button id="mBoard" type="button" aria-pressed="false">Moodboard</button>
+  </div>
+  <div class="tools">
+    <div class="seg rope-only" role="group" aria-label="Spread">
+      <button id="sBranch" type="button" aria-pressed="true">Branch</button>
+      <button id="sRing" type="button" aria-pressed="false">Ring</button>
+    </div>
+    <button id="fit" class="rope-only" type="button">Fit</button>
+    <button id="tuneBtn" type="button" aria-expanded="false" aria-controls="tune">Tune</button>
+    <button id="open-about" type="button">About</button>
+  </div>
+</header>
+
+<div id="tune" hidden>
+  <div>
+    <h4><label for="vivid">Colour</label></h4>
+    <div class="row"><input id="vivid" type="range" min="0" max="100" value="70"><span id="vividVal" style="font:12px var(--mono);width:3ch;text-align:right">70</span></div>
+    <div class="ramp"></div>
+    <div class="scale"><span>muted</span><span>natural</span><span>vivid</span></div>
+    <p>Higher values only search for strongly coloured works, push the palette toward pure hues and boost image saturation.</p>
+  </div>
+  <div>
+    <h4>Look for</h4>
+    <div class="chips">
+      <label><input type="checkbox" id="cIllus" checked> illustration</label>
+      <label><input type="checkbox" id="cPoster" checked> posters &amp; graphic</label>
+      <label><input type="checkbox" id="cTexture" checked> texture &amp; pattern</label>
+      <label><input type="checkbox" id="cPhoto"> art photography</label>
+    </div>
+    <p>Applies to the next pull. Each colour picks its searches from the checked kinds.</p>
+  </div>
+</div>
+
+<div class="legend">hover a card to light its ropes · drag a card · drag the board to pan · scroll to zoom</div>
+<div class="counter" id="counter"></div>
+<div class="ticker" id="ticker">Type a name and pull. The machine will look for an artist by that name.</div>
+
+<div id="about" hidden>
+  <div class="sheet">
+    <button class="close" id="close-about" type="button">Close</button>
+    <div class="via" style="color:var(--ink-2)">About</div>
+    <h1>A Rube Goldberg machine that <em>reads museum collections</em></h1>
+    <p class="lede">You type one first name. The machine looks for an artist with that name in museum databases, takes one of their works, reads its colour, and uses that colour to pull prints, posters, textiles and illustration out of other collections. Each image then decides where the machine goes next. At the end the same material is recomposed as a moodboard.</p>
+
+    <div class="prose">
+      <h2>The mechanism</h2>
+      <div class="diagram">
+        <svg viewBox="0 0 1000 600" xmlns="http://www.w3.org/2000/svg" font-family="IBM Plex Mono, Menlo, monospace" font-size="12">
+          <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#5e6573"/></marker></defs>
+          <g fill="none" stroke="#5e6573" stroke-width="1.5" marker-end="url(#ar)">
+            <path d="M130 90 H185"/><path d="M395 60 H450"/><path d="M395 120 H450"/><path d="M290 150 V200"/>
+            <path d="M560 150 V215"/><path d="M560 285 V330"/><path d="M660 250 H720"/><path d="M560 400 V445"/>
+            <path d="M450 520 H340"/><path d="M670 520 H735"/>
+            <path d="M560 560 V585 H950 V250 H900" stroke-dasharray="5 4"/>
+            <path d="M240 520 H120 V340 H450" stroke-dasharray="5 4"/>
+          </g>
+          <g stroke="#1d2230" stroke-width="1.5">
+            <rect x="20" y="65" width="110" height="50" rx="25" fill="#f4f1ea"/>
+            <rect x="185" y="30" width="210" height="120" fill="#f4f1ea"/>
+            <rect x="185" y="200" width="210" height="60" fill="#f4f1ea" stroke-dasharray="4 3"/>
+            <rect x="450" y="30" width="220" height="120" fill="#f4f1ea"/>
+            <rect x="460" y="215" width="200" height="70" fill="#f4f1ea"/>
+            <rect x="720" y="215" width="180" height="70" fill="#f4f1ea" stroke-dasharray="4 3"/>
+            <rect x="450" y="330" width="220" height="70" fill="#ffcf5a"/>
+            <rect x="450" y="445" width="220" height="115" fill="#f4f1ea" stroke="#b5471f"/>
+            <rect x="240" y="490" width="100" height="60" fill="#ffcf5a"/>
+            <rect x="735" y="490" width="160" height="60" fill="#ffcf5a"/>
+          </g>
+          <g fill="#1d2230">
+            <text x="75" y="95" text-anchor="middle" font-weight="600">NAME</text>
+            <text x="197" y="52" font-weight="600">1 · find the artist</text>
+            <text x="197" y="72" fill="#5e6573">Art Institute: agents</text><text x="197" y="90" fill="#5e6573">named like the input</text>
+            <text x="197" y="112" fill="#5e6573">The Met: artist search</text><text x="197" y="130" fill="#5e6573">filtered by name</text>
+            <text x="197" y="222" font-weight="600">no artist?</text><text x="197" y="242" fill="#5e6573">titles → illustrations</text>
+            <text x="462" y="52" font-weight="600">2 · their works</text>
+            <text x="462" y="72" fill="#5e6573">paintings, prints, drawings</text><text x="462" y="90" fill="#5e6573">with an image</text>
+            <text x="462" y="112" fill="#5e6573">each keeps its metadata:</text><text x="462" y="130" fill="#5e6573">colour, place, maker, tags</text>
+            <text x="472" y="238" font-weight="600">3 · read the colour</text><text x="472" y="256" fill="#5e6573">museum colour field, or</text><text x="472" y="274" fill="#5e6573">pixels sampled on canvas</text>
+            <text x="732" y="238" font-weight="600">colour name</text><text x="732" y="256" fill="#5e6573">The Color API</text><text x="732" y="274" fill="#5e6573">→ a search word</text>
+            <text x="462" y="352" font-weight="600">4 · search by colour</text><text x="462" y="370">prints, posters, textiles with</text><text x="462" y="388">the same hue and saturation</text>
+            <text x="462" y="467" font-weight="600" fill="#b5471f">5 · each image rolls</text>
+            <text x="462" y="487" fill="#5e6573">its colour → step 3 again</text><text x="462" y="505" fill="#5e6573">its place → works from there</text>
+            <text x="462" y="523" fill="#5e6573">its maker → more by them</text><text x="462" y="541" fill="#5e6573">a subject tag → posters, patterns</text>
+            <text x="290" y="525" text-anchor="middle" font-weight="600">place</text>
+            <text x="815" y="518" text-anchor="middle" font-weight="600">maker · tag</text><text x="815" y="536" text-anchor="middle">art search</text>
+            <text x="760" y="580" fill="#5e6573">loop until 24 images or depth 4</text>
+          </g>
+        </svg>
+      </div>
+
+      <div class="table-wrap">
+        <table class="steps">
+          <tr><th>Card</th><th>Comes from</th><th>Leads to</th></tr>
+          <tr><td>Artist (red top)</td><td>Art Institute agents or Met artists whose name contains the input</td><td>their works</td></tr>
+          <tr><td>Image (badge: print, poster, textile, illustration, photo…)</td><td>an artist or a search tag</td><td>one move chosen from what its record contains</td></tr>
+          <tr><td>Colour swatch</td><td>the image's colour field (AIC) or its pixels</td><td>prints, posters, textiles and photographs with the same hue</td></tr>
+          <tr><td>Search tag (yellow)</td><td>any value the machine decided to search</td><td>the images it returned</td></tr>
+          <tr><td>Moodboard</td><td>every colour and image collected in the run</td><td>a five-colour palette, keywords and one of four layouts</td></tr>
+        </table>
+      </div>
+
+      <h2>Controls</h2>
+      <p><b>Tune → Colour</b> sets how saturated the machine wants things. At the vivid end it only asks the Art Institute for works whose catalogued colour saturation is high, ranks greyish images lower, pushes the moodboard palette toward pure hues, and boosts image saturation on screen. <b>Look for</b> chooses which kinds of works each colour searches: illustration (prints, drawings, illustrated books), posters and graphic design, texture and pattern (textiles and close-up surfaces), and art photography.</p>
+      <p><b>Branch / Ring</b> changes how the rope web spreads: Branch lets it grow outward freely; Ring pulls every card onto a circle by how many steps it is from the name, so the whole run reads as rings around the trigger. <b>Moodboard</b> has four layouts (Editorial, Gallery, Scrapbook, Poster); Recompose reshuffles the palette and image choice within the current layout.</p>
+
+      <h2>Responses to the brief</h2>
+      <p class="q">How can we build Rube Goldberg systems in the digital realm?</p>
+      <p>By treating the answer from one database as the question for the next, without asking whether that makes sense. A name becomes an artist, an artist becomes a painting, a painting becomes a hue in degrees, a hue becomes a query for posters and textiles nobody connected to that painter. The hand-off rules are the mechanism, and each one is written on the rope.</p>
+      <p class="q">What kind of data could be passed around?</p>
+      <p>Names, museum agent IDs, object IDs, HSL colour values, hex codes, colour names, places of origin, maker IDs, subject tags, image URLs. Some of it is metadata catalogued by curators; some is read from pixels in your browser. When neither exists, the machine takes another route.</p>
+      <p class="q">What services could be chained together to produce unexpected outcomes?</p>
+      <p>Museum open-access APIs are deep, free and richly described: the Art Institute of Chicago stores the dominant colour of each artwork, so a painting can search for textiles by hue. The Met's Drawings and Prints department and Cleveland's open access add catalogued subjects and posters; Openverse adds Creative Commons illustration, pattern and texture. None of these services know about each other.</p>
+      <p class="q">What would the triggers look like, and the end results?</p>
+      <p>The trigger is the smallest gesture, one word. The end result is two things: a web of images strung on rope, each tied to the value that summoned it, and a moodboard composed from it. Type the same name twice and you get a different web, because every image rolls a die.</p>
+
+      <h2>Video</h2>
+      <div class="video"><video controls playsinline preload="metadata" src="demo.mp4"></video></div>
+
+      <h2>Sources</h2>
+      <p>Art Institute of Chicago API, The Metropolitan Museum of Art Collection API, Cleveland Museum of Art Open Access API, Openverse, The Color API. No keys, no server: every request is made from your browser. Each image card credits its source.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ======================================================================
+   The Name Machine
+   name → artist in museum collections → their works → colour
+   colour → prints / posters / textiles / photographs with the same hue
+   each image → one move: colour, place, maker, subject tag
+   ====================================================================== */
+const stage = document.getElementById('stage'), world = document.getElementById('world');
+const cvs = document.getElementById('ropes'), ctx = cvs.getContext('2d');
+const lcv = document.getElementById('labels'), lctx = lcv.getContext('2d');
+const ticker = document.getElementById('ticker'), counter = document.getElementById('counter');
+const goBtn = document.getElementById('go');
+const $ = id => document.getElementById(id);
+
+const nodes = [], edges = [];
+const cam = { s: .7, x: 0, y: 0 }, camT = { s: .7, x: 0, y: 0 };
+let autoCam = true, running = false, stopFlag = false, dpr = 1, hovered = null, lastName = '', mode = 'rope', spread = 'branch', frameNo = 0;
+const SEG = 14, GROW_MS = 600, MAX_IMG = 24, MAX_DEPTH = 4, RING_GAP = 250;
+const S = { images: 0, steps: 0, seen: new Set(), searches: 0, colors: [] };
+
+/* ---------- settings ---------- */
+const store = { get(k, d) { try { const v = localStorage.getItem('nm.' + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+                set(k, v) { try { localStorage.setItem('nm.' + k, JSON.stringify(v)); } catch {} } };
+const V = () => +$('vivid').value / 100;               // 0 muted … 1 vivid
+const CATS = () => ({ illus: $('cIllus').checked, poster: $('cPoster').checked, texture: $('cTexture').checked, photo: $('cPhoto').checked });
+function applyVivid() {
+  const v = V(); $('vividVal').textContent = Math.round(v * 100);
+  document.documentElement.style.setProperty('--sat', (0.6 + v * 0.85).toFixed(2));
+  document.documentElement.style.setProperty('--con', (0.97 + v * 0.1).toFixed(2));
+}
+$('vivid').value = store.get('vivid', 70);
+[['cIllus', true], ['cPoster', true], ['cTexture', true], ['cPhoto', false]].forEach(([id, d]) => { $(id).checked = store.get(id, d); $(id).onchange = () => { store.set(id, $(id).checked); if (!Object.values(CATS()).some(Boolean)) { $('cIllus').checked = true; store.set('cIllus', true); } }; });
+let vividTimer = 0;
+$('vivid').oninput = () => { applyVivid(); store.set('vivid', +$('vivid').value); clearTimeout(vividTimer); if (mode === 'board') vividTimer = setTimeout(() => buildBoard(), 350); };
+applyVivid();
+$('tuneBtn').onclick = () => { const t = $('tune'); t.hidden = !t.hidden; $('tuneBtn').setAttribute('aria-expanded', !t.hidden); };
+
+/* ---------- helpers ---------- */
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const shuffle = a => a.map(v => [Math.random(), v]).sort((p, q) => p[0] - q[0]).map(p => p[1]);
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const rnd = (a, b) => a + Math.random() * (b - a);
+const short = (s, n = 34) => { s = String(s || ''); return s.length > n ? s.slice(0, n - 1) + '…' : s; };
+function weighted(opts) { let r = Math.random() * opts.reduce((s, o) => s + o[1], 0); for (const o of opts) if ((r -= o[1]) < 0) return o[0]; return opts[0] && opts[0][0]; }
+async function getJSON(url) { S.searches++; updateCounter(); const r = await fetch(url); if (!r.ok) throw new Error(r.status); return r.json(); }
+function hslToHex(h, s, l) {
+  s /= 100; l /= 100; const k = n => (n + h / 30) % 12, a = s * Math.min(l, 1 - l);
+  const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+  return [f(0), f(8), f(4)].map(v => Math.round(v * 255).toString(16).padStart(2, '0')).join('').toUpperCase();
+}
+function rgbToHsl(r, g, b) {
+  r /= 255; g /= 255; b /= 255; const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2; let h = 0, s = 0;
+  if (mx !== mn) { const d = mx - mn; s = l > .5 ? d / (2 - mx - mn) : d / (mx + mn);
+    h = mx === r ? (g - b) / d + (g < b ? 6 : 0) : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; h *= 60; }
+  return { h: Math.round(h), s: Math.round(s * 100), l: Math.round(l * 100) };
+}
+function brackets(obj, prefix = '') {
+  const out = [];
+  for (const [k, v] of Object.entries(obj)) {
+    const key = prefix ? `${prefix}[${k}]` : k;
+    if (v !== null && typeof v === 'object') out.push(brackets(v, key)); else out.push(`${encodeURIComponent(key)}=${encodeURIComponent(v)}`);
+  }
+  return out.filter(Boolean).join('&');
+}
+const fold = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '');
+const nameMatches = (full, name) => { const n = fold(name).toLowerCase().replace(/[^a-z0-9 ]/g, '').trim(); return !!n && new RegExp(`(^|[^a-z])${n.replace(/ +/g, '[^a-z]+')}`, 'i').test(fold(full)); };
+function say(msg) { S.steps++; ticker.innerHTML = `<b>${String(S.steps).padStart(2, '0')}</b> ${msg}`; updateCounter(); }
+function updateCounter() { counter.innerHTML = `${S.images} / ${MAX_IMG} images<br>${S.searches} requests`; }
+function loadImg(src, ms = 8000) {
+  return new Promise(res => { const im = new Image(); let done = false; const end = ok => { if (!done) { done = true; res(ok ? im : null); } };
+    im.onload = () => end(im.naturalWidth > 1); im.onerror = () => end(false); setTimeout(() => end(false), ms); im.referrerPolicy = 'no-referrer'; im.src = src; });
+}
+/* dominant colour from pixels, weighted toward saturated pixels; null if the server forbids reading (CORS) */
+async function pixelColor(src) {
+  const im = new Image(); im.crossOrigin = 'anonymous'; im.referrerPolicy = 'no-referrer';
+  const ok = await new Promise(r => { im.onload = () => r(true); im.onerror = () => r(false); setTimeout(() => r(false), 6000); im.src = src; });
+  if (!ok) return null;
+  try {
+    const c = document.createElement('canvas'); c.width = c.height = 40; const g = c.getContext('2d');
+    g.drawImage(im, 0, 0, 40, 40); const d = g.getImageData(0, 0, 40, 40).data;
+    const buckets = Array.from({ length: 12 }, () => ({ w: 0, h: 0, s: 0, l: 0 })); let gw = 0, gl = 0, sats = [];
+    for (let i = 0; i < d.length; i += 4) {
+      const p = rgbToHsl(d[i], d[i + 1], d[i + 2]); gw++; gl += p.l; sats.push(p.s);
+      if (p.s < 12) continue;
+      const w = Math.pow(p.s / 100, 1.6) * (1 - Math.abs(p.l - 50) / 55);
+      const b = buckets[Math.floor(p.h / 30) % 12]; b.w += w; b.h += p.h * w; b.s += p.s * w; b.l += p.l * w;
+    }
+    const best = buckets.reduce((a, b) => b.w > a.w ? b : a);
+    if (best.w < 5) return { h: 0, s: 4, l: Math.round(gl / gw), from: 'pixels' };
+    return { h: Math.round(best.h / best.w), s: Math.round(best.s / best.w), l: Math.round(best.l / best.w), from: 'pixels' };
+  } catch { return null; }
+}
+
+/* ---------- normalising records ---------- */
+const AIC_FIELDS = 'id,title,image_id,artist_title,artist_id,date_display,place_of_origin,color,artwork_type_title,subject_titles,term_titles,classification_title';
+const iiif = id => `https://www.artic.edu/iiif/2/${id}/full/400,/0/default.jpg`;
+const cleanTags = arr => [...new Set((arr || []).filter(t => t && t.length > 2 && t.length < 28 && !/photograph|gelatin|silver|albumen|paper|ink|oil|canvas|public domain|chromogenic|etching|engraving|lithograph|woodcut|watercolor|graphite|^print|^drawing|^\d/i.test(t)))];
+function kindOf(s) {
+  s = String(s || '').toLowerCase();
+  if (/poster|advertis|graphic design|broadside/.test(s)) return 'poster';
+  if (/textile|fabric|tapestr|embroider|lace|brocade|velvet|silk|sampler|wallpaper|pattern/.test(s)) return 'textile';
+  if (/photo/.test(s)) return 'photo';
+  if (/illustrat|book/.test(s)) return 'illustration';
+  if (/print|woodblock|etching|lithograph|engraving/.test(s)) return 'print';
+  if (/drawing|watercolo|sketch/.test(s)) return 'drawing';
+  if (/painting/.test(s)) return 'painting';
+  return 'artwork';
+}
+function fromAIC(a) {
+  return { kind: kindOf([a.artwork_type_title, a.classification_title, ...(a.term_titles || []).slice(0, 4)].join(' ')), id: 'aic' + a.id, src: iiif(a.image_id), title: a.title,
+    credit: [a.artist_title, a.date_display, 'Art Institute of Chicago'].filter(Boolean).join(' · '),
+    color: a.color && a.color.s != null ? { h: Math.round(a.color.h), s: Math.round(a.color.s), l: Math.round(a.color.l), from: 'AIC colour field' } : null,
+    place: a.place_of_origin, artistId: a.artist_id, artist: a.artist_title, tags: cleanTags([...(a.subject_titles || []), ...(a.term_titles || [])]), source: 'Art Institute of Chicago' };
+}
+function fromMet(o) {
+  return { kind: kindOf((o.objectName || '') + ' ' + (o.classification || '')), id: 'met' + o.objectID, src: o.primaryImageSmall, title: o.title || 'Untitled',
+    credit: [o.artistDisplayName, o.objectDate, 'The Met'].filter(Boolean).join(' · '), color: null,
+    place: o.city || o.country || o.culture || null, artist: o.artistDisplayName, tags: cleanTags((o.tags || []).map(t => t.term)), source: 'The Met' };
+}
+function fromOpenverse(i, kind) {
+  return { kind, id: 'ov' + i.id, src: i.thumbnail || i.url, title: i.title || 'Untitled', credit: [i.creator, (i.license || '').toUpperCase(), 'Openverse'].filter(Boolean).join(' · '),
+    color: null, place: null, artist: null, tags: cleanTags((i.tags || []).map(t => t.name)).slice(0, 8), source: 'Openverse' };
+}
+function fromCMA(a) {
+  return { kind: kindOf(a.type), id: 'cma' + a.id, src: a.images.web.url, title: a.title,
+    credit: [(a.creators && a.creators[0] && a.creators[0].description || '').split('(')[0].trim(), a.creation_date, 'Cleveland Museum of Art'].filter(Boolean).join(' · '),
+    color: null, place: a.culture && a.culture[0], artist: null, tags: [], source: 'Cleveland Museum of Art' };
+}
+
+/* ---------- searches ---------- */
+const ART_TYPES = ['Print', 'Drawing and Watercolor', 'Book'];
+const typeFilter = types => ({ bool: { should: types.map(t => ({ match: { artwork_type_title: t } })) } });
+/* hue window plus a saturation floor that rises with the Colour slider */
+function hueRange(c) {
+  const v = V();
+  if (c.s < 12 && v < .45) return [{ range: { 'color.s': { lte: 12 } } }, { range: { 'color.l': { gte: c.l - 15, lte: c.l + 15 } } }];
+  const grey = c.s < 12, win = grey ? 30 : 9 + Math.round((1 - v) * 4);
+  const floor = Math.round(8 + v * 52);                           // 8 … 60
+  const minS = grey ? floor : Math.max(floor, c.s - 25 + Math.round(v * 15));
+  const lo = c.h - win, hi = c.h + win;
+  const hue = lo < 0 || hi > 360
+    ? { bool: { should: [{ range: { 'color.h': { gte: (lo + 360) % 360, lte: 360 } } }, { range: { 'color.h': { gte: 0, lte: hi % 360 } } }] } }
+    : { range: { 'color.h': { gte: lo, lte: hi } } };
+  const must = [hue, { range: { 'color.s': { gte: Math.min(minS, 85) } } }];
+  if (v > .5) must.push({ range: { 'color.l': { gte: 18, lte: 82 } } });
+  return must;
+}
+const aicSearch = async (must, limit = 40, kind) => {
+  const j = await getJSON(`https://api.artic.edu/api/v1/artworks/search?${brackets({ query: { bool: { must } } })}&fields=${AIC_FIELDS}&limit=${limit}`);
+  return j.data.filter(a => a.image_id).map(a => { const r = fromAIC(a); if (kind) r.kind = kind; return r; });
+};
+const metObjects = async (ids, n = 8, kind) => {
+  const objs = await Promise.all(shuffle(ids).slice(0, n).map(id => getJSON(`https://collectionapi.metmuseum.org/public/collection/v1/objects/${id}`).catch(() => null)));
+  return objs.filter(o => o && o.primaryImageSmall).map(o => { const r = fromMet(o); if (kind) r.kind = kind; return r; });
+};
+const HAS_IMG = { exists: { field: 'image_id' } };
+const API = {
+  async aicAgents(name) {
+    const j = await getJSON(`https://api.artic.edu/api/v1/agents/search?q=${encodeURIComponent(name)}&fields=id,title,birth_date,death_date&limit=15`);
+    return j.data.filter(a => nameMatches(a.title, name));
+  },
+  aicByArtist: (id, types) => aicSearch([{ term: { artist_id: id } }, HAS_IMG, ...(types ? [typeFilter(types)] : [])], 30),
+  async aicTitle(q) {
+    const j = await getJSON(`https://api.artic.edu/api/v1/artworks/search?q=${encodeURIComponent(q)}&query[exists][field]=image_id&fields=${AIC_FIELDS}&limit=20`);
+    return j.data.filter(a => a.image_id).map(fromAIC);
+  },
+  aicArtByColor: c => aicSearch([typeFilter(ART_TYPES), HAS_IMG, ...hueRange(c)]),
+  aicPosterByColor: c => aicSearch([{ multi_match: { query: 'poster', fields: ['title', 'term_titles', 'classification_titles', 'medium_display'] } }, HAS_IMG, ...hueRange(c)], 40, 'poster'),
+  aicTextileByColor: c => aicSearch([{ match: { artwork_type_title: 'Textile' } }, HAS_IMG, ...hueRange(c)], 40, 'textile'),
+  aicPhotosByColor: c => aicSearch([{ match: { artwork_type_title: 'Photograph' } }, HAS_IMG, ...hueRange(c)], 40, 'photo'),
+  aicArtByWord: q => aicSearch([typeFilter(ART_TYPES), HAS_IMG, { multi_match: { query: q, fields: ['title', 'place_of_origin', 'subject_titles', 'term_titles'] } }], 30),
+  aicTextileByWord: q => aicSearch([{ match: { artwork_type_title: 'Textile' } }, HAS_IMG, { multi_match: { query: q, fields: ['title', 'place_of_origin', 'subject_titles', 'term_titles'] } }], 30, 'textile'),
+  async metArtist(name) {
+    const j = await getJSON(`https://collectionapi.metmuseum.org/public/collection/v1/search?artistOrCulture=true&hasImages=true&q=${encodeURIComponent(name)}`);
+    const ids = (j.objectIDs || []).slice(0, 14);
+    const objs = await Promise.all(ids.map(id => getJSON(`https://collectionapi.metmuseum.org/public/collection/v1/objects/${id}`).catch(() => null)));
+    return objs.filter(o => o && o.primaryImageSmall && nameMatches(o.artistDisplayName, name)).map(fromMet);
+  },
+  async metPrints(q, kind) {   // department 9 = Drawings and Prints (includes posters)
+    const j = await getJSON(`https://collectionapi.metmuseum.org/public/collection/v1/search?departmentId=9&hasImages=true&q=${encodeURIComponent(q)}`);
+    return metObjects((j.objectIDs || []).slice(0, 40), 8, kind);
+  },
+  async metPhotos(q) {
+    const j = await getJSON(`https://collectionapi.metmuseum.org/public/collection/v1/search?medium=Photographs&hasImages=true&q=${encodeURIComponent(q)}`);
+    return metObjects((j.objectIDs || []).slice(0, 30), 8, 'photo');
+  },
+  async openverse(q, category, kind) {
+    const j = await getJSON(`https://api.openverse.org/v1/images/?q=${encodeURIComponent(q)}${category ? '&category=' + category : ''}&page_size=20`);
+    return (j.results || []).map(i => fromOpenverse(i, kind));
+  },
+  async cmaArt(q) {
+    const type = pick(['Print', 'Drawing']);
+    const j = await getJSON(`https://openaccess-api.clevelandart.org/api/artworks/?q=${encodeURIComponent(q)}&type=${type}&has_image=1&cc0=1&limit=20`);
+    return (j.data || []).filter(a => a.images && a.images.web).map(fromCMA);
+  },
+  async cmaTextile(q) {
+    const j = await getJSON(`https://openaccess-api.clevelandart.org/api/artworks/?q=${encodeURIComponent(q)}&type=Textile&has_image=1&cc0=1&limit=20`);
+    return (j.data || []).filter(a => a.images && a.images.web).map(a => ({ ...fromCMA(a), kind: 'textile' }));
+  },
+  async colorName(hex) { try { const j = await getJSON(`https://www.thecolorapi.com/id?hex=${hex}`); return j.name.value; } catch { return null; } },
+};
+const tryAll = async (...fns) => { for (const f of fns) { try { const r = await f(); if (r && r.length) return r; } catch {} } return []; };
+
+/* what each kind of search looks like, per content category */
+const BY_COLOR = {
+  illus: c => pick([
+    { src: 'Art Institute · prints & drawings', what: 'same colour, on paper', run: () => tryAll(() => API.aicArtByColor(c.c), () => API.openverse(c.word, 'illustration', 'illustration')) },
+    { src: 'Openverse · illustration', what: 'illustrations', word: true, run: () => tryAll(() => API.openverse(c.word, 'illustration', 'illustration'), () => API.metPrints(c.word)) },
+  ]),
+  poster: c => pick([
+    { src: 'Art Institute · posters', what: 'posters in that colour', run: () => tryAll(() => API.aicPosterByColor(c.c), () => API.metPrints(c.word + ' poster', 'poster')) },
+    { src: 'Openverse · poster & graphic', what: 'graphic design', word: true, q: c.word + ' poster', run: () => tryAll(() => API.openverse(c.word + ' poster', 'illustration', 'poster'), () => API.openverse(c.word + ' graphic design', null, 'graphic'), () => API.metPrints(c.word + ' poster', 'poster')) },
+  ]),
+  texture: c => pick([
+    { src: 'Art Institute · textiles', what: 'woven, printed, embroidered', run: () => tryAll(() => API.aicTextileByColor(c.c), () => API.openverse(c.word + ' pattern', 'illustration', 'texture')) },
+    { src: 'Openverse · texture', what: 'surfaces & patterns', word: true, q: c.word + ' texture', run: () => tryAll(() => API.openverse(c.word + ' texture', null, 'texture'), () => API.openverse(c.word + ' pattern', null, 'texture')) },
+  ]),
+  photo: c => ({ src: 'Art Institute · photographs', what: 'museum photographs, same colour', run: () => tryAll(() => API.aicPhotosByColor(c.c)) }),
+};
+const BY_WORD = {
+  illus: w => pick([
+    { src: 'The Met · drawings & prints', run: () => tryAll(() => API.metPrints(w), () => API.openverse(w, 'illustration', 'illustration')) },
+    { src: 'Cleveland · prints & drawings', run: () => tryAll(() => API.cmaArt(w), () => API.aicArtByWord(w)) },
+    { src: 'Art Institute · prints & drawings', run: () => tryAll(() => API.aicArtByWord(w), () => API.openverse(w, 'illustration', 'illustration')) },
+  ]),
+  poster: w => pick([
+    { src: 'The Met · posters', q: w + ' poster', run: () => tryAll(() => API.metPrints(w + ' poster', 'poster'), () => API.openverse(w + ' poster', 'illustration', 'poster')) },
+    { src: 'Openverse · poster & graphic', q: w + ' poster', run: () => tryAll(() => API.openverse(w + ' poster', 'illustration', 'poster'), () => API.openverse(w + ' graphic', null, 'graphic')) },
+  ]),
+  texture: w => pick([
+    { src: 'Art Institute · textiles', run: () => tryAll(() => API.aicTextileByWord(w), () => API.cmaTextile(w)) },
+    { src: 'Cleveland · textiles', run: () => tryAll(() => API.cmaTextile(w), () => API.openverse(w + ' pattern', null, 'texture')) },
+    { src: 'Openverse · pattern', q: w + ' pattern', run: () => tryAll(() => API.openverse(w + ' pattern', null, 'texture'), () => API.openverse(w + ' texture', null, 'texture')) },
+  ]),
+  photo: w => ({ src: 'The Met · photographs', run: () => tryAll(() => API.metPhotos(w)) }),
+};
+const CAT_WEIGHT = { illus: 3, poster: 3, texture: 3, photo: 1.5 };
+const enabledCats = () => Object.entries(CATS()).filter(e => e[1]).map(e => [e[0], CAT_WEIGHT[e[0]]]);
+
+/* ---------- nodes & edges ---------- */
+function addNode(type, x, y, html) {
+  const el = document.createElement('div'); el.className = 'node ' + type;
+  el.innerHTML = `<div class="tilt"><div class="card">${html}</div></div>`; world.appendChild(el);
+  const n = { el, tiltEl: el.firstChild, x, y, vx: 0, vy: 0, w: 0, h: 0, tilt: 0, live: false, drag: false, dir: 0, depth: 0 };
+  el._n = n; measure(n); nodes.push(n); return n;
+}
+function measure(n) { n.w = n.el.offsetWidth; n.h = n.el.offsetHeight; }
+function addEdge(a, b, label) {
+  const len = Math.max(200, Math.hypot(b.x - a.x, b.y - a.y));
+  const e = { a, b, label, len, rope: len * 1.06, grow: 0, born: performance.now(), pts: [] };
+  for (let i = 0; i <= SEG; i++) e.pts.push({ x: a.x, y: a.y, px: a.x, py: a.y });
+  edges.push(e); return e;
+}
+function place(parent, i = 0, n = 1, dist = 270, spr = .6) {
+  const a = parent.dir + (i - (n - 1) / 2) * spr + (Math.random() - .5) * .25;
+  return { x: parent.x + Math.cos(a) * dist, y: parent.y + Math.sin(a) * dist, dir: a };
+}
+function make(type, parent, i, n, html, dist, spr) {
+  const p = place(parent, i, n, dist, spr); const node = addNode(type, p.x, p.y, html); node.dir = p.dir; node.depth = parent.depth; return node;
+}
+async function spawn(child, parents) {
+  parents.forEach(([p, label]) => addEdge(p, child, label));
+  if (parents.length) await sleep(GROW_MS);
+  child.live = true; child.el.classList.add('live'); measure(child); ringDirty = true; retarget(); await sleep(150);
+}
+const card = (via, val, what) => `<span class="via">${esc(via)}</span><span class="val">${esc(val)}</span><span class="what">${esc(what)}</span>`;
+async function keyCard(parent, label, via, val, what, cls = '', i = 0, n = 1) {
+  const k = make('key' + cls, parent, i, n, card(via, val, what), 250); await spawn(k, [[parent, label]]); return k;
+}
+async function queryCard(parent, label, source, q, what, i = 0, n = 1) {
+  const k = make('query', parent, i, n, `<span class="via">Search · ${esc(source)}</span><span class="val">“${esc(short(q, 26))}”</span><span class="what">${esc(what)}</span>`, 250);
+  await spawn(k, [[parent, label]]); return k;
+}
+function emptyQuery(q, why) { q.el.classList.add('none'); q.el.querySelector('.what').textContent = why || '0 hits'; }
+const KIND_RANK = { poster: 0, graphic: 0, textile: 0, texture: 0, illustration: 0, print: .3, drawing: .3, painting: 1, artwork: 1, photo: 1.6 };
+/* rank: wanted kinds first, greyish works last when the Colour slider is high */
+function rankRec(r) {
+  const v = V(), c = r.color || r.pc;
+  const satPen = c ? Math.max(0, v * 50 - c.s) / 14 : v * .6;
+  return KIND_RANK[r.kind] + satPen + Math.random() * .6;
+}
+async function hang(parent, records, count, label = '') {
+  const fresh = records.filter(r => r.src && !S.seen.has(r.id) && !S.seen.has(r.src)).map(r => [rankRec(r), r]).sort((a, b) => a[0] - b[0]).map(p => p[1]);
+  const want = Math.min(count, MAX_IMG - S.images); const out = [];
+  if (want <= 0) return out;
+  const tryList = fresh.slice(0, want + 3); const loads = tryList.map(r => loadImg(r.src));
+  for (let i = 0; i < tryList.length && out.length < want && !stopFlag; i++) {
+    const im = await loads[i]; if (!im) continue; const r = tryList[i];
+    S.seen.add(r.id); S.seen.add(r.src); r.ratio = im.naturalWidth / im.naturalHeight;
+    const n = make('img k-' + r.kind, parent, out.length, want, `<span class="badge">${r.kind}</span><img src="${esc(r.src)}" alt="" referrerpolicy="no-referrer"><figcaption><b>${esc(r.title)}</b> · ${esc(r.credit)}</figcaption>`, 290, .55);
+    n.meta = r; n.depth = parent.depth + 1; n.el.title = `${r.title} — ${r.credit}`;
+    S.images++; updateCounter();
+    await spawn(n, [[parent, label]]); out.push(n);
+  }
+  if (!out.length && parent.el.classList.contains('query')) emptyQuery(parent, records.length ? 'images would not load' : '0 hits');
+  return out;
+}
+
+/* ---------- stage 1: what does the library know about this name? ---------- */
+async function fromName(root, name) {
+  let works = [];
+  say(`asking the <b>Art Institute of Chicago</b> for artists called <b>${esc(name)}</b>…`);
+  const qA = await queryCard(root, 'name', 'Art Institute · artists', name, 'agents whose name matches', 0, 2);
+  let agents = []; try { agents = await API.aicAgents(name); } catch {}
+  let found = 0;
+  for (const ag of shuffle(agents).slice(0, 5)) {
+    if (found >= 2 || stopFlag) break;
+    let recs = []; try { recs = await API.aicByArtist(ag.id); } catch {}
+    if (!recs.length) continue;
+    found++;
+    const life = [ag.birth_date, ag.death_date].filter(Boolean).join('–');
+    say(`found <b>${esc(ag.title)}</b> in the Art Institute — ${recs.length} works with images`);
+    const a = await keyCard(qA, 'artist match', 'Art Institute · artist', short(ag.title, 30), life ? `${life} · ${recs.length} works` : `${recs.length} works`, ' artist', found - 1, 2);
+    works.push(...await hang(a, recs, 2, 'work by'));
+  }
+  if (!found) { emptyQuery(qA, agents.length ? 'artists found, but no images' : 'no artist by that name'); say(`no artist called <b>${esc(name)}</b> with images in Chicago`); }
+
+  if (!stopFlag) {
+    say(`asking <b>The Met</b> for works by anyone named <b>${esc(name)}</b>…`);
+    const qM = await queryCard(root, 'name', 'The Met · artist', name, 'artist name contains it', 1, 2);
+    let recs = []; try { recs = await API.metArtist(name); } catch {}
+    const byArtist = {}; recs.forEach(r => (byArtist[r.artist] = byArtist[r.artist] || []).push(r));
+    const artists = Object.keys(byArtist).slice(0, 2);
+    if (!artists.length) { emptyQuery(qM, 'no artist by that name'); say(`The Met has no artist called <b>${esc(name)}</b> with images`); }
+    for (let i = 0; i < artists.length && !stopFlag; i++) {
+      say(`found <b>${esc(artists[i])}</b> at The Met`);
+      const a = await keyCard(qM, 'artist match', 'The Met · artist', short(artists[i], 30), `${byArtist[artists[i]].length} works with images`, ' artist', i, artists.length);
+      works.push(...await hang(a, byArtist[artists[i]], 2, 'work by'));
+    }
+  }
+  if (!works.length && !stopFlag) {
+    say(`no artist named <b>${esc(name)}</b> — looking for the name in <b>prints and posters</b> instead`);
+    const qT = await queryCard(root, 'no artist → titles', 'Art Institute · titles', name, 'the name in a title or description', 0, 1);
+    works.push(...await hang(qT, await tryAll(() => API.aicArtByWord(name), () => API.aicTitle(name)), 3, 'title match'));
+  }
+  if (!works.length && !stopFlag) {
+    say(`still nothing — searching <b>illustrations</b> of “${esc(name)}”`);
+    const qO = await queryCard(root, 'last resort', 'Openverse · illustration', name, 'Creative Commons illustration', 0, 1);
+    works.push(...await hang(qO, await tryAll(() => API.openverse(name, 'illustration', 'illustration')), 3, ''));
+  }
+  return works;
+}
+
+/* ---------- moves ---------- */
+async function colorMove(n) {
+  const r = n.meta;
+  say(`reading the colour of <b>${esc(short(r.title))}</b>…`);
+  let c = r.color || r.pc;
+  if (!r.color && !r.pc) { c = await pixelColor(r.src); if (c) r.pc = c; }
+  if (!c) { say(`could not read the colour of <b>${esc(short(r.title))}</b> (the server won't share pixels)`); return null; }
+  const hex = hslToHex(c.h, c.s, c.l);
+  const nm = (await API.colorName(hex)) || (c.s < 12 ? 'Grey' : 'Hue ' + c.h);
+  const word = c.s < 12 ? (c.l < 35 ? 'black' : c.l > 70 ? 'white' : 'grey') : nm.split(/\s+/).pop().toLowerCase();
+  S.colors.push({ ...c, hex: '#' + hex, name: nm });
+  document.documentElement.style.setProperty('--live', '#' + hex);
+  const sw = make('swatch', n, 0, 1, `<div class="chip" style="background:#${hex}"></div><div class="lab"><span class="via">${esc(c.from || 'colour')}</span><span class="val">${esc(short(nm, 18))}</span><span class="what">#${hex} · h ${c.h}° s ${c.s} l ${c.l}</span></div>`, 250);
+  say(`<b>${esc(short(r.title))}</b> is mostly <b>${esc(nm)}</b> (#${hex}) — searching that colour`);
+  await spawn(sw, [[n, c.from === 'pixels' ? 'pixels → colour' : 'dominant colour']]);
+  return { sw, c, hex, nm, word };
+}
+async function refsFromColor(col) {
+  const out = []; const { sw, c } = col;
+  const v = V(), floor = Math.round(8 + v * 52);
+  const label = c.s < 12 && v < .45 ? `greyscale l ${c.l}` : `hue ${c.h}° · s ≥ ${floor}`;
+  // choose up to three different kinds of search from the enabled categories
+  const opts = enabledCats(), chosen = [];
+  while (chosen.length < Math.min(3, opts.length)) { const k = weighted(opts.filter(o => !chosen.includes(o[0]))); chosen.push(k); }
+  for (let i = 0; i < chosen.length && S.images < MAX_IMG && !stopFlag; i++) {
+    const s = BY_COLOR[chosen[i]](col);
+    const qText = s.q || (s.word ? col.word : (c.s < 12 && v < .45 ? 'black & white' : `hue ${c.h}°`));
+    const q = await queryCard(sw, s.word ? 'colour name → word' : label, s.src, qText, s.what, i, chosen.length);
+    out.push(...await hang(q, await s.run(), chosen[i] === 'photo' ? 1 : 2));
+  }
+  return out;
+}
+async function wordMove(n, edgeLabel, via, value, what, word) {
+  const k = await keyCard(n, edgeLabel, via, short(value, 28), what);
+  const cat = weighted(enabledCats()); const s = BY_WORD[cat](word);
+  const q = await queryCard(k, edgeLabel.split(' ')[0], s.src, s.q || word, { illus: 'works on paper', poster: 'posters & graphic', texture: 'textiles & patterns', photo: 'photographs' }[cat]);
+  return hang(q, await s.run(), 2);
+}
+async function placeMove(n) {
+  const r = n.meta;
+  say(`<b>${esc(short(r.title))}</b> was made in <b>${esc(short(r.place, 30))}</b> — following the place`);
+  return wordMove(n, 'place of origin', 'from the record · place', r.place, `of “${short(r.title, 24)}”`, r.place);
+}
+async function tagMove(n) {
+  const r = n.meta, tag = pick(r.tags);
+  say(`<b>${esc(short(r.title))}</b> is tagged <b>${esc(tag)}</b> — searching that subject`);
+  return wordMove(n, 'subject tag', 'from the record · subject', tag, `one of ${r.tags.length} tags`, tag);
+}
+async function makerMove(n) {
+  const r = n.meta;
+  say(`following the maker of <b>${esc(short(r.title))}</b>: <b>${esc(r.artist)}</b>`);
+  const k = await keyCard(n, r.kind === 'photo' ? 'photographer' : 'maker', 'from the record · maker', short(r.artist, 28), 'more by them', ' artist');
+  const recs = r.artistId ? await tryAll(() => API.aicByArtist(r.artistId, r.kind === 'photo' ? ['Photograph'] : ART_TYPES), () => API.aicByArtist(r.artistId))
+    : await tryAll(() => r.kind === 'photo' ? API.metPhotos(r.artist) : API.metPrints(r.artist));
+  return hang(k, recs, 2, 'also by');
+}
+async function expand(n) {
+  const r = n.meta; if (!r || n.depth > MAX_DEPTH) return [];
+  const opts = [['colour', 3]];
+  if (r.place) opts.push(['place', 2]);
+  if (r.artist && !/unknown|anonymous/i.test(r.artist)) opts.push(['maker', 1]);
+  if (r.tags.length) opts.push(['tag', 2]);
+  let choice = n.depth <= 1 ? 'colour' : weighted(opts);   // the artist's own works always pass on their colour
+  if (choice === 'colour') { const col = await colorMove(n); if (col) return refsFromColor(col); if (r.tags.length) return tagMove(n); if (r.place) return placeMove(n); return []; }
+  if (choice === 'place') return placeMove(n);
+  if (choice === 'maker') return makerMove(n);
+  return tagMove(n);
+}
+
+async function run(name) {
+  reset(); autoCam = true; lastName = name;
+  const root = addNode('key trigger', 0, 0, card('Trigger · you typed', name, 'a first name')); root.dir = 0; root.isRoot = true;
+  say(`the ball is <b>${esc(name)}</b>`); await spawn(root, []);
+  const queue = [...await fromName(root, name)];
+  while (queue.length && S.images < MAX_IMG && !stopFlag) {
+    const n = queue.splice(Math.floor(Math.random() * Math.min(3, queue.length)), 1)[0];
+    queue.push(...await expand(n));
+  }
+  const imgs = nodes.filter(n => n.meta); const count = k => imgs.filter(n => n.meta.kind === k).length;
+  ticker.innerHTML = stopFlag ? `<b>Stopped.</b> ${S.images} images so far. Try Moodboard.` :
+    `<b>Done.</b> “${esc(name)}” → ${imgs.length} images (${count('poster') + count('graphic')} posters, ${count('textile') + count('texture')} textures, ${count('print') + count('drawing') + count('illustration')} prints & illustration). Open <b>Moodboard</b>.`;
+  autoCam = true; retarget();
+  if (mode === 'board') buildBoard();
+}
+function reset() {
+  nodes.splice(0).forEach(n => n.el.remove()); edges.length = 0; hovered = null;
+  S.images = 0; S.steps = 0; S.searches = 0; S.seen.clear(); S.colors = []; stopFlag = false; updateCounter();
+  document.documentElement.style.setProperty('--live', '#ffcf5a');
+}
+
+/* ---------- ring layout: cards sit on circles by distance from the name ---------- */
+let ringDirty = true, maxRing = 0;
+function computeRing() {
+  ringDirty = false;
+  const root = nodes.find(n => n.isRoot && n.live); if (!root) return;
+  const kids = new Map(); edges.forEach(e => { if (!kids.has(e.a)) kids.set(e.a, []); kids.get(e.a).push(e.b); });
+  const tree = new Map(), seen = new Set([root]), q = [root]; root.ring = 0; maxRing = 0;
+  while (q.length) { const n = q.shift(); const ch = (kids.get(n) || []).filter(c => c.live && !seen.has(c)); ch.forEach(c => { seen.add(c); c.ring = n.ring + 1; maxRing = Math.max(maxRing, c.ring); q.push(c); }); tree.set(n, ch); }
+  const leaves = new Map(); const count = n => { if (leaves.has(n)) return leaves.get(n); const ch = tree.get(n) || []; const v = ch.length ? ch.reduce((s, c) => s + count(c), 0) : 1; leaves.set(n, v); return v; };
+  count(root);
+  const assign = (n, a0, a1) => { const ch = tree.get(n) || []; const total = leaves.get(n); let a = a0;
+    ch.forEach(c => { const span = (a1 - a0) * leaves.get(c) / total; c.ta = a + span / 2; c.tr = c.ring * RING_GAP; assign(c, a, a + span); a += span; }); };
+  root.ta = 0; root.tr = 0; assign(root, -Math.PI / 2, Math.PI * 1.5);
+}
+
+/* ---------- physics ---------- */
+function physics() {
+  frameNo++;
+  const ring = spread === 'ring';
+  if (ring && (ringDirty || frameNo % 30 === 0)) computeRing();
+  const live = nodes.filter(n => n.live);
+  for (const e of edges) {
+    if (e.grow < 1 || !e.a.live || !e.b.live) continue;
+    const dx = e.b.x - e.a.x, dy = e.b.y - e.a.y, d = Math.hypot(dx, dy) || 1;
+    if (d > e.len * (ring ? 1.6 : 1)) {
+      const f = (d - e.len * (ring ? 1.6 : 1)) * .045, fx = dx / d * f, fy = dy / d * f;
+      const ma = e.a.drag ? 0 : 1, mb = e.b.drag ? 0 : 1, t = ma + mb || 1;
+      e.a.vx += fx * ma / t * 2; e.a.vy += fy * ma / t * 2; e.b.vx -= fx * mb / t * 2; e.b.vy -= fy * mb / t * 2;
+    }
+  }
+  const charge = ring ? .0011 : .0024;
+  for (let i = 0; i < live.length; i++) for (let j = i + 1; j < live.length; j++) {
+    const a = live[i], b = live[j], dx = b.x - a.x, dy = b.y - a.y, dd = Math.hypot(dx, dy) || 1;
+    if (dd < 520) { const f = (520 - dd) * charge, fx = dx / dd * f, fy = dy / dd * f;
+      if (!a.drag) { a.vx -= fx; a.vy -= fy; } if (!b.drag) { b.vx += fx; b.vy += fy; } }
+    const ox = (a.w + b.w) / 2 + 30 - Math.abs(dx), oy = (a.h + b.h) / 2 + 30 - Math.abs(dy);
+    if (ox > 0 && oy > 0) {
+      const push = Math.min(ox, oy) * .05;
+      const ux = ox < oy ? Math.sign(dx || Math.random() - .5) : 0, uy = ox < oy ? 0 : Math.sign(dy || Math.random() - .5);
+      if (!a.drag) { a.vx -= ux * push; a.vy -= uy * push; } if (!b.drag) { b.vx += ux * push; b.vy += uy * push; }
+    }
+  }
+  for (const n of live) {
+    if (ring && n.tr != null && !n.drag) {
+      const tx = Math.cos(n.ta) * n.tr, ty = Math.sin(n.ta) * n.tr, k = n.isRoot ? .08 : .018;
+      n.vx += (tx - n.x) * k; n.vy += (ty - n.y) * k;
+    }
+    if (!n.drag) { n.vx *= .86; n.vy *= .86; n.x += n.vx; n.y += n.vy; }
+    n.tilt += (Math.max(-12, Math.min(12, -n.vx * 1.6)) - n.tilt) * .12;
+  }
+  const now = performance.now();
+  for (const e of edges) {
+    e.grow = Math.min(1, (now - e.born) / GROW_MS);
+    const g = 1 - Math.pow(1 - e.grow, 3);
+    const A = edgePoint(e.a, e.b.x, e.b.y), B = e.b.live ? edgePoint(e.b, e.a.x, e.a.y) : { x: e.b.x, y: e.b.y };
+    const bx = A.x + (B.x - A.x) * g, by = A.y + (B.y - A.y) * g;
+    const span = Math.hypot(B.x - A.x, B.y - A.y);
+    const seg = Math.max(span * 1.04, e.rope - (e.a.w + e.b.w) / 3) * Math.max(g, .03) / SEG, P = e.pts;
+    for (let i = 1; i < SEG; i++) { const p = P[i], vx = (p.x - p.px) * .96, vy = (p.y - p.py) * .96; p.px = p.x; p.py = p.y; p.x += vx; p.y += vy + .4; }
+    P[0].x = A.x; P[0].y = A.y; P[SEG].x = bx; P[SEG].y = by;
+    for (let k = 0; k < 12; k++) for (let i = 0; i < SEG; i++) {
+      const p = P[i], q = P[i + 1], dx = q.x - p.x, dy = q.y - p.y, d = Math.hypot(dx, dy) || .001, diff = (d - seg) / d;
+      if (i === 0) { q.x -= dx * diff; q.y -= dy * diff; }
+      else if (i + 1 === SEG) { p.x += dx * diff; p.y += dy * diff; }
+      else { p.x += dx * diff * .5; p.y += dy * diff * .5; q.x -= dx * diff * .5; q.y -= dy * diff * .5; }
+    }
+  }
+}
+function edgePoint(n, tx, ty) {
+  const dx = tx - n.x, dy = ty - n.y; if (!n.w || (!dx && !dy)) return { x: n.x, y: n.y };
+  const s = Math.min((n.w / 2 + 2) / Math.abs(dx || 1e-6), (n.h / 2 + 2) / Math.abs(dy || 1e-6), 1);
+  return { x: n.x + dx * s, y: n.y + dy * s };
+}
+
+/* ---------- camera ---------- */
+const TOP = 76, BOTTOM = 64;
+function retarget() {
+  if (!autoCam) return;
+  const live = nodes.filter(n => n.live); if (!live.length) return;
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  live.forEach(n => { x0 = Math.min(x0, n.x - n.w / 2); y0 = Math.min(y0, n.y - n.h / 2); x1 = Math.max(x1, n.x + n.w / 2); y1 = Math.max(y1, n.y + n.h / 2); });
+  const m = 60, sw = stage.clientWidth, sh = stage.clientHeight - TOP - BOTTOM;
+  const s = Math.min(sw / (x1 - x0 + m * 2), sh / (y1 - y0 + m * 2), 1.1);
+  camT.s = s; camT.x = sw / 2 - (x0 + x1) / 2 * s; camT.y = TOP + sh / 2 - (y0 + y1) / 2 * s;
+}
+const toWorld = (sx, sy) => ({ x: (sx - cam.x) / cam.s, y: (sy - cam.y) / cam.s });
+
+/* ---------- draw ---------- */
+function resize() {
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  [cvs, lcv].forEach(c => { c.width = stage.clientWidth * dpr; c.height = stage.clientHeight * dpr; });
+  retarget();
+}
+function ropePath(c, P) {
+  c.beginPath(); c.moveTo(P[0].x, P[0].y);
+  for (let i = 1; i < SEG; i++) { const mx = (P[i].x + P[i + 1].x) / 2, my = (P[i].y + P[i + 1].y) / 2; c.quadraticCurveTo(P[i].x, P[i].y, mx, my); }
+  c.lineTo(P[SEG].x, P[SEG].y);
+}
+function strokeRope(c, P, lw, color, dark) {
+  c.lineCap = 'round';
+  ropePath(c, P); c.strokeStyle = 'rgba(0,0,0,.35)'; c.lineWidth = lw + 2; c.stroke();
+  ropePath(c, P); c.strokeStyle = color; c.lineWidth = lw; c.stroke();
+  c.setLineDash([lw * 1.2, lw * 1.6]); ropePath(c, P); c.strokeStyle = dark; c.lineWidth = lw * .45; c.stroke(); c.setLineDash([]);
+  c.fillStyle = dark; [P[0], P[SEG]].forEach(p => { c.beginPath(); c.arc(p.x, p.y, lw * 1.5, 0, 7); c.fill(); });
+}
+const rectsHit = (a, b) => a.x0 < b.x1 && a.x1 > b.x0 && a.y0 < b.y1 && a.y1 > b.y0;
+function draw() {
+  const T = [cam.s * dpr, 0, 0, cam.s * dpr, cam.x * dpr, cam.y * dpr];
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cvs.width, cvs.height); ctx.setTransform(...T);
+  lctx.setTransform(1, 0, 0, 1, 0, 0); lctx.clearRect(0, 0, lcv.width, lcv.height); lctx.setTransform(...T);
+  const lw = Math.max(2.4, 1.4 / cam.s);
+  if (spread === 'ring') {   // faint guide circles
+    const root = nodes.find(n => n.isRoot && n.live);
+    if (root) { ctx.strokeStyle = 'rgba(217,199,163,.10)'; ctx.lineWidth = Math.max(1, 1 / cam.s); ctx.setLineDash([6 / cam.s, 8 / cam.s]);
+      for (let r = 1; r <= maxRing; r++) { ctx.beginPath(); ctx.arc(root.x, root.y, r * RING_GAP, 0, 7); ctx.stroke(); } ctx.setLineDash([]); }
+  }
+  for (const e of edges) strokeRope(ctx, e.pts, lw, '#d9c7a3', 'rgba(140,122,88,.9)');
+  const hot = hovered ? edges.filter(e => e.a === hovered || e.b === hovered) : [];
+  for (const e of hot) strokeRope(lctx, e.pts, lw * 1.25, '#ffcf5a', '#b58a1c');
+  const fs = Math.max(12, 11 / cam.s);
+  lctx.font = `600 ${fs}px "IBM Plex Mono", Menlo, monospace`; lctx.textAlign = 'center'; lctx.textBaseline = 'middle';
+  const boxes = nodes.filter(n => n.live).map(n => ({ x0: n.x - n.w / 2 - 4, x1: n.x + n.w / 2 + 4, y0: n.y - n.h / 2 - 4, y1: n.y + n.h / 2 + 4 }));
+  const placed = [];
+  for (const e of [...hot, ...edges.filter(e => !hot.includes(e))]) {
+    if (!e.label || e.grow < .9) continue;
+    const isHot = hot.includes(e); const w = lctx.measureText(e.label).width + fs, h = fs * 1.7;
+    let spot = null;
+    for (const t of [.5, .38, .62, .28, .72]) {
+      const p = e.pts[Math.round(SEG * t)], r = { x0: p.x - w / 2, x1: p.x + w / 2, y0: p.y - h / 2, y1: p.y + h / 2 };
+      if (placed.some(q => rectsHit(q, r))) continue;
+      if (!isHot && boxes.some(b => rectsHit(b, r))) continue;
+      spot = { p, r }; break;
+    }
+    if (!spot) continue;
+    placed.push(spot.r);
+    lctx.globalAlpha = Math.min(1, (e.grow - .9) * 10);
+    lctx.fillStyle = isHot ? '#ffcf5a' : 'rgba(12,16,22,.94)'; lctx.fillRect(spot.r.x0, spot.r.y0, w, h);
+    lctx.strokeStyle = isHot ? '#b58a1c' : '#8c7a58'; lctx.lineWidth = Math.max(1, .8 / cam.s); lctx.strokeRect(spot.r.x0, spot.r.y0, w, h);
+    lctx.fillStyle = isHot ? '#1d2230' : '#ffcf5a'; lctx.fillText(e.label, spot.p.x, spot.p.y + 1); lctx.globalAlpha = 1;
+  }
+}
+function frame() {
+  physics();
+  if (mode === 'rope') {
+    if (autoCam) { if (frameNo % 20 === 0) retarget(); const k = .07; cam.s += (camT.s - cam.s) * k; cam.x += (camT.x - cam.x) * k; cam.y += (camT.y - cam.y) * k; }
+    world.style.transform = `translate(${cam.x}px, ${cam.y}px) scale(${cam.s})`;
+    for (const n of nodes) { n.el.style.transform = `translate(${n.x - n.w / 2}px, ${n.y - n.h / 2}px)`; n.tiltEl.style.transform = `rotate(${n.tilt.toFixed(2)}deg)`; }
+    draw();
+  }
+  requestAnimationFrame(frame);
+}
+
+/* ---------- interaction ---------- */
+let grab = null, pan = null;
+stage.addEventListener('pointerdown', ev => {
+  const el = ev.target.closest('.node'); stage.setPointerCapture(ev.pointerId);
+  if (el && el._n) { const n = el._n, w = toWorld(ev.clientX, ev.clientY);
+    grab = { n, ox: n.x - w.x, oy: n.y - w.y, lx: w.x, ly: w.y }; n.drag = true; n.el.classList.add('dragging'); hovered = n; }
+  else { pan = { x: ev.clientX, y: ev.clientY }; autoCam = false; stage.classList.add('panning'); }
+});
+stage.addEventListener('pointermove', ev => {
+  if (grab) { const w = toWorld(ev.clientX, ev.clientY), n = grab.n; n.vx = w.x - grab.lx; n.vy = w.y - grab.ly; grab.lx = w.x; grab.ly = w.y; n.x = w.x + grab.ox; n.y = w.y + grab.oy; }
+  else if (pan) { cam.x += ev.clientX - pan.x; cam.y += ev.clientY - pan.y; pan.x = ev.clientX; pan.y = ev.clientY; }
+  else { const el = document.elementFromPoint(ev.clientX, ev.clientY); const nd = el && el.closest && el.closest('.node'); hovered = nd && nd._n && nd._n.live ? nd._n : null; }
+});
+const release = () => { if (grab) { grab.n.drag = false; grab.n.el.classList.remove('dragging'); grab = null; } pan = null; stage.classList.remove('panning'); };
+stage.addEventListener('pointerup', release); stage.addEventListener('pointercancel', release);
+stage.addEventListener('pointerleave', () => { if (!grab) hovered = null; });
+stage.addEventListener('wheel', ev => {
+  ev.preventDefault(); autoCam = false;
+  const s = Math.max(.08, Math.min(2.5, cam.s * Math.exp(-ev.deltaY * .0015))), w = toWorld(ev.clientX, ev.clientY);
+  cam.s = s; cam.x = ev.clientX - w.x * s; cam.y = ev.clientY - w.y * s;
+}, { passive: false });
+$('fit').onclick = () => { autoCam = true; retarget(); };
+function setSpread(s) {
+  spread = s; store.set('spread', s); ringDirty = true;
+  $('sBranch').setAttribute('aria-pressed', s === 'branch'); $('sRing').setAttribute('aria-pressed', s === 'ring');
+  if (s === 'branch') nodes.forEach(n => { n.tr = null; });
+  autoCam = true; setTimeout(retarget, 400); setTimeout(retarget, 1200);
+}
+$('sBranch').onclick = () => setSpread('branch'); $('sRing').onclick = () => setSpread('ring');
+const about = $('about');
+$('open-about').onclick = () => { about.hidden = false; history.replaceState(null, '', '#about'); };
+$('close-about').onclick = () => { about.hidden = true; history.replaceState(null, '', '#'); };
+about.addEventListener('click', e => { if (e.target === about) $('close-about').click(); });
+if (location.hash === '#about') about.hidden = false;
+window.addEventListener('resize', resize);
+
+/* ======================================================================
+   Moodboard mode
+   ====================================================================== */
+const boardView = $('boardView'), mb = $('mb'), mbCredits = $('mbCredits');
+let layout = store.get('layout', 'editorial'), seedShift = 0;
+function setMode(m) {
+  mode = m; document.body.classList.toggle('mode-board', m === 'board'); boardView.hidden = m !== 'board';
+  $('mRope').setAttribute('aria-pressed', m === 'rope'); $('mBoard').setAttribute('aria-pressed', m === 'board');
+  if (m === 'board') buildBoard();
+}
+$('mRope').onclick = () => setMode('rope');
+$('mBoard').onclick = () => setMode('board');
+$('recompose').onclick = () => { seedShift++; buildBoard(true); };
+document.querySelectorAll('#layouts button').forEach(b => b.onclick = () => { layout = b.dataset.l; store.set('layout', layout); markLayout(); buildBoard(); });
+function markLayout() { document.querySelectorAll('#layouts button').forEach(b => b.setAttribute('aria-pressed', b.dataset.l === layout)); }
+markLayout();
+
+const hueDist = (a, b) => { const d = Math.abs(a - b) % 360; return d > 180 ? 360 - d : d; };
+function colDist(a, b) { const sat = Math.min(a.s, b.s) / 100; return Math.hypot(hueDist(a.h, b.h) / 180 * 100 * sat, (a.l - b.l) * 1.2, (a.s - b.s) * .5); }
+const textOn = c => (c.l > 62 || (c.h > 40 && c.h < 200 && c.l > 50)) ? '#111' : '#fff';
+const withHex = c => ({ ...c, hex: '#' + hslToHex(c.h, c.s, c.l) });
+/* push a colour toward a purer hue as the Colour slider rises */
+function boost(c) {
+  const v = V(); if (c.s < 6) return withHex({ ...c, l: Math.max(8, Math.min(95, c.l)) });
+  const s = Math.min(96, c.s + (100 - c.s) * Math.max(0, v - .25) * .8), l = c.l + (50 - c.l) * Math.max(0, v - .4) * .5;
+  return withHex({ ...c, s: Math.round(s), l: Math.round(l) });
+}
+function choosePalette(all) {
+  const v = V(); const pool = all.filter(Boolean);
+  if (!pool.length) return [];
+  const seed = pool[0]; const pal = [seed];
+  const related = pool.filter(c => hueDist(c.h, seed.h) < 70 || c.s < 15 || Math.abs(hueDist(c.h, seed.h) - 180) < 30);
+  const cand = related.length >= 4 ? related : pool;
+  while (pal.length < 5 && pal.length < cand.length) {
+    let best = null, bestD = -1;
+    for (const c of cand) { if (pal.includes(c)) continue; const d = Math.min(...pal.map(p => colDist(p, c))) + v * c.s / 3; if (d > bestD) { bestD = d; best = c; } }
+    if (!best || bestD < 6) break; pal.push(best);
+  }
+  const derive = [[0, 0, -30], [28, 10, 14], [-28, 10, 6], [180, 0, -5], [0, -10, 32]];
+  for (let i = 0; pal.length < 5; i++) { const [dh, ds, dl] = derive[i]; pal.push({ h: (seed.h + dh + 360) % 360, s: Math.max(18, Math.min(90, seed.s + ds)), l: Math.max(10, Math.min(88, seed.l + dl)) }); }
+  // keep one deep anchor colour, like a designer would
+  const out = pal.map(boost).sort((a, b) => a.l - b.l);
+  if (out[0].l > 24) out[0] = withHex({ h: out[0].h, s: Math.min(out[0].s, 45), l: 14 });
+  return out;
+}
+function keywords(imgs) {
+  const count = {};
+  imgs.forEach(n => n.meta.tags.forEach(t => { const k = t.replace(/\b\w/g, m => m.toUpperCase()); count[k] = (count[k] || 0) + 1; }));
+  let kw = Object.entries(count).sort((a, b) => b[1] - a[1]).map(e => e[0]).slice(0, 3);
+  const names = S.colors.map(c => c.name).filter(Boolean);
+  while (kw.length < 3 && names.length) { const nm = names.shift(); if (!kw.includes(nm)) kw.push(nm); }
+  if (kw.length < 3) kw.push(...['Ink', 'Paper', 'Light'].slice(0, 3 - kw.length));
+  return kw;
+}
+const flipRows = areas => areas.map(r => r.split(' ').reverse().join(' '));
+const GRIDS = {
+  editorial: { slots: ['b', 'd', 'c', 'a', 'e', 'f'], areas: ['t t t t t . a a b b b .', 't t t t t . a a b b b e', '. n n n n n a a b b b e', '. n n n n n c c b b b e',
+                         'p p p k k k c c d d d e', '. . . k k k c c d d d e', 'f f . k k k c c d d d .', 'f f . x x x x x d d d .'] },
+  gallery: { slots: ['d', 'a', 'b', 'g', 'e', 'c', 'f'], areas: ['a a a t t t t t . b b b', 'a a a t t t t t . b b b', 'a a a p p p p . . b b b', 'c c n n n n n n d d d d',
+                       'c c n n n n n n d d d d', 'c c e e e k k k d d d d', 'f f e e e k k k g g g g', 'x x x x x k k k g g g g'] },
+  poster: { slots: ['h', 'a', 'b', 'c', 'd'], areas: ['h h h h h h h h a a a a', 'h h h h h h h h a a a a', 'h h h h h h h h a a a a', 'h h h h h h h h b b c c',
+                      'h h h h h h h h b b c c', 'h h h h h h h h k k k k', 'p p p p p p p p k k k k', 'p p p p p p p p d d x x'] },
+};
+const SLOTS = { editorial: 6, gallery: 7, poster: 5, scrapbook: 6 };
+
+async function buildBoard(recompose = false) {
+  const imgs = nodes.filter(n => n.meta && n.live);
+  if (imgs.length < 3) {
+    mb.className = 'mb-empty'; mb.removeAttribute('style'); mbCredits.innerHTML = '';
+    mb.innerHTML = running ? 'The machine is still collecting. Come back when a few images are on the rope.' : 'Nothing to compose yet. Type a name and pull, then come back here.';
+    return;
+  }
+  if (!mb.classList.contains('mb')) { mb.className = 'mb-empty'; mb.textContent = 'Reading colours…'; }
+  await Promise.all(imgs.map(async n => { if (!n.meta.color && !n.meta.pc) { const c = await pixelColor(n.meta.src); if (c) n.meta.pc = c; } }));
+  const colOf = n => n.meta.color || n.meta.pc || null;
+  const pool = [...S.colors, ...imgs.map(colOf)].filter(Boolean);
+  // with a high Colour setting, start the palette from the most saturated colour found
+  if (V() > .55) pool.sort((a, b) => b.s - a.s);
+  if (seedShift && pool.length > 1) { const i = seedShift % pool.length; pool.unshift(pool.splice(i, 1)[0]); }
+  const pal = choosePalette(pool);
+  const v = V();
+  const scored = imgs.map(n => { const c = colOf(n); const d = c ? Math.min(...pal.map(p => colDist(p, c))) : 45;
+    const satPen = c ? Math.max(0, v * 55 - c.s) * .6 : v * 18;
+    return { n, score: d + satPen + KIND_RANK[n.meta.kind] * 10 + (recompose ? Math.random() * 30 : 0) }; }).sort((a, b) => a.score - b.score);
+  const chosen = scored.slice(0, SLOTS[layout]).map(s => s.n);
+  const D = { pal, chosen, kw: keywords(imgs), dark: pal[0], light: pal[pal.length - 1], vivid: [...pal].sort((a, b) => b.s - a.s)[0],
+    title: lastName, colorName: (S.colors.find(c => c.s > 20) || S.colors[0] || {}).name || '', n: imgs.length, colOf, flip: recompose && Math.random() < .5 };
+  const html = layout === 'scrapbook' ? scrapbook(D) : gridBoard(D);
+  mb.innerHTML = html;
+  fitAll();
+  mbCredits.innerHTML = chosen.map((n, i) => `${i + 1}. ${esc(n.meta.title)} — ${esc(n.meta.credit)} <span style="opacity:.6">[${n.meta.kind}]</span>`).join('<br>');
+}
+/* shrink each text block until everything inside it fits its own box */
+function overflows(el) {
+  if (el.scrollHeight > el.clientHeight + 1 || el.scrollWidth > el.clientWidth + 1) return true;
+  const b = el.getBoundingClientRect();
+  return [...el.children].some(c => { const r = c.getBoundingClientRect(); return r.right > b.right + 1 || r.left < b.left - 1 || r.bottom > b.bottom + 1 || r.top < b.top - 1; });
+}
+function fitAll() {
+  const run = () => mb.querySelectorAll('[data-fit]').forEach(el => {
+    el.style.fontSize = '';
+    let size = parseFloat(getComputedStyle(el).fontSize), guard = 0;
+    while (overflows(el) && size > 7 && guard++ < 60) { size *= .93; el.style.fontSize = size + 'px'; }
+  });
+  run(); if (document.fonts && document.fonts.ready) document.fonts.ready.then(run);
+}
+let refitTimer = 0;
+window.addEventListener('resize', () => { if (mode === 'board') { clearTimeout(refitTimer); refitTimer = setTimeout(fitAll, 150); } });
+function photoTile(n, area, D, extra = '', style = '') {
+  const r = n.meta, c = D.colOf(n);
+  const contain = /print|drawing|illustration|poster/.test(r.kind) && r.ratio && (r.ratio < .62 || r.ratio > 1.75);
+  const bg = c ? '#' + hslToHex(c.h, Math.min(c.s, 35), 92) : '#f1f1f1';
+  return `<div class="ph${contain ? ' contain' : ''}" style="${area ? `grid-area:${area};` : ''}--bgc:${bg};${style}" title="${esc(r.title)} — ${esc(r.credit)}"><img src="${esc(r.src)}" alt="${esc(r.title)}" referrerpolicy="no-referrer">${extra}</div>`;
+}
+function gridBoard(D) {
+  const g = GRIDS[layout]; let delay = 0; const d = () => `animation-delay:${(delay += 70)}ms`;
+  mb.className = 'mb grid'; mb.style.gridTemplateAreas = (D.flip ? flipRows(g.areas) : g.areas).map(r => `"${r}"`).join(' ');
+  let html = '';
+  if (layout === 'poster') {
+    html += photoTile(D.chosen[0], 'h', D, `<div class="hero-name" data-fit><span>${esc(D.title)}</span></div>`, d());
+    D.chosen.slice(1).forEach((n, i) => { html += photoTile(n, g.slots[i + 1], D, '', d()); });
+    html += `<div class="strip" style="grid-area:p;${d()}">${D.pal.map(p => `<div style="background:${p.hex};color:${textOn(p)}">${p.hex}</div>`).join('')}</div>`;
+    html += `<div class="kw" data-fit style="grid-area:k;background:${D.dark.hex};color:${D.light.hex};${d()}"><b>${esc(D.kw[0])}</b><i>${esc(D.kw[1])} &amp; ${esc(D.kw[2])}</i><span>${esc(D.colorName)}</span></div>`;
+    html += `<div class="foot" style="grid-area:x;padding:0 0 0 .6em;${d()}">The Name Machine</div>`;
+    mb.style.padding = '0'; return html;
+  }
+  mb.style.padding = '';
+  html += `<div class="ttl" data-fit style="grid-area:t;${d()}"><h3>${esc(D.title)}${D.colorName ? `<em>${esc(D.colorName)}</em>` : ''}</h3><p>Keywords: ${D.kw.map(esc).join(', ')}</p><small>composed from ${D.n} images found for “${esc(D.title)}”</small></div>`;
+  html += `<div class="nm" data-fit style="grid-area:n;background:${D.dark.hex};${d()}"><span style="color:${D.light.hex}">${esc(D.title)}</span></div>`;
+  html += `<div class="kw" data-fit style="grid-area:k;background:${D.vivid.hex};color:${textOn(D.vivid)};${d()}"><b>${esc(D.kw[0])}</b><i>${esc(D.kw[1])} &amp; ${esc(D.kw[2])}</i><span>${esc(D.colorName)}</span><span>${D.pal.map(p => p.hex).join(' ')}</span></div>`;
+  html += `<div class="pal" style="grid-area:p;${d()}">${D.pal.map(p => `<div class="sw"><i style="background:${p.hex}"></i><em>${p.hex}</em></div>`).join('')}</div>`;
+  D.chosen.forEach((n, i) => { html += photoTile(n, g.slots[i], D, '', d()); });
+  html += `<div class="foot" style="grid-area:x;${d()}">${esc(D.title)} • The Name Machine • ${esc([...new Set(D.chosen.map(n => n.meta.source))].join(' · '))}</div>`;
+  return html;
+}
+/* free-form board after a classic terracotta-style collage: colour bars, brush title, tape, ink splatter */
+function scrapbook(D) {
+  mb.className = 'mb free'; mb.style.gridTemplateAreas = ''; mb.style.padding = '';
+  let delay = 0; const d = () => `animation-delay:${(delay += 80)}ms`;
+  const J = (x, a = 1.2) => (x + rnd(-a, a)).toFixed(2);
+  const flip = D.flip, X = x => flip ? 100 - x : x;   // mirror horizontally on some recomposes
+  const box = (x, y, w, h) => `left:${J(flip ? 100 - x - w : x)}%;top:${J(y)}%;width:${w}%;height:${h}%;`;
+  const S1 = [[9, 12, 25, 57], [36.5, 17, 24, 41], [63, 17, 26, 45], [22, 61, 18.5, 30], [42, 61, 18.5, 30], [77, 46, 18.5, 44]];
+  let html = '';
+  D.chosen.forEach((n, i) => { const [x, y, w, h] = S1[i]; html += photoTile(n, '', D, '', box(x, y, w, h) + `z-index:${i === 0 ? 1 : 2};transform:rotate(${rnd(-1.2, 1.2).toFixed(2)}deg);${d()}`); });
+  // colour bars on the outer edge, overlapping the first image
+  const bx = flip ? 89 : 0;
+  html += `<div class="bars" style="left:${bx}%;top:0;width:11%;height:100%;z-index:3;${d()}">${D.pal.slice().reverse().map((p, i) => `<div style="top:${18 + i * 13.5}%;height:10.5%;background:${p.hex}"></div>`).join('')}</div>`;
+  // brush-script title
+  html += `<div class="brush" data-fit style="${flip ? 'left:13%' : 'right:3%'};top:0;width:${flip ? 47 : 52}%;height:17%;justify-content:${flip ? 'flex-start' : 'flex-end'};color:${D.dark.hex};${d()}"><span>${esc(D.title)}</span></div>`;
+  // keyword pills
+  const pillBg = withHex({ h: D.vivid.h, s: Math.min(55, D.vivid.s), l: 74 });
+  html += `<div class="pill" style="left:${X(flip ? 48 : 52)}%;top:72%;background:${pillBg.hex};color:#fff;${d()}" data-fit>${esc(D.kw[0])}</div>`;
+  html += `<div class="pill" style="left:${X(flip ? 46 : 54)}%;top:80%;background:${pillBg.hex};color:#fff;${d()}" data-fit>and ${esc(D.kw[1].toLowerCase())}</div>`;
+  // washi tape on a few corners
+  [[33, 13, 40], [58, 55, -42], [88, 80, -45], [20, 82, 38]].forEach(([x, y, rot]) => {
+    html += `<div class="tape" style="left:${J(X(x) - 3)}%;top:${J(y)}%;width:7%;height:3.2%;transform:rotate(${rot + rnd(-6, 6)}deg);${d()}"></div>`;
+  });
+  // ink splatter
+  const dots = []; [[18, 6], [86, 14], [72, 92], [4, 92]].forEach(([cx, cy]) => {
+    for (let i = 0; i < 26; i++) { const a = rnd(0, 6.28), r = Math.pow(Math.random(), 1.6) * 7; dots.push(`<circle cx="${(X(cx) + Math.cos(a) * r * 1.0).toFixed(2)}" cy="${(cy + Math.sin(a) * r * 1.6).toFixed(2)}" r="${(Math.random() < .08 ? rnd(.5, 1) : rnd(.08, .32)).toFixed(2)}"/>`); }
+  });
+  html += `<svg class="splat" viewBox="0 0 100 100" preserveAspectRatio="none" style="left:0;top:0;width:100%;height:100%;${d()}"><g fill="${D.dark.hex}" opacity=".85">${dots.join('')}</g></svg>`;
+  return html;
+}
+
+document.getElementById('trigger').addEventListener('submit', async e => {
+  e.preventDefault();
+  if (running) { stopFlag = true; goBtn.textContent = '…'; return; }
+  const name = $('name').value.trim(); if (!name) return;
+  if (mode === 'board') setMode('rope');
+  $('tune').hidden = true; $('tuneBtn').setAttribute('aria-expanded', false);
+  running = true; goBtn.textContent = 'Stop'; seedShift = 0;
+  try { await run(name); } finally { running = false; goBtn.textContent = 'Pull'; }
+});
+
+resize();
+setSpread(store.get('spread', 'branch'));
+const hint = addNode('hint', 0, 0, card('How it works', 'Type a name, pull.', 'The machine looks for an artist with that name in museum collections, reads the colour of their work, and follows it into prints, posters, textiles and illustration. Tune sets how vivid. Then open Moodboard.'));
+hint.live = true; hint.el.classList.add('live'); measure(hint); retarget();
+updateCounter(); requestAnimationFrame(frame);
+</script>
+</body>
+</html>
