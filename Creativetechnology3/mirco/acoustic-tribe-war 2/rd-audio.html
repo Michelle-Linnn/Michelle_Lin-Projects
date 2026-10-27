@@ -1,0 +1,425 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>声控突现纹理</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@600;900&family=Noto+Sans+SC:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+[hidden]{display:none!important}
+/* Layout: full-bleed live simulation; a field-notebook instrument panel floats right (bottom sheet on phones). */
+:root{
+  --ink:#0c0e10; --panel:rgba(13,15,18,.78); --bone:#ebe4d2; --muted:#959a9f;
+  --ochre:#d99a3e; --line:rgba(235,228,210,.14); --warn:#e0715a;
+  --f-display:"Noto Serif SC","Songti SC","STSong",serif;
+  --f-body:"Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--ink);color:var(--bone);font-family:var(--f-body);overflow:hidden}
+#gl{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:crosshair}
+.head{position:fixed;left:0;top:0;padding:calc(env(safe-area-inset-top,0px) + 20px) 20px 0;pointer-events:none;max-width:min(560px,100%)}
+.head h1{margin:0;font-family:var(--f-display);font-weight:900;font-size:clamp(28px,4.2vw,46px);letter-spacing:.06em;line-height:1.1;text-wrap:balance;text-shadow:0 2px 18px rgba(0,0,0,.55)}
+.head p{margin:8px 0 0;font-size:13px;color:var(--bone);opacity:.82;line-height:1.6;text-shadow:0 1px 8px rgba(0,0,0,.7)}
+.head .eq{font-family:var(--f-mono);font-size:11.5px;opacity:.75;margin-top:6px}
+.form{position:fixed;left:20px;bottom:calc(env(safe-area-inset-bottom,0px) + 18px);pointer-events:none}
+.form small{display:block;font-family:var(--f-mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ochre)}
+.form b{font-family:var(--f-display);font-size:clamp(22px,3vw,32px);font-weight:600;text-shadow:0 2px 14px rgba(0,0,0,.6)}
+
+.panel{position:fixed;right:16px;top:calc(env(safe-area-inset-top,0px) + 16px);width:300px;max-height:calc(100% - 32px);overflow-y:auto;
+  background:var(--panel);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:10px;
+  padding:14px 16px 16px;display:flex;flex-direction:column;gap:14px;font-size:13px}
+.panel h2{margin:0;font-size:11px;font-family:var(--f-mono);font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.sec{display:flex;flex-direction:column;gap:8px}
+.src{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+button,.filebtn{font:inherit;color:var(--bone);background:rgba(235,228,210,.06);border:1px solid var(--line);border-radius:6px;padding:8px 10px;cursor:pointer;text-align:left;line-height:1.3}
+button:hover,.filebtn:hover{background:rgba(235,228,210,.12)}
+button:focus-visible,.filebtn:focus-within,select:focus-visible,input:focus-visible{outline:2px solid var(--ochre);outline-offset:2px}
+button[aria-pressed="true"]{border-color:var(--ochre);background:rgba(217,154,62,.16)}
+.filebtn{position:relative;display:block}
+.filebtn input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%}
+.status{font-size:12px;color:var(--muted);line-height:1.55;min-height:1.5em}
+.status.warn{color:var(--warn)}
+.meters{display:grid;grid-template-columns:auto 1fr 3.4em;gap:6px 10px;align-items:center;font-size:12px}
+.meters span{color:var(--muted)}
+.bar{height:6px;border-radius:3px;background:rgba(235,228,210,.1);overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--ochre);transition:width .06s linear}
+.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;text-align:right;font-size:11.5px}
+canvas.mini{width:100%;display:block;border-radius:6px;background:rgba(0,0,0,.28);border:1px solid var(--line)}
+#spec{height:44px}
+#fk{height:150px}
+.readout{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;font-family:var(--f-mono);font-size:11.5px;font-variant-numeric:tabular-nums}
+.readout div{display:flex;flex-direction:column;gap:2px}
+.readout em{font-style:normal;color:var(--muted);font-size:10.5px;letter-spacing:.08em}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.row label{color:var(--muted);font-size:12px;min-width:4.5em}
+select{font:inherit;color:var(--bone);background:#16191d;border:1px solid var(--line);border-radius:6px;padding:6px 8px;flex:1;min-width:0}
+input[type=range]{flex:1;min-width:0;accent-color:var(--ochre)}
+.acts{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.hint{font-size:11.5px;color:var(--muted);line-height:1.6;margin:0}
+#toggle{display:none}
+.fail{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;line-height:1.7}
+
+@media (max-width:720px){
+  .panel{left:0;right:0;top:auto;bottom:0;width:auto;max-height:52%;border-radius:12px 12px 0 0;border-bottom:0;
+    padding:12px 16px calc(env(safe-area-inset-bottom,0px) + 14px)}
+  .panel.closed .body{display:none}
+  #toggle{display:block;text-align:center}
+  .form{bottom:auto;top:calc(env(safe-area-inset-top,0px) + 118px)}
+  .head p.long{display:none}
+}
+@media (prefers-reduced-motion:reduce){.bar i{transition:none}}
+</style>
+
+<canvas id="gl" aria-label="反应-扩散模拟画面，可用指针在画面上点画"></canvas>
+
+<header class="head">
+  <h1>声控突现纹理</h1>
+  <p class="long">斑马纹、豹斑、鱼纹与螺旋波，都可以由两种化学物质的“反应 + 扩散”自发长出来。这里，你的声音在实时改写方程里的参数。</p>
+  <p class="eq">∂u/∂t = Dᵤ∇²u − uv² + F(1−u) &nbsp;·&nbsp; ∂v/∂t = Dᵥ∇²v + uv² − (F+k)v</p>
+</header>
+
+<div class="form" aria-live="polite"><small>当前形态</small><b id="formName">迷宫纹</b></div>
+
+<aside class="panel" id="panel">
+  <button id="toggle" aria-expanded="true">收起面板</button>
+  <div class="body" style="display:flex;flex-direction:column;gap:14px">
+    <div class="sec">
+      <h2>音源</h2>
+      <div class="src">
+        <button id="bMic" aria-pressed="false">麦克风</button>
+        <button id="bSynth" aria-pressed="false">内置合成乐</button>
+        <label class="filebtn" id="bFile">播放音频文件<input id="file" type="file" accept="audio/*"></label>
+        <button id="bOff" aria-pressed="true">静默漫游</button>
+      </div>
+      <div class="status" id="status">未接入声音：参数在 F–k 平面上缓慢漫游。</div>
+    </div>
+
+    <div class="sec">
+      <h2>声音信号</h2>
+      <canvas class="mini" id="spec"></canvas>
+      <div class="meters">
+        <span>音量</span><div class="bar"><i id="mVol"></i></div><div class="num" id="nVol">0.00</div>
+        <span>低频</span><div class="bar"><i id="mBass"></i></div><div class="num" id="nBass">0.00</div>
+        <span>高频</span><div class="bar"><i id="mTreb"></i></div><div class="num" id="nTreb">0.00</div>
+        <span>音高</span><div class="bar"><i id="mPitch"></i></div><div class="num" id="nPitch">— Hz</div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <h2>F–k 参数平面</h2>
+      <canvas class="mini" id="fk"></canvas>
+      <div class="readout">
+        <div><em>进料 F</em><span id="rF">0.0000</span></div>
+        <div><em>消耗 k</em><span id="rK">0.0000</span></div>
+        <div><em>扩散 Dᵤ/Dᵥ</em><span id="rD">1.00/.50</span></div>
+      </div>
+      <p class="hint">音高决定沿哪种纹理滑动；音量升高 k，让图案“融化”；低频加快扩散，并在鼓点处注入新的种子。</p>
+    </div>
+
+    <div class="sec">
+      <h2>调节</h2>
+      <div class="row"><label for="pal">配色</label>
+        <select id="pal"><option value="0">豹纹</option><option value="1">深海荧光</option><option value="2">宣纸墨迹</option></select></div>
+      <div class="row"><label for="sens">灵敏度</label><input id="sens" type="range" min="0.4" max="2.5" step="0.05" value="1"></div>
+      <div class="acts"><button id="bSeed">撒下新种子</button><button id="bClear">清空重来</button></div>
+      <p class="hint">在画面上按住拖动，可以亲手点画出化学种子。</p>
+    </div>
+  </div>
+</aside>
+
+<script>
+(()=>{
+const $=id=>document.getElementById(id);
+const canvas=$('gl');
+const gl=canvas.getContext('webgl2',{antialias:false,premultipliedAlpha:false,preserveDrawingBuffer:true});
+function fail(msg){document.body.insertAdjacentHTML('beforeend',`<div class="fail">${msg}</div>`);}
+if(!gl){fail('你的浏览器不支持 WebGL2，无法运行这个模拟。请换用较新的 Chrome、Edge、Firefox 或 Safari。');return;}
+if(!gl.getExtension('EXT_color_buffer_float')){fail('你的显卡驱动不支持浮点渲染（EXT_color_buffer_float），模拟无法运行。');return;}
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---------- shaders ---------- */
+const VS=`#version 300 es
+out vec2 vUv;void main(){vec2 p=vec2((gl_VertexID<<1)&2,gl_VertexID&2);vUv=p;gl_Position=vec4(p*2.-1.,0.,1.);}`;
+const SIM=`#version 300 es
+precision highp float;
+uniform sampler2D uS;uniform vec2 uRes;uniform float uF,uK,uDu,uDv;
+uniform vec4 uDrops[8];uniform int uN;out vec4 o;
+void main(){
+ vec2 px=1./uRes;vec2 uv=gl_FragCoord.xy*px;
+ vec2 c=texture(uS,uv).rg;
+ vec2 l=-c
+  +.2*(texture(uS,uv+vec2(px.x,0)).rg+texture(uS,uv-vec2(px.x,0)).rg+texture(uS,uv+vec2(0,px.y)).rg+texture(uS,uv-vec2(0,px.y)).rg)
+  +.05*(texture(uS,uv+px).rg+texture(uS,uv-px).rg+texture(uS,uv+vec2(px.x,-px.y)).rg+texture(uS,uv+vec2(-px.x,px.y)).rg);
+ float r=c.r*c.g*c.g;
+ float u=c.r+(uDu*l.r-r+uF*(1.-c.r));
+ float v=c.g+(uDv*l.g+r-(uF+uK)*c.g);
+ for(int i=0;i<8;i++){if(i>=uN)break;vec4 d=uDrops[i];vec2 dp=(uv-d.xy)*uRes;
+   dp=dp-uRes*floor(dp/uRes+.5);
+   if(dot(dp,dp)<d.z*d.z){u=mix(u,.5,d.w);v=mix(v,.25,d.w);}}
+ o=vec4(clamp(u,0.,1.),clamp(v,0.,1.),0.,1.);
+}`;
+const DRAW=`#version 300 es
+precision highp float;
+uniform sampler2D uS;uniform vec2 uSim;uniform vec3 c0,c1,c2,c3;uniform float uGlow;
+in vec2 vUv;out vec4 o;
+vec3 ramp(float t){return t<.33?mix(c0,c1,t/.33):t<.66?mix(c1,c2,(t-.33)/.33):mix(c2,c3,(t-.66)/.34);}
+void main(){
+ vec2 px=1./uSim;
+ float v=texture(uS,vUv).g;
+ float vx=texture(uS,vUv+vec2(px.x,0)).g-texture(uS,vUv-vec2(px.x,0)).g;
+ float vy=texture(uS,vUv+vec2(0,px.y)).g-texture(uS,vUv-vec2(0,px.y)).g;
+ vec3 n=normalize(vec3(-vx*9.,-vy*9.,1.));
+ vec3 L=normalize(vec3(-.45,.55,.7));
+ float dif=clamp(dot(n,L),0.,1.);
+ float sp=pow(clamp(dot(reflect(-L,n),vec3(0,0,1)),0.,1.),28.);
+ vec3 col=ramp(smoothstep(.02,.36,v));
+ col*=.72+.42*dif;col+=sp*.22*(.5+uGlow);
+ vec2 q=vUv-.5;col*=1.-.38*dot(q,q)*1.6;
+ o=vec4(col,1.);
+}`;
+function sh(t,s){const x=gl.createShader(t);gl.shaderSource(x,s);gl.compileShader(x);if(!gl.getShaderParameter(x,gl.COMPILE_STATUS))throw gl.getShaderInfoLog(x);return x;}
+function prog(fs){const p=gl.createProgram();gl.attachShader(p,sh(gl.VERTEX_SHADER,VS));gl.attachShader(p,sh(gl.FRAGMENT_SHADER,fs));gl.linkProgram(p);
+  if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw gl.getProgramInfoLog(p);
+  const u={};const n=gl.getProgramParameter(p,gl.ACTIVE_UNIFORMS);for(let i=0;i<n;i++){const a=gl.getActiveUniform(p,i);const nm=a.name.replace('[0]','');u[nm]=gl.getUniformLocation(p,a.name);}return{p,u};}
+let simP,drawP;
+try{simP=prog(SIM);drawP=prog(DRAW);}catch(e){fail('着色器编译失败：'+e);return;}
+gl.bindVertexArray(gl.createVertexArray());
+
+/* ---------- state textures ---------- */
+let W=0,H=0,tex=[],fbo=[],cur=0;
+function mkTex(data){const t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,t);
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA16F,W,H,0,gl.RGBA,gl.FLOAT,data);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.REPEAT);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.REPEAT);return t;}
+function seedData(dense){
+  const d=new Float32Array(W*H*4);
+  for(let i=0;i<W*H;i++){d[i*4]=1;d[i*4+3]=1;}
+  const n=Math.max(8,Math.round(W*H/(dense?2500:5200)));
+  for(let s=0;s<n;s++){const cx=Math.random()*W|0,cy=Math.random()*H|0,r=3+Math.random()*7|0;
+    for(let y=-r;y<=r;y++)for(let x=-r;x<=r;x++){const xx=(cx+x+W)%W,yy=(cy+y+H)%H,j=(yy*W+xx)*4;
+      d[j]=.5+Math.random()*.02;d[j+1]=.25+Math.random()*.02;}}
+  return d;}
+function setup(){
+  const dpr=Math.min(devicePixelRatio||1,2);
+  const cw=innerWidth,ch=innerHeight;
+  canvas.width=Math.round(cw*dpr);canvas.height=Math.round(ch*dpr);
+  const sc=cw<800?1.3:2;
+  let w=Math.round(cw/sc),h=Math.round(ch/sc);const m=Math.min(1,1100/w);w=Math.round(w*m);h=Math.round(h*m);
+  if(w===W&&h===H)return;W=w;H=h;
+  tex.forEach(t=>gl.deleteTexture(t));fbo.forEach(f=>gl.deleteFramebuffer(f));
+  const d=seedData(true);tex=[mkTex(d),mkTex(d)];
+  fbo=tex.map(t=>{const f=gl.createFramebuffer();gl.bindFramebuffer(gl.FRAMEBUFFER,f);gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,t,0);return f;});
+  gl.bindFramebuffer(gl.FRAMEBUFFER,null);cur=0;
+}
+function reseed(clear){const d=seedData(!clear);gl.bindTexture(gl.TEXTURE_2D,tex[cur]);gl.texSubImage2D(gl.TEXTURE_2D,0,0,0,W,H,gl.RGBA,gl.FLOAT,d);}
+setup();
+let rt;addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(setup,200);});
+
+/* ---------- pattern presets on the F–k plane ---------- */
+const PRE=[
+  {n:'旋涡波',F:.014,k:.045},
+  {n:'迷宫纹',F:.029,k:.057},
+  {n:'孔洞纹',F:.039,k:.058},
+  {n:'珊瑚纹',F:.0545,k:.062},
+  {n:'豹斑 · 细胞分裂',F:.0367,k:.0649},
+];
+function presetAt(t){t=Math.max(0,Math.min(PRE.length-1,t));const i=Math.min(PRE.length-2,Math.floor(t)),f=t-i;
+  return{F:PRE[i].F+(PRE[i+1].F-PRE[i].F)*f,k:PRE[i].k+(PRE[i+1].k-PRE[i].k)*f};}
+
+/* palettes */
+const hex=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16)/255);
+const PAL=[
+  ['#dcaa55','#a8692b','#43260f','#120a06'],
+  ['#050b14','#0e3d52','#2fa7a0','#dcfff2'],
+  ['#ece6d8','#bdb4a2','#3b3631','#0e0d0c'],
+].map(p=>p.map(hex));
+let pal=0;
+$('pal').onchange=e=>{pal=+e.target.value;};
+
+/* ---------- audio ---------- */
+let ac=null,an=null,freq,time,mode='off',stopSrc=null;
+function ctx(){if(!ac){ac=new (window.AudioContext||window.webkitAudioContext)();an=ac.createAnalyser();an.fftSize=2048;an.smoothingTimeConstant=.55;
+  freq=new Uint8Array(an.frequencyBinCount);time=new Float32Array(an.fftSize);}
+  if(ac.state==='suspended')ac.resume();return ac;}
+const status=$('status');
+function setStatus(t,warn){status.textContent=t;status.classList.toggle('warn',!!warn);}
+function setMode(m){mode=m;['bMic','bSynth','bOff'].forEach(id=>$(id).setAttribute('aria-pressed','false'));
+  $('bFile').style.borderColor=m==='file'?'var(--ochre)':'';
+  if(m==='mic')$('bMic').setAttribute('aria-pressed','true');
+  if(m==='synth')$('bSynth').setAttribute('aria-pressed','true');
+  if(m==='off')$('bOff').setAttribute('aria-pressed','true');}
+function stop(){if(stopSrc){try{stopSrc();}catch(e){}stopSrc=null;}}
+
+$('bOff').onclick=()=>{stop();setMode('off');setStatus('未接入声音：参数在 F–k 平面上缓慢漫游。');};
+
+$('bMic').onclick=async()=>{
+  stop();ctx();
+  try{
+    if(!navigator.mediaDevices?.getUserMedia)throw new Error('nomedia');
+    const st=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+    const s=ac.createMediaStreamSource(st);s.connect(an);
+    stopSrc=()=>{s.disconnect();st.getTracks().forEach(t=>t.stop());};
+    setMode('mic');setStatus('麦克风已接入。说话、唱歌、拍手都可以，试试从低音滑到高音。');
+  }catch(e){
+    setMode('off');
+    setStatus('无法使用麦克风。在 Claude 的页面预览里，麦克风会被浏览器沙箱拦截；请把这个页面的 HTML 文件下载后用浏览器直接打开，或者先用“内置合成乐”和“播放音频文件”。',true);
+  }
+};
+
+$('file').onchange=async e=>{
+  const f=e.target.files[0];if(!f)return;stop();ctx();
+  setStatus('正在解码 '+f.name+' …');
+  try{
+    const buf=await ac.decodeAudioData(await f.arrayBuffer());
+    const src=ac.createBufferSource();src.buffer=buf;src.loop=true;
+    const g=ac.createGain();g.gain.value=.9;src.connect(g);g.connect(an);g.connect(ac.destination);src.start();
+    stopSrc=()=>{src.stop();g.disconnect();};
+    setMode('file');setStatus('正在循环播放：'+f.name);
+  }catch(err){setMode('off');setStatus('这个文件无法解码。请换一个 mp3、wav、m4a 或 ogg 文件。',true);}
+  e.target.value='';
+};
+
+$('bSynth').onclick=()=>{
+  stop();ctx();
+  const master=ac.createGain();master.gain.value=.32;master.connect(an);master.connect(ac.destination);
+  const pad=ac.createOscillator();pad.type='sawtooth';const pad2=ac.createOscillator();pad2.type='sawtooth';pad2.detune.value=9;
+  const lp=ac.createBiquadFilter();lp.type='lowpass';lp.Q.value=6;const pg=ac.createGain();pg.gain.value=.16;
+  pad.connect(lp);pad2.connect(lp);lp.connect(pg);pg.connect(master);pad.start();pad2.start();
+  const nb=ac.createBuffer(1,ac.sampleRate*.1,ac.sampleRate);const nd=nb.getChannelData(0);for(let i=0;i<nd.length;i++)nd[i]=Math.random()*2-1;
+  const NOTES=[55,82.4,110,130.8,164.8,220,261.6,329.6,440,523.3,659.3,880,1046.5];
+  let ni=4,step=0,next=ac.currentTime+.05,section=0;
+  function sched(s,t){
+    if(s%32===0)section=Math.random();
+    if(s%8===0){ni=Math.max(0,Math.min(NOTES.length-1,ni+[-3,-2,-1,1,2,3,4,-4][Math.random()*8|0]));
+      const f=NOTES[ni];pad.frequency.setTargetAtTime(f,t,.35);pad2.frequency.setTargetAtTime(f*1.003,t,.35);
+      lp.frequency.setTargetAtTime(Math.min(9000,f*(3+section*6)),t,.5);
+      pg.gain.setTargetAtTime(.08+section*.16,t,.8);}
+    const kickOn=section>.25?s%2===0:s%4===0;
+    if(kickOn){const o=ac.createOscillator(),g=ac.createGain();o.frequency.setValueAtTime(130,t);o.frequency.exponentialRampToValueAtTime(42,t+.25);
+      g.gain.setValueAtTime(.95,t);g.gain.exponentialRampToValueAtTime(.001,t+.38);o.connect(g);g.connect(master);o.start(t);o.stop(t+.4);}
+    if(s%2===1&&Math.random()<.4+section*.5){const n=ac.createBufferSource();n.buffer=nb;const hp=ac.createBiquadFilter();hp.type='highpass';hp.frequency.value=6500;
+      const g=ac.createGain();g.gain.setValueAtTime(.22,t);g.gain.exponentialRampToValueAtTime(.001,t+.07);n.connect(hp);hp.connect(g);g.connect(master);n.start(t);}
+  }
+  const timer=setInterval(()=>{while(next<ac.currentTime+.2){sched(step,next);next+=.25;step++;}},50);
+  stopSrc=()=>{clearInterval(timer);pad.stop();pad2.stop();master.disconnect();};
+  setMode('synth');setStatus('内置合成乐：滑动的旋律改变音高，鼓点注入种子。');
+};
+
+/* ---------- analysis ---------- */
+let vol=0,bass=0,treb=0,pitchN=.4,pitchHz=0,peak=.05,bassAvg=0,volAvg=0,lastOn=0,heard=0;
+function analyse(now){
+  if(mode==='off'||!an){vol*=.92;bass*=.92;treb*=.92;return;}
+  an.getByteFrequencyData(freq);an.getFloatTimeDomainData(time);
+  let s=0;for(let i=0;i<time.length;i++)s+=time[i]*time[i];const rms=Math.sqrt(s/time.length);
+  const sens=+$('sens').value;
+  peak=Math.max(rms,peak*.998,.04);
+  const gate=rms>.006;
+  const v=gate?Math.min(1,(rms/peak)*sens*.95):0;
+  const hz=ac.sampleRate/an.fftSize;
+  const band=(a,b)=>{let t=0,c=0;for(let i=Math.max(1,Math.round(a/hz));i<=Math.round(b/hz);i++){t+=freq[i];c++;}return t/c/255;};
+  const b=Math.min(1,Math.max(0,(band(30,180)-.3)/.55*sens));
+  const tr=Math.min(1,Math.max(0,(band(3000,9000)-.15)/.5*sens));
+  let num=0,den=0;for(let i=Math.round(80/hz);i<=Math.round(8000/hz);i++){const m=freq[i]/255;const w=m*m;num+=w*i*hz;den+=w;}
+  if(gate&&den>.5){pitchHz=num/den;const p=Math.log2(pitchHz/250)/Math.log2(5000/250);pitchN+=(Math.max(0,Math.min(1,p))-pitchN)*.06;heard=now;}
+  vol+=(v-vol)*.3;bass+=(b-bass)*.35;treb+=(tr-treb)*.3;
+  bassAvg+=(bass-bassAvg)*.05;volAvg+=(vol-volAvg)*.04;
+  if(now-lastOn>140&&((bass>.32&&bass>bassAvg*1.3)||(vol-volAvg>.22))){lastOn=now;
+    const k=1+Math.round(bass*3);for(let i=0;i<k;i++)drop(Math.random(),Math.random(),3+bass*9+Math.random()*3,.9);}
+}
+
+/* ---------- drops & pointer ---------- */
+const drops=[];
+function drop(x,y,r,s){if(drops.length<8)drops.push([x,y,r,s]);}
+let ptr=null;
+canvas.addEventListener('pointerdown',e=>{ptr=e;canvas.setPointerCapture(e.pointerId);});
+canvas.addEventListener('pointermove',e=>{if(ptr)ptr=e;});
+const up=()=>{ptr=null;};canvas.addEventListener('pointerup',up);canvas.addEventListener('pointercancel',up);
+$('bSeed').onclick=()=>{for(let i=0;i<8;i++)drop(Math.random(),Math.random(),5+Math.random()*7,1);};
+$('bClear').onclick=()=>reseed(true);
+
+/* ---------- mobile panel ---------- */
+const panel=$('panel'),tg=$('toggle');
+tg.onclick=()=>{const c=panel.classList.toggle('closed');tg.textContent=c?'展开面板':'收起面板';tg.setAttribute('aria-expanded',String(!c));};
+
+/* ---------- mini canvases ---------- */
+function fit(c){const r=c.getBoundingClientRect(),d=Math.min(devicePixelRatio||1,2);const w=Math.round(r.width*d),h=Math.round(r.height*d);
+  if(c.width!==w||c.height!==h){c.width=w;c.height=h;}return [c.getContext('2d'),w,h,d];}
+const css=getComputedStyle(document.documentElement);
+const C={bone:css.getPropertyValue('--bone').trim(),muted:css.getPropertyValue('--muted').trim(),ochre:css.getPropertyValue('--ochre').trim(),line:css.getPropertyValue('--line').trim()};
+function drawSpec(){const [x,w,h]=fit($('spec'));x.clearRect(0,0,w,h);if(!an||mode==='off'){x.fillStyle=C.muted;x.font=`${11*(w/280)}px sans-serif`;x.fillText('等待声音输入…',8,h/2+4);return;}
+  const N=48,hz=ac.sampleRate/an.fftSize,bw=w/N;
+  for(let i=0;i<N;i++){const f0=60*Math.pow(10000/60,i/N),f1=60*Math.pow(10000/60,(i+1)/N);let m=0,c=0;
+    for(let j=Math.round(f0/hz);j<=Math.max(Math.round(f0/hz),Math.round(f1/hz));j++){m+=freq[j]||0;c++;}m/=c*255;
+    x.fillStyle=i<9?C.ochre:C.bone;x.globalAlpha=.35+.65*m;x.fillRect(i*bw+1,h-m*h,bw-2,m*h);}x.globalAlpha=1;}
+const trail=[];
+const KMIN=.04,KMAX=.07,FMIN=0,FMAX=.08;
+function drawFK(F,k){const [x,w,h,d]=fit($('fk'));x.clearRect(0,0,w,h);
+  const pad=8*d,X=v=>pad+(v-KMIN)/(KMAX-KMIN)*(w-2*pad),Y=v=>h-pad-(v-FMIN)/(FMAX-FMIN)*(h-2*pad);
+  x.strokeStyle=C.line;x.lineWidth=1;
+  for(let i=0;i<=6;i++){const kk=KMIN+i*.005;x.beginPath();x.moveTo(X(kk),pad);x.lineTo(X(kk),h-pad);x.stroke();}
+  for(let i=0;i<=4;i++){const ff=i*.02;x.beginPath();x.moveTo(pad,Y(ff));x.lineTo(w-pad,Y(ff));x.stroke();}
+  x.font=`${9.5*d}px "IBM Plex Mono",monospace`;x.fillStyle=C.muted;x.fillText('k →',w-pad-24*d,h-pad-4*d);x.fillText('F ↑',pad+3*d,pad+10*d);
+  x.strokeStyle=C.muted;x.setLineDash([3*d,3*d]);x.beginPath();PRE.forEach((p,i)=>{i?x.lineTo(X(p.k),Y(p.F)):x.moveTo(X(p.k),Y(p.F));});x.stroke();x.setLineDash([]);
+  x.font=`${10.5*d}px "Noto Sans SC",sans-serif`;
+  PRE.forEach(p=>{x.fillStyle=C.bone;x.beginPath();x.arc(X(p.k),Y(p.F),2.5*d,0,7);x.fill();
+    const lab=p.n.split(' ')[0];const tw=x.measureText(lab).width;let lx=X(p.k)+5*d;if(lx+tw>w-pad)lx=X(p.k)-5*d-tw;x.globalAlpha=.8;x.fillText(lab,lx,Y(p.F)-4*d);x.globalAlpha=1;});
+  trail.push([k,F]);if(trail.length>160)trail.shift();
+  x.strokeStyle=C.ochre;x.lineWidth=1.5*d;x.beginPath();trail.forEach((p,i)=>{x.globalAlpha=i/trail.length;i?x.lineTo(X(p[0]),Y(p[1])):x.moveTo(X(p[0]),Y(p[1]));});x.stroke();x.globalAlpha=1;
+  x.fillStyle=C.ochre;x.beginPath();x.arc(X(k),Y(F),4.5*d,0,7);x.fill();x.strokeStyle=C.bone;x.lineWidth=1*d;x.stroke();}
+
+/* ---------- main loop ---------- */
+let F=PRE[1].F,K=PRE[1].k,Du=1,Dv=.5,lastAuto=0,lastUi=0,frame=0;
+const dropBuf=new Float32Array(32);
+const el={mVol:$('mVol'),mBass:$('mBass'),mTreb:$('mTreb'),mPitch:$('mPitch'),nVol:$('nVol'),nBass:$('nBass'),nTreb:$('nTreb'),nPitch:$('nPitch'),
+  rF:$('rF'),rK:$('rK'),rD:$('rD'),form:$('formName')};
+function loop(now){
+  requestAnimationFrame(loop);frame++;
+  analyse(now);
+  const t=now/1000;
+  const listening=mode!=='off'&&now-heard<2500;
+  const tt=listening?pitchN*(PRE.length-1):(PRE.length-1)*(.5-.5*Math.cos(t*.045));
+  const base=presetAt(tt);
+  const tF=base.F-.0025*treb, tK=base.k+.0038*vol;
+  const tDu=1+.1*bass, tDv=.5*(1+.1*bass)-.03*treb;
+  const a=listening?.03:.012;
+  F+=(tF-F)*a;K+=(tK-K)*a;Du+=(tDu-Du)*.08;Dv+=(tDv-Dv)*.08;
+  const autoGap=listening?3500:1800;
+  if(now-lastAuto>autoGap){lastAuto=now;drop(Math.random(),Math.random(),4+Math.random()*5,.9);}
+  if(ptr){const r=canvas.getBoundingClientRect();drop((ptr.clientX-r.left)/r.width,1-(ptr.clientY-r.top)/r.height,7,1);}
+
+  // simulate
+  const steps=reduce?4:Math.round(10+8*vol);
+  gl.useProgram(simP.p);gl.viewport(0,0,W,H);
+  gl.uniform2f(simP.u.uRes,W,H);gl.uniform1f(simP.u.uF,F);gl.uniform1f(simP.u.uK,K);gl.uniform1f(simP.u.uDu,Du);gl.uniform1f(simP.u.uDv,Dv);
+  gl.uniform1i(simP.u.uS,0);gl.activeTexture(gl.TEXTURE0);
+  dropBuf.fill(0);drops.forEach((d,i)=>dropBuf.set(d,i*4));
+  gl.uniform4fv(simP.u.uDrops,dropBuf);
+  for(let i=0;i<steps;i++){
+    gl.uniform1i(simP.u.uN,i===0?drops.length:0);
+    gl.bindFramebuffer(gl.FRAMEBUFFER,fbo[1-cur]);gl.bindTexture(gl.TEXTURE_2D,tex[cur]);
+    gl.drawArrays(gl.TRIANGLES,0,3);cur=1-cur;}
+  drops.length=0;
+  // draw
+  gl.bindFramebuffer(gl.FRAMEBUFFER,null);gl.viewport(0,0,canvas.width,canvas.height);
+  gl.useProgram(drawP.p);gl.bindTexture(gl.TEXTURE_2D,tex[cur]);
+  gl.uniform1i(drawP.u.uS,0);gl.uniform2f(drawP.u.uSim,W,H);gl.uniform1f(drawP.u.uGlow,vol);
+  const P=PAL[pal];gl.uniform3fv(drawP.u.c0,P[0]);gl.uniform3fv(drawP.u.c1,P[1]);gl.uniform3fv(drawP.u.c2,P[2]);gl.uniform3fv(drawP.u.c3,P[3]);
+  gl.drawArrays(gl.TRIANGLES,0,3);
+
+  if(now-lastUi>66){lastUi=now;
+    el.mVol.style.width=(vol*100)+'%';el.mBass.style.width=(bass*100)+'%';el.mTreb.style.width=(treb*100)+'%';el.mPitch.style.width=(pitchN*100)+'%';
+    el.nVol.textContent=vol.toFixed(2);el.nBass.textContent=bass.toFixed(2);el.nTreb.textContent=treb.toFixed(2);
+    el.nPitch.textContent=listening&&pitchHz?Math.round(pitchHz)+' Hz':'— Hz';
+    el.rF.textContent=F.toFixed(4);el.rK.textContent=K.toFixed(4);el.rD.textContent=Du.toFixed(2)+'/'+Dv.toFixed(2).replace(/^0/,'');
+    let best=0,bd=1e9;PRE.forEach((p,i)=>{const d=((p.F-F)/.08)**2+((p.k-K)/.03)**2;if(d<bd){bd=d;best=i;}});
+    const name=vol>.75&&listening?'融化中…':PRE[best].n;if(el.form.textContent!==name)el.form.textContent=name;
+    drawSpec();drawFK(F,K);}
+}
+// warm up so the first frame already shows pattern
+(function warm(){gl.useProgram(simP.p);gl.viewport(0,0,W,H);gl.uniform2f(simP.u.uRes,W,H);gl.uniform1f(simP.u.uF,F);gl.uniform1f(simP.u.uK,K);
+  gl.uniform1f(simP.u.uDu,1);gl.uniform1f(simP.u.uDv,.5);gl.uniform1i(simP.u.uN,0);gl.uniform1i(simP.u.uS,0);gl.activeTexture(gl.TEXTURE0);
+  for(let i=0;i<500;i++){gl.bindFramebuffer(gl.FRAMEBUFFER,fbo[1-cur]);gl.bindTexture(gl.TEXTURE_2D,tex[cur]);gl.drawArrays(gl.TRIANGLES,0,3);cur=1-cur;}})();
+requestAnimationFrame(loop);
+})();
+</script>
